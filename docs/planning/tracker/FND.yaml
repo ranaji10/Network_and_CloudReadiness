@@ -65,3 +65,12 @@ stories:
     depends_on: [FND-05]
     acceptance: "mypy clean on src/readiness"
     notes: ""
+  - id: FND-08
+    title: Default config resolvable from a wheel, a checkout or an Agent Engine bundle
+    status: in_progress
+    phase: 1
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
+    depends_on: [FND-02]
+    acceptance: "pip install from GitHub works without the repo; adk deploy bundles config; tests cover resolution order"
+    notes: ""

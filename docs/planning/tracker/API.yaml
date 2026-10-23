@@ -22,11 +22,11 @@ stories:
     notes: ""
   - id: API-03
     title: Web UI (upload, progress, report view)
-    status: todo
+    status: in_progress
     phase: 4
-    owner: ""
-    branch: ""
-    depends_on: [API-02]
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
+    depends_on: [API-01]
     acceptance: "an analyst completes an assessment without the CLI"
     notes: ""
   - id: API-04
