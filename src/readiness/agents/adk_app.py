@@ -74,7 +74,7 @@ def build_root_agent():
 
     return LlmAgent(
         name="readiness_coordinator",
-        model=GlobalGemini(model=settings.llm_model or "gemini-2.5-flash"),
+        model=GlobalGemini(model=settings.llm_model or "gemini-3.5-flash"),
         description="Assesses network security, cloud and agentic-AI readiness from a document source.",
         instruction=COORDINATOR,
         tools=[run_readiness_assessment],
