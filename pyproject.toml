@@ -29,7 +29,9 @@ gcp = [
   "google-api-python-client>=2.130",
   "google-auth>=2.30",
 ]
-adk = ["google-adk>=1.0"]
+# google-adk 2.x deploys to Agent Engine through the standalone Agent Platform SDK; the adk CLI
+# only declares it under its own `gcp` extra, so pin it here (and in agents/requirements.txt).
+adk = ["google-adk>=2.2", "google-cloud-agentplatform[agent-engines]>=2.2,<3"]
 aws = ["boto3>=1.34"]
 anthropic = ["anthropic>=0.40"]
 pii = ["presidio-analyzer>=2.2"]
