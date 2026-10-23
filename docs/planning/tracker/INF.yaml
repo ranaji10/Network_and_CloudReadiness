@@ -19,7 +19,7 @@ stories:
     branch: claude/trusting-keller-qe5w65
     depends_on: [INF-01]
     acceptance: "build on main passes quality-gate, secret-scan and build-image"
-    notes: "first run failed: src/readiness/data was git-ignored by the data/ pattern"
+    notes: "first run failed: src/readiness/data was git-ignored by the data/ pattern (fixed: root-anchored ignores); Dockerfile no longer needs BuildKit"
   - id: INF-03
     title: Cloud Run deploy with _DEPLOY=true
     status: todo
@@ -85,7 +85,7 @@ stories:
     notes: ""
   - id: INF-10
     title: Publish the container image to GHCR on release tags
-    status: in_progress
+    status: done
     phase: 1
     owner: claude-code
     branch: claude/trusting-keller-qe5w65

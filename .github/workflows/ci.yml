@@ -11,6 +11,7 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -26,6 +27,7 @@ jobs:
 
   secrets:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,6 +41,7 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -46,6 +49,13 @@ jobs:
         with:
           context: .
           push: false
+          load: true
           tags: readiness:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Smoke test the image (offline assessment through the API)
+        run: |
+          docker run -d --name readiness -p 8080:8080 -e READINESS_AUTH_DISABLED=true readiness:ci
+          for i in $(seq 1 30); do curl -sf localhost:8080/healthz && break; sleep 2; done
+          curl -sf localhost:8080/healthz
+          curl -sf -F "files=@tests/fixtures/synthetic_acme/security_policy.md" \
+            "localhost:8080/assessments/upload?profile=security_only" | head -c 400
+          docker rm -f readiness
