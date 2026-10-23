@@ -49,7 +49,7 @@ def make_llm(settings: Settings, secrets: SecretStore | None = None) -> LLMProvi
         return GeminiLLM(
             model=settings.llm_model or None,
             project=settings.gcp_project or None,
-            location=settings.gcp_location,
+            location=settings.gemini_location,
             api_key=secrets.get("GEMINI_API_KEY"),
         )
     if settings.llm_provider == "anthropic":

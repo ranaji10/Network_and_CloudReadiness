@@ -44,3 +44,11 @@ def test_agent_tool_uses_temp_workspace_when_unset(monkeypatch, fixtures_dir):
     out = run_readiness_assessment(str(fixtures_dir / "synthetic_acme"), "security_only")
     assert out["domains"][0]["id"] == "network_security"
     assert (Path(tempfile.gettempdir()) / "readiness-workspace").exists()
+
+
+def test_gemini_location_is_independent_of_runtime_region(monkeypatch):
+    from readiness.config import Settings
+
+    monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "asia-south1")
+    s = Settings(_env_file=None)
+    assert s.gcp_location == "asia-south1" and s.gemini_location == "global"
