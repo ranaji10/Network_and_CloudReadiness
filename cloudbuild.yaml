@@ -28,7 +28,7 @@ timeout: 1500s
 
 steps:
   - id: quality-gate
-    name: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    name: ghcr.io/astral-sh/uv:python3.12-bookworm  # not -slim: scripts/check_*.py need git
     entrypoint: bash
     env: ["UV_LINK_MODE=copy", "UV_PYTHON_DOWNLOADS=never"]
     args:
