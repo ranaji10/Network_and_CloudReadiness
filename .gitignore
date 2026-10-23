@@ -1,0 +1,45 @@
+# --- Confidentiality guardrail: client / organisation data never enters git ---
+# Anything an assessment reads or produces lives outside version control.
+data/
+workspace/
+uploads/
+reports/
+*.client.*
+*.confidential.*
+*.secret
+*.pem
+*.key
+*.p12
+*.json.key
+service-account*.json
+*-credentials*.json
+.env
+.env.*
+!.env.example
+# Terraform state and variable files carry account identifiers
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+# --- Tooling ---
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+dist/
+build/
+*.egg-info/
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+# Local Claude Code settings (shared settings.json is committed on purpose)
+.claude/settings.local.json

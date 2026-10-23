@@ -1,0 +1,73 @@
+# Google Cloud Build pipeline. Runs on every push via the existing trigger.
+#
+# Stage 1 (always): lint, tests, policy checks, container build  -> fixes the "red build" with no cloud resources.
+# Stage 2 (gated):  push to Artifact Registry + deploy to Cloud Run when _DEPLOY=true.
+#
+# Nothing here is account-specific: PROJECT_ID comes from the build, everything else is a substitution
+# set on the trigger (see infra/terraform/gcp/trigger.tf and docs/runbooks/DEPLOY_GCP.md).
+substitutions:
+  _REGION: asia-south1
+  _AR_REPO: readiness
+  _SERVICE: readiness-api
+  _DEPLOY: "false"
+  _RUNTIME_SA: ""              # e.g. readiness-runtime@PROJECT.iam.gserviceaccount.com (set by Terraform)
+  _IMAGE: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}
+
+options:
+  dynamic_substitutions: true
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_HIGHCPU_8
+
+timeout: 1500s
+
+steps:
+  - id: quality-gate
+    name: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    entrypoint: bash
+    env: ["UV_LINK_MODE=copy", "UV_PYTHON_DOWNLOADS=never"]
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        uv sync --frozen --group dev
+        uv run ruff check src tests scripts
+        uv run ruff format --check src tests scripts
+        uv run pytest -q
+        uv run python scripts/check_portability.py
+        uv run python scripts/check_no_client_data.py
+        uv run python scripts/render_tracker.py --check
+
+  - id: secret-scan
+    name: ghcr.io/gitleaks/gitleaks:latest
+    entrypoint: gitleaks
+    args: ["dir", ".", "--config", ".gitleaks.toml", "--no-banner", "--redact", "--exit-code", "1"]
+
+  - id: build-image
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_IMAGE}:${SHORT_SHA}", "-t", "${_IMAGE}:latest", "."]
+
+  - id: push-image
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ "${_DEPLOY}" != "true" ]; then echo "push skipped (_DEPLOY=${_DEPLOY})"; exit 0; fi
+        docker push "${_IMAGE}:${SHORT_SHA}" && docker push "${_IMAGE}:latest"
+
+  - id: deploy-cloud-run
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        if [ "${_DEPLOY}" != "true" ]; then echo "deploy skipped (_DEPLOY=${_DEPLOY})"; exit 0; fi
+        gcloud run deploy "${_SERVICE}" \
+          --image "${_IMAGE}:${SHORT_SHA}" \
+          --region "${_REGION}" \
+          --platform managed \
+          --no-allow-unauthenticated \
+          --ingress internal-and-cloud-load-balancing \
+          ${_RUNTIME_SA:+--service-account "${_RUNTIME_SA}"} \
+          --set-env-vars "READINESS_PROVIDER=gcp,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},READINESS_LLM_PROVIDER=mock" \
+          --quiet

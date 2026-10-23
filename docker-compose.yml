@@ -1,0 +1,14 @@
+# Local, fully offline run: `docker compose up --build` then POST to http://localhost:8080/assessments
+services:
+  api:
+    build: .
+    ports: ["8080:8080"]
+    env_file: [.env]
+    environment:
+      READINESS_PROVIDER: local
+      READINESS_LLM_PROVIDER: ${READINESS_LLM_PROVIDER:-mock}
+      READINESS_AUTH_DISABLED: "true"
+      READINESS_WORKSPACE_DIR: /workspace
+    volumes:
+      - ./workspace:/workspace          # reports (git-ignored)
+      - ./data:/data:ro                 # put client documents here (git-ignored); use source_uri file:///data/<folder>

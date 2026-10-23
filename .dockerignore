@@ -1,0 +1,15 @@
+.git
+.venv
+.env
+.env.*
+workspace/
+data/
+uploads/
+reports/
+infra/
+docs/
+legacy/
+reference/
+tests/
+**/__pycache__
+*.tfstate*

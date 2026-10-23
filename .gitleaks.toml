@@ -1,0 +1,20 @@
+# gitleaks configuration: default rules plus repo-specific allowlists.
+# Run: make secrets-scan   (also runs in Cloud Build, GitHub Actions and pre-commit)
+title = "readiness"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe paths and synthetic values"
+paths = [
+  '''^reference/''',                     # CSA published material
+  '''^legacy/v1_agent_platform/screenshots/''',
+  '''^tests/fixtures/synthetic_acme/''',  # SYNTHETIC, see its README
+  '''^src/readiness/data/ccm_v4\.1\.json$''',
+  '''(^|/)uv\.lock$''',
+]
+regexes = [
+  '''REPLACE-[A-Za-z0-9\-]+''',
+  '''Sup3rSecretValue1''',               # synthetic password used by the redaction tests
+]

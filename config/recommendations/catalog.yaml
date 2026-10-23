@@ -1,0 +1,547 @@
+# Recommendation catalog. One entry per check id. Options are deliberately multi-provider so the
+# tool stays neutral: the profile's target_providers order decides what is listed first.
+# provider: gcp | aws | oss | process. Keep notes short; link to vendor docs rather than paraphrasing.
+version: "1.0"
+recommendations:
+  # ---------------- Network security ----------------
+  - check_id: NS-PER-01
+    title: Put a managed next-generation firewall in front of every internet ingress
+    rationale: Stateful inspection with threat signatures is the baseline control for internet exposure.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Cloud NGFW (Enterprise) + hierarchical firewall policies", note: "L7 inspection, IDS integration, org-level policy." }
+      - { provider: aws, product: "AWS Network Firewall + Security Groups / NACLs" }
+      - { provider: oss, product: "OPNsense / pfSense with Suricata", note: "Good for on-prem edge; needs HA pair." }
+  - check_id: NS-PER-02
+    title: Front public web applications with a WAF and DDoS protection
+    rationale: Application-layer attacks and volumetric DDoS bypass network firewalls.
+    effort: S
+    impact: high
+    options:
+      - { provider: gcp, product: "Cloud Armor (WAF + Adaptive Protection) on the external load balancer" }
+      - { provider: aws, product: "AWS WAF + AWS Shield Advanced on ALB/CloudFront" }
+      - { provider: oss, product: "ModSecurity + OWASP Core Rule Set behind NGINX; Cloudflare free tier for DDoS" }
+  - check_id: NS-PER-03
+    title: Move to default-deny firewall policy with documented, reviewed rules
+    rationale: Undocumented permissive rules accumulate; default-deny plus quarterly review keeps exposure known.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "Firewall policies as code (Terraform) + Firewall Insights", note: "Insights flags shadowed and overly permissive rules." }
+      - { provider: aws, product: "Security Groups as code + AWS Firewall Manager + Network Access Analyzer" }
+      - { provider: oss, product: "Terraform/Ansible-managed rules with periodic review in Git", note: "" }
+      - { provider: process, product: "Quarterly firewall rule review with named owner" }
+  - check_id: NS-PER-04
+    title: Replace exposed admin ports with zero-trust or VPN access plus MFA
+    rationale: Exposed RDP/SSH and legacy VPNs without MFA are the most common ransomware entry points.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Identity-Aware Proxy (TCP forwarding) + Chrome Enterprise Premium (BeyondCorp)" }
+      - { provider: aws, product: "AWS Verified Access or Client VPN with IAM Identity Center MFA; SSM Session Manager for admin" }
+      - { provider: oss, product: "WireGuard / OpenVPN with MFA (Authelia/Keycloak); Teleport or Boundary for admin access" }
+  - check_id: NS-SEG-01
+    title: Segment the network into security zones with controlled east-west traffic
+    rationale: Segmentation limits blast radius and is prerequisite for a clean cloud landing zone.
+    effort: L
+    impact: high
+    options:
+      - { provider: gcp, product: "Shared VPC with per-tier subnets, firewall tags, VPC Service Controls for data perimeters" }
+      - { provider: aws, product: "Multi-account landing zone (Control Tower) + VPCs/subnets per tier + Transit Gateway" }
+      - { provider: oss, product: "VLANs with inter-VLAN firewalling; Calico/Cilium network policies for Kubernetes" }
+  - check_id: NS-SEG-02
+    title: Produce and maintain a current network topology and IP plan
+    rationale: Every migration and security review starts from an accurate map; it is also CCM I&S-08.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Network Topology (Network Intelligence Center) + Network Analyzer", note: "Automatic for the GCP side." }
+      - { provider: aws, product: "AWS Network Manager / Reachability Analyzer" }
+      - { provider: oss, product: "NetBox as IPAM/DCIM source of truth; diagrams as code (diagrams.net in Git)" }
+  - check_id: NS-SEG-03
+    title: Isolate administrative access via bastion / management network
+    rationale: Admin interfaces reachable from user networks are a lateral-movement path.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "IAP TCP forwarding with no public IPs; OS Login; Privileged Access Manager" }
+      - { provider: aws, product: "SSM Session Manager; no public IPs on admin interfaces" }
+      - { provider: oss, product: "Teleport / Boundary bastion with session recording; dedicated management VLAN" }
+  - check_id: NS-SEG-04
+    title: Separate guest and corporate wireless with 802.1X
+    rationale: Shared wireless lets untrusted devices reach internal systems.
+    effort: S
+    impact: low
+    options:
+      - { provider: oss, product: "FreeRADIUS + 802.1X (WPA2/3-Enterprise), separate guest VLAN with captive portal" }
+      - { provider: gcp, product: "Cloud Identity as RADIUS identity source via partner (e.g. SecureW2 / JumpCloud)" }
+      - { provider: aws, product: "AWS Managed Microsoft AD as RADIUS backend" }
+  - check_id: NS-IAM-01
+    title: Consolidate on a central identity provider with SSO
+    rationale: SSO is the control point for MFA, joiner/leaver and least privilege.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Cloud Identity / Google Workspace as IdP, SAML/OIDC apps" }
+      - { provider: aws, product: "AWS IAM Identity Center with external IdP (Entra ID / Okta)" }
+      - { provider: oss, product: "Keycloak or Authentik as OIDC/SAML provider" }
+  - check_id: NS-IAM-02
+    title: Enforce MFA for all users; phishing-resistant for admins
+    rationale: MFA blocks the majority of credential-based attacks.
+    effort: S
+    impact: high
+    options:
+      - { provider: gcp, product: "Cloud Identity 2-Step Verification enforcement; security keys / passkeys for admins" }
+      - { provider: aws, product: "IAM Identity Center MFA policies; FIDO2 keys for root/admin" }
+      - { provider: oss, product: "Keycloak OTP/WebAuthn policies" }
+  - check_id: NS-IAM-03
+    title: Implement least privilege with periodic access reviews
+    rationale: Standing privileges are the lever attackers use once inside.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "IAM Recommender + Policy Analyzer; Privileged Access Manager for just-in-time grants" }
+      - { provider: aws, product: "IAM Access Analyzer + permission boundaries; Identity Center access reviews" }
+      - { provider: oss, product: "Quarterly access review workflow in Git/ticketing; OpenFGA for app-level RBAC" }
+      - { provider: process, product: "Quarterly access recertification owned by system owners" }
+  - check_id: NS-IAM-04
+    title: Move machine credentials into a secret manager with rotation
+    rationale: Hard-coded or shared credentials cannot be rotated or audited.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Secret Manager + Workload Identity Federation (no long-lived keys)" }
+      - { provider: aws, product: "AWS Secrets Manager with rotation Lambdas; IAM roles instead of keys" }
+      - { provider: oss, product: "HashiCorp Vault / OpenBao with dynamic secrets" }
+  - check_id: NS-DET-01
+    title: Centralise logs in a SIEM with a retention policy
+    rationale: Without central logs there is no detection and no forensic capability.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Cloud Logging + Log Analytics; Google SecOps (Chronicle) for SIEM" }
+      - { provider: aws, product: "CloudWatch Logs + Security Lake + Amazon OpenSearch / Security Hub" }
+      - { provider: oss, product: "Wazuh or Elastic Security (ELK); Graylog" }
+  - check_id: NS-DET-02
+    title: Deploy intrusion detection and endpoint detection and response
+    rationale: Network and endpoint telemetry are needed to detect compromise early.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Cloud IDS (Palo Alto-powered) + Security Command Center Premium" }
+      - { provider: aws, product: "Amazon GuardDuty + Inspector; Network Firewall IPS rules" }
+      - { provider: oss, product: "Suricata / Zeek sensors; Wazuh agents for EDR-lite" }
+  - check_id: NS-DET-03
+    title: Establish vulnerability scanning and a patching cadence
+    rationale: Known-exploited vulnerabilities are patched late far more often than zero-days are used.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Security Command Center vulnerability findings; OS Config patch management; Artifact Analysis for containers" }
+      - { provider: aws, product: "Amazon Inspector; SSM Patch Manager" }
+      - { provider: oss, product: "OpenVAS / Greenbone; Trivy for containers; unattended-upgrades / WSUS" }
+      - { provider: process, product: "30/60/90-day SLAs by severity, tracked monthly" }
+  - check_id: NS-DET-04
+    title: Write and exercise an incident response plan
+    rationale: A rehearsed plan halves time-to-contain; auditors and insurers now expect it.
+    effort: S
+    impact: medium
+    options:
+      - { provider: process, product: "IR plan based on NIST SP 800-61; annual tabletop; contacts for legal/PR/insurer" }
+      - { provider: gcp, product: "Security Command Center + SecOps SOAR playbooks" }
+      - { provider: aws, product: "Security Hub automated response (Security Hub ARC) + Incident Manager" }
+  - check_id: NS-RES-01
+    title: Enforce TLS 1.2+ in transit and encryption at rest everywhere
+    rationale: Legacy protocols and unencrypted disks fail most compliance regimes outright.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Default encryption at rest + CMEK via Cloud KMS; SSL policies on load balancers (TLS 1.2 min)" }
+      - { provider: aws, product: "KMS CMKs; ALB security policies TLS 1.2+; S3 default encryption" }
+      - { provider: oss, product: "LUKS/dm-crypt; Mozilla modern TLS config; step-ca / Let's Encrypt" }
+  - check_id: NS-RES-02
+    title: Make backups immutable, offsite and restore-tested with defined RPO/RTO
+    rationale: Ransomware targets backups first; untested restores fail when needed.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Backup and DR Service; Cloud Storage with Object Lock/retention policies; Turbo replication" }
+      - { provider: aws, product: "AWS Backup with Vault Lock; S3 Object Lock" }
+      - { provider: oss, product: "Restic / Borg / Veeam CE to immutable object storage; quarterly restore drills" }
+  - check_id: NS-RES-03
+    title: Add redundancy and failover for critical services and links
+    rationale: Single points of failure turn minor incidents into outages.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "Regional MIGs / multi-zone GKE; HA VPN; global load balancing" }
+      - { provider: aws, product: "Multi-AZ deployments; redundant VPN/Direct Connect; Route 53 health checks" }
+      - { provider: oss, product: "Keepalived/VRRP; dual-ISP with BGP or SD-WAN" }
+  # ---------------- Cloud readiness ----------------
+  - check_id: CR-CMP-01
+    title: Build a complete server/VM inventory with specs and ownership
+    rationale: Discovery data drives sizing, waves and cost estimates.
+    effort: S
+    impact: high
+    options:
+      - { provider: gcp, product: "Migration Center discovery client (agentless) + StratoZone data" }
+      - { provider: aws, product: "AWS Application Discovery Service / Migration Evaluator" }
+      - { provider: oss, product: "NetBox + Ansible facts gathering; RVTools for VMware" }
+  - check_id: CR-CMP-02
+    title: Catalogue applications with dependencies and criticality
+    rationale: Migration waves must respect dependencies and business impact.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Migration Center application grouping + dependency mapping" }
+      - { provider: aws, product: "Migration Hub + Application Discovery Service network view" }
+      - { provider: oss, product: "Dependency mapping via Zeek/NetFlow + spreadsheet CMDB" }
+      - { provider: process, product: "Application owner interviews using the 6R disposition template" }
+  - check_id: CR-CMP-03
+    title: Pilot containerisation for a stateless workload
+    rationale: Containers unlock portable, auto-scaled runtime and are the simplest path off VMs.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "Cloud Run (serverless containers) or GKE Autopilot; Migrate to Containers for lift-and-modernise" }
+      - { provider: aws, product: "App Runner / ECS Fargate; EKS for Kubernetes" }
+      - { provider: oss, product: "Docker + k3s / Kubernetes; Helm charts in Git" }
+  - check_id: CR-CMP-04
+    title: Collect utilisation data for right-sizing before migration
+    rationale: Peak-sized VMs copied to cloud waste 30-50% of spend.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Migration Center performance data (2-4 weeks) + Recommender right-sizing" }
+      - { provider: aws, product: "Migration Evaluator / Compute Optimizer" }
+      - { provider: oss, product: "Prometheus node exporter + Grafana for 30 days" }
+  - check_id: CR-DAT-01
+    title: Document every database engine, version, size and growth
+    rationale: Database choice (managed vs self-run) is the biggest architectural decision in a migration.
+    effort: S
+    impact: high
+    options:
+      - { provider: gcp, product: "Database Migration Service assessment; target Cloud SQL / AlloyDB / Spanner" }
+      - { provider: aws, product: "DMS Schema Conversion assessment; target RDS / Aurora" }
+      - { provider: oss, product: "pg_stat / sys.dm_* scripts + inventory sheet" }
+  - check_id: CR-DAT-02
+    title: Quantify storage volumes, shares and IOPS
+    rationale: Storage tiers and file-share services depend on actual capacity and performance needs.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Cloud Storage (Standard/Nearline/Coldline/Archive) + Filestore / NetApp Volumes; Storage Transfer Service" }
+      - { provider: aws, product: "S3 tiers + EFS/FSx; DataSync" }
+      - { provider: oss, product: "MinIO for S3-compatible object storage; Ceph" }
+  - check_id: CR-DAT-03
+    title: Classify data and document residency constraints
+    rationale: Residency decides regions; classification decides encryption and access controls.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Sensitive Data Protection (DLP) discovery; Assured Workloads / Organization Policy for data residency" }
+      - { provider: aws, product: "Amazon Macie; SCPs restricting regions" }
+      - { provider: oss, product: "Classification scheme (public/internal/confidential/restricted) + OpenDLP scans" }
+      - { provider: process, product: "Data classification policy signed off by data owners" }
+  - check_id: CR-DAT-04
+    title: Document backup schedules and retention per data class
+    rationale: Retention requirements drive storage cost and legal exposure.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Backup and DR Service plans; Cloud SQL automated backups + PITR" }
+      - { provider: aws, product: "AWS Backup plans with lifecycle" }
+      - { provider: oss, product: "Documented retention matrix + pgBackRest / Restic schedules" }
+  - check_id: CR-NET-01
+    title: Design hybrid connectivity with bandwidth and latency targets
+    rationale: Migration speed and hybrid operation depend on a sized, redundant link.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "HA VPN to start; Dedicated / Partner Interconnect for >1 Gbps; Cross-Cloud Interconnect for multi-cloud" }
+      - { provider: aws, product: "Site-to-Site VPN; Direct Connect" }
+      - { provider: oss, product: "WireGuard/IPsec tunnels with BGP (FRRouting)" }
+  - check_id: CR-NET-02
+    title: Reserve non-overlapping IP ranges for cloud VPCs
+    rationale: Overlapping ranges force NAT and block peering later.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Shared VPC design with reserved RFC 1918 blocks; Network Connectivity Center" }
+      - { provider: aws, product: "VPC IPAM to allocate and track CIDRs" }
+      - { provider: oss, product: "NetBox IPAM as source of truth" }
+  - check_id: CR-NET-03
+    title: Federate identity to the cloud provider
+    rationale: Federation avoids a second user directory and enables workload identity for services.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Cloud Identity with directory sync / SAML federation; Workload Identity Federation for CI and on-prem" }
+      - { provider: aws, product: "IAM Identity Center with external IdP; IAM Roles Anywhere" }
+      - { provider: oss, product: "Keycloak as IdP federated to cloud via SAML/OIDC" }
+  - check_id: CR-NET-04
+    title: Define DNS and certificate lifecycle for cloud
+    rationale: Split-horizon DNS and automated certificates are needed from day one of hybrid.
+    effort: S
+    impact: low
+    options:
+      - { provider: gcp, product: "Cloud DNS (private zones + forwarding) + Certificate Manager / CAS" }
+      - { provider: aws, product: "Route 53 Resolver + ACM / Private CA" }
+      - { provider: oss, product: "CoreDNS/BIND + cert-manager / step-ca" }
+  - check_id: CR-SEC-01
+    title: Map applicable compliance obligations to cloud controls
+    rationale: Choosing regions, logging and encryption depends on which regimes apply.
+    effort: S
+    impact: high
+    options:
+      - { provider: gcp, product: "Compliance Reports Manager; Assured Workloads; Security Command Center compliance dashboards" }
+      - { provider: aws, product: "AWS Artifact; Audit Manager; Security Hub standards" }
+      - { provider: oss, product: "CSA CCM v4.1 as the control baseline; OpenSCAP for hosts" }
+      - { provider: process, product: "Regulatory mapping workshop with legal/compliance (CCM GRC-07)" }
+  - check_id: CR-SEC-02
+    title: Adopt a landing zone / security baseline before the first workload
+    rationale: Retrofitting org policies, logging and network design is far costlier than starting right.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Google Cloud Security Foundations blueprint (terraform-example-foundation) + Organization Policy" }
+      - { provider: aws, product: "AWS Control Tower + Landing Zone Accelerator" }
+      - { provider: oss, product: "Terraform modules in Git with policy-as-code (OPA/Conftest, Checkov)" }
+  - check_id: CR-SEC-03
+    title: Decide the key management model (provider keys vs CMEK/BYOK/HSM)
+    rationale: Regulated data often requires customer-managed keys; retrofitting re-encrypts everything.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Cloud KMS with CMEK; Cloud HSM or Cloud External Key Manager for strict regimes" }
+      - { provider: aws, product: "AWS KMS CMKs; CloudHSM; XKS for external keys" }
+      - { provider: oss, product: "HashiCorp Vault Transit / OpenBao; SoftHSM for dev" }
+  - check_id: CR-SEC-04
+    title: Extend security monitoring to cloud with CSPM and audit logs
+    rationale: Misconfiguration is the top cloud breach cause; posture management catches it continuously.
+    effort: S
+    impact: high
+    options:
+      - { provider: gcp, product: "Security Command Center (Standard free, Premium/Enterprise for CSPM) + Cloud Audit Logs sink" }
+      - { provider: aws, product: "Security Hub + GuardDuty + CloudTrail organisation trail" }
+      - { provider: oss, product: "Prowler / CloudQuery / Steampipe scheduled scans; Falco for runtime" }
+  - check_id: CR-COS-01
+    title: Inventory licences and check cloud portability (BYOL / Software Assurance)
+    rationale: Licence portability changes cloud TCO by 20-40% for Windows/SQL estates.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Migration Center licence assessment; sole-tenant nodes for BYOL" }
+      - { provider: aws, product: "License Manager; Dedicated Hosts for BYOL" }
+      - { provider: oss, product: "Evaluate open-source replacements (PostgreSQL for SQL Server, Linux for Windows) per workload" }
+  - check_id: CR-COS-02
+    title: Build a current-state TCO baseline
+    rationale: Without a baseline, cloud cost conversations have no anchor.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Migration Center TCO report + Pricing Calculator" }
+      - { provider: aws, product: "Migration Evaluator business case + Pricing Calculator" }
+      - { provider: oss, product: "Spreadsheet TCO model (hardware depreciation, power, licences, staff)" }
+      - { provider: process, product: "Finance-validated cost baseline signed off before migration business case" }
+  - check_id: CR-COS-03
+    title: Establish cloud cost governance (budgets, labels, FinOps owner)
+    rationale: Cost overruns are the most common reason cloud programmes stall.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Billing budgets and alerts; label policy; BigQuery billing export + Looker Studio dashboards; committed use discounts" }
+      - { provider: aws, product: "Budgets + Cost Explorer; tagging policies; Savings Plans" }
+      - { provider: oss, product: "OpenCost / Kubecost for Kubernetes; Infracost in CI" }
+      - { provider: process, product: "Named FinOps owner and monthly cost review" }
+  - check_id: CR-COS-04
+    title: "Raise operations maturity: IaC, CI/CD, monitoring, runbooks"
+    rationale: Cloud at scale is only safe when changes are automated, tested and observable.
+    effort: L
+    impact: high
+    options:
+      - { provider: gcp, product: "Terraform + Cloud Build / Cloud Deploy; Cloud Monitoring + Managed Prometheus; Cloud Operations runbooks" }
+      - { provider: aws, product: "Terraform/CDK + CodePipeline; CloudWatch + Managed Grafana" }
+      - { provider: oss, product: "Terraform / OpenTofu + GitHub Actions; Prometheus + Grafana + Loki; runbooks in Git" }
+  - check_id: CR-COS-05
+    title: Fund a skills and change plan (cloud centre of excellence)
+    rationale: Teams without training recreate on-prem patterns in the cloud.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "Google Cloud Skills Boost paths; Partner-led CCoE enablement" }
+      - { provider: aws, product: "AWS Skill Builder; Cloud Adoption Framework (People perspective)" }
+      - { provider: oss, product: "Internal guild + Linux Foundation / CNCF courses" }
+      - { provider: process, product: "Named CCoE lead; 10% time for enablement for 2 quarters" }
+  # ---------------- Agentic AI readiness ----------------
+  - check_id: AI-DAT-01
+    title: Stand up a data catalogue with owners and classification
+    rationale: Agents can only be trusted with data whose sensitivity and ownership are known.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Dataplex Universal Catalog + Sensitive Data Protection auto-classification" }
+      - { provider: aws, product: "Glue Data Catalog + DataZone + Macie" }
+      - { provider: oss, product: "OpenMetadata or DataHub" }
+  - check_id: AI-DAT-02
+    title: Establish a governed analytical data platform
+    rationale: Agents and analytics need one governed source rather than ad-hoc extracts.
+    effort: L
+    impact: high
+    options:
+      - { provider: gcp, product: "BigQuery (+ BigLake for lake data), Dataflow / Datastream for ingestion" }
+      - { provider: aws, product: "Redshift / Athena on S3 lake; Glue ETL" }
+      - { provider: oss, product: "PostgreSQL + DuckDB / ClickHouse; Apache Iceberg lakehouse with Trino" }
+  - check_id: AI-DAT-03
+    title: Make unstructured content retrievable (search / vector index) with access controls
+    rationale: Retrieval-augmented agents need indexed documents that respect existing permissions.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Vertex AI Search (managed RAG with ACL-aware connectors) or AlloyDB/pgvector + Vertex embeddings" }
+      - { provider: aws, product: "Amazon Kendra / Bedrock Knowledge Bases; OpenSearch vector engine" }
+      - { provider: oss, product: "pgvector / Qdrant / Weaviate with document-level ACL metadata" }
+  - check_id: AI-DAT-04
+    title: Introduce data quality checks and lineage
+    rationale: Agents amplify bad data; lineage is needed to explain and audit answers.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "Dataplex data quality + lineage; Dataform assertions" }
+      - { provider: aws, product: "Glue Data Quality; DataZone lineage" }
+      - { provider: oss, product: "Great Expectations / Soda; OpenLineage + Marquez" }
+  - check_id: AI-INT-01
+    title: Expose core systems through documented APIs or events
+    rationale: Agents act through APIs; screen-scraping and manual steps do not scale or audit.
+    effort: L
+    impact: high
+    options:
+      - { provider: gcp, product: "Apigee or API Gateway; Pub/Sub + Eventarc for events; Application Integration connectors" }
+      - { provider: aws, product: "API Gateway; EventBridge; AppFlow" }
+      - { provider: oss, product: "OpenAPI-first services; Kafka / NATS for events; n8n for low-code glue" }
+  - check_id: AI-INT-02
+    title: Put APIs behind a gateway with auth, quotas and logging
+    rationale: Agent traffic needs rate limits and audit; a gateway is where agent identities are enforced.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "Apigee (analytics, quotas, OAuth) or Cloud API Gateway" }
+      - { provider: aws, product: "API Gateway usage plans + WAF" }
+      - { provider: oss, product: "Kong / Tyk / Envoy Gateway" }
+  - check_id: AI-INT-03
+    title: Adopt a managed AI platform for model access and agent hosting
+    rationale: Managed platforms provide enterprise data-use terms, quotas, and hosting for agents.
+    effort: S
+    impact: high
+    options:
+      - { provider: gcp, product: "Vertex AI (Gemini, Model Garden incl. Claude) + Agent Development Kit + Agent Engine; Gemini Enterprise for packaged agents" }
+      - { provider: aws, product: "Amazon Bedrock (Claude, others) + Bedrock AgentCore" }
+      - { provider: oss, product: "Ollama / vLLM self-hosted models; LangGraph or ADK (open source) for agents" }
+  - check_id: AI-INT-04
+    title: Standardise on agent/tool protocols (MCP, A2A, function calling)
+    rationale: Open protocols keep agents portable across model providers and avoid lock-in.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "ADK with MCP tools and A2A; Agent Engine runtime" }
+      - { provider: aws, product: "Bedrock AgentCore Gateway (MCP) + Strands Agents" }
+      - { provider: oss, product: "MCP servers for internal systems; LangGraph / CrewAI / ADK runtime" }
+  - check_id: AI-INT-05
+    title: Provide elastic compute for inference and batch AI jobs
+    rationale: AI workloads are bursty; fixed capacity is either idle or saturated.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "Cloud Run (GPU) / GKE Autopilot; Batch; Vertex AI endpoints with autoscaling" }
+      - { provider: aws, product: "ECS/EKS with Karpenter; SageMaker endpoints; AWS Batch" }
+      - { provider: oss, product: "Kubernetes with KEDA autoscaling; Ray for distributed jobs" }
+  - check_id: AI-GOV-01
+    title: Publish an AI acceptable-use and responsible-AI policy
+    rationale: Staff are already using AI tools; policy sets what data may be shared and how outputs are checked.
+    effort: S
+    impact: high
+    options:
+      - { provider: process, product: "Policy covering approved tools, data classes allowed, human review, disclosure; aligned to NIST AI RMF / ISO 42001" }
+      - { provider: gcp, product: "Enforce via Workspace / Gemini Enterprise admin controls and DLP" }
+      - { provider: aws, product: "Enforce via Bedrock Guardrails and IAM" }
+  - check_id: AI-GOV-02
+    title: Risk-assess AI use cases before deployment
+    rationale: Agents that act on systems need the same change and risk control as any production change.
+    effort: S
+    impact: medium
+    options:
+      - { provider: process, product: "Lightweight AI risk assessment template (use case, data, autonomy level, failure modes); DPIA when personal data" }
+      - { provider: oss, product: "NIST AI RMF playbook; OWASP Top 10 for LLM Applications checklist" }
+  - check_id: AI-GOV-03
+    title: Gate consequential agent actions behind human approval
+    rationale: Autonomy should be earned per action class; approvals and kill switches limit damage.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "ADK long-running tool confirmations; Agent Engine with approval workflows via Application Integration" }
+      - { provider: aws, product: "Bedrock Agents return-of-control / AgentCore policies; Step Functions human approval" }
+      - { provider: oss, product: "Approval step in LangGraph (interrupt) or n8n; feature flags as kill switch" }
+  - check_id: AI-GOV-04
+    title: Keep an inventory of models and agents with owners
+    rationale: Unowned agents cannot be patched, audited or retired.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Vertex AI Model Registry; Agent registry in Agent Engine" }
+      - { provider: aws, product: "SageMaker Model Registry; AgentCore registry" }
+      - { provider: oss, product: "Model cards in Git; MLflow registry" }
+  - check_id: AI-GOV-05
+    title: Complete model-provider due diligence and data-use terms
+    rationale: Confirm no training on your data, retention windows and regional processing before sending client data.
+    effort: S
+    impact: high
+    options:
+      - { provider: process, product: "Vendor assessment (CAIQ-lite) + DPA; confirm zero-retention / no-training terms" }
+      - { provider: gcp, product: "Vertex AI enterprise data-use terms; data residency via regional endpoints" }
+      - { provider: aws, product: "Bedrock data-use terms; regional endpoints" }
+  - check_id: AI-SEC-01
+    title: Run agents under least-privilege, auditable identities
+    rationale: An agent with admin rights is an unattended admin.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Dedicated service accounts per agent; Workload Identity; IAM Conditions; Privileged Access Manager" }
+      - { provider: aws, product: "IAM roles per agent with session tags; permission boundaries" }
+      - { provider: oss, product: "SPIFFE/SPIRE identities; OpenFGA for fine-grained authorisation" }
+  - check_id: AI-SEC-02
+    title: Keep secrets in a manager and out of prompts and code
+    rationale: Prompts and traces are logged; a secret in a prompt is a secret in the logs.
+    effort: S
+    impact: high
+    options:
+      - { provider: gcp, product: "Secret Manager + secret scanning in Cloud Build; Sensitive Data Protection on prompts" }
+      - { provider: aws, product: "Secrets Manager; CodeGuru / git-secrets" }
+      - { provider: oss, product: "gitleaks pre-commit + CI; Vault/OpenBao" }
+  - check_id: AI-SEC-03
+    title: Add prompt-injection and data-leakage controls around agents
+    rationale: Documents and web content are untrusted input; outputs must be filtered for sensitive data.
+    effort: M
+    impact: high
+    options:
+      - { provider: gcp, product: "Model Armor (prompt/response screening) + Sensitive Data Protection; VPC Service Controls" }
+      - { provider: aws, product: "Bedrock Guardrails (content, PII, grounding)" }
+      - { provider: oss, product: "Presidio for PII; LLM Guard / NeMo Guardrails; allow-listed tools only" }
+  - check_id: AI-SEC-04
+    title: Trace and audit every agent action and model call
+    rationale: Traceability is required to debug, prove compliance and investigate incidents.
+    effort: S
+    impact: medium
+    options:
+      - { provider: gcp, product: "Cloud Trace + Cloud Logging via OpenTelemetry; Agent Engine sessions and traces" }
+      - { provider: aws, product: "CloudWatch + X-Ray; AgentCore Observability" }
+      - { provider: oss, product: "OpenTelemetry + Langfuse / Phoenix" }
+  - check_id: AI-SEC-05
+    title: Evaluate and red-team agents before and after release
+    rationale: Agent behaviour drifts with model and prompt changes; evals catch regressions.
+    effort: M
+    impact: medium
+    options:
+      - { provider: gcp, product: "Vertex AI Gen AI Evaluation Service; ADK eval sets in CI" }
+      - { provider: aws, product: "Bedrock model evaluation; AgentCore evaluations" }
+      - { provider: oss, product: "promptfoo / DeepEval in CI; garak / PyRIT for red-teaming" }
