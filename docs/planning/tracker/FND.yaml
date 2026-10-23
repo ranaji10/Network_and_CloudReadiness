@@ -1,0 +1,67 @@
+epic: FND
+name: Foundation
+owner_hint: whoever touches repo layout, packaging or shared models
+stories:
+  - id: FND-01
+    title: Repository reorganised (legacy/, reference/, src/, config/, infra/, docs/)
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "V1 artefacts under legacy/, CSA bundle under reference/, no OS cruft tracked"
+    notes: ""
+  - id: FND-02
+    title: Python package with pyproject, uv lock and optional provider extras
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "uv sync --group dev works; core installs with no cloud SDK"
+    notes: ""
+  - id: FND-03
+    title: Domain models and ports (DocumentSource, LLMProvider, BlobStore, SecretStore)
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [FND-02]
+    acceptance: "src/readiness/models.py and ports/__init__.py; adapters import cloud SDKs lazily"
+    notes: ""
+  - id: FND-04
+    title: CSA CCM v4.1 / CAIQ catalog generated into the package
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "scripts/build_control_catalog.py regenerates src/readiness/data/ccm_v4.1.json"
+    notes: ""
+  - id: FND-05
+    title: Mock LLM and offline test suite
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [FND-03]
+    acceptance: "pytest passes with no network; synthetic fixtures only"
+    notes: ""
+  - id: FND-06
+    title: Pin dependency upper bounds and add a monthly dependency refresh story
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [FND-02]
+    acceptance: "uv lock refresh documented; CI runs on the lock file"
+    notes: ""
+  - id: FND-07
+    title: Type checking (mypy) added to make check
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [FND-05]
+    acceptance: "mypy clean on src/readiness"
+    notes: ""

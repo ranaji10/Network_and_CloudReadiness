@@ -1,0 +1,10 @@
+id: security_only
+name: Network security only
+version: "1.0"
+description: Pure security posture review; no cloud or AI readiness weighting.
+domains:
+  - { id: network_security, weight: 100 }
+thresholds: { high_confidence_coverage: 70, grade_a: 85, grade_b: 70, grade_c: 50 }
+rules: { met_min_signals: 2, partial_points_ratio: 0.5, negative_overrides: true, llm_override_min_confidence: 0.6 }
+target_providers: [oss, gcp, aws]
+max_recommendations: 30

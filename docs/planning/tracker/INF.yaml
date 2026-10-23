@@ -1,0 +1,85 @@
+epic: INF
+name: Infrastructure
+owner_hint: infra/, Dockerfile, cloudbuild.yaml, Makefile
+stories:
+  - id: INF-01
+    title: Dockerfile, cloudbuild.yaml, Terraform for GCP, AWS skeleton, Makefile and compose
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "cloudbuild quality gate runs without cloud resources; deploy gated by _DEPLOY"
+    notes: ""
+  - id: INF-02
+    title: First green Cloud Build run on the existing trigger
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [INF-01]
+    acceptance: "build on main passes quality-gate, secret-scan and build-image"
+    notes: ""
+  - id: INF-03
+    title: Cloud Run deploy with _DEPLOY=true
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [INF-02, INF-05]
+    acceptance: "/healthz answers from the Cloud Run URL with IAM auth"
+    notes: ""
+  - id: INF-04
+    title: IAP in front of Cloud Run
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [INF-03]
+    acceptance: "no public ingress; users authenticate with Google identity"
+    notes: ""
+  - id: INF-05
+    title: Terraform applied for dev (buckets, SAs, secrets, registry)
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [INF-01]
+    acceptance: "make tf-apply ENV=dev succeeds; outputs pasted on the trigger"
+    notes: ""
+  - id: INF-06
+    title: Validate AWS skeleton and add App Runner service
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [INF-01]
+    acceptance: "infra/terraform/aws applies in a sandbox account; API served from App Runner"
+    notes: ""
+  - id: INF-07
+    title: Staging and prod environments in separate projects
+    status: todo
+    phase: 5
+    owner: ""
+    branch: ""
+    depends_on: [INF-05]
+    acceptance: "envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN"
+    notes: ""
+  - id: INF-08
+    title: Monitoring, alerting and uptime check for the API
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [INF-03]
+    acceptance: "alert on 5xx rate and latency; uptime check on /healthz"
+    notes: ""
+  - id: INF-09
+    title: GitHub Actions mirror of the quality gate
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [INF-01]
+    acceptance: ".github/workflows/ci.yml runs lint, tests, policy checks"
+    notes: ""

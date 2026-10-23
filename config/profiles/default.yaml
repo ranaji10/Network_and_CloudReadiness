@@ -1,0 +1,22 @@
+# Scoring profile: which domains count, how much, and the thresholds. Copy this file to create a new
+# profile (e.g. one per industry or per client tier) and select it with --profile <id>.
+id: default
+name: Balanced (security + cloud + agentic AI)
+version: "1.0"
+description: Equal emphasis on current network security posture and readiness to adopt cloud and agentic AI.
+domains:
+  - { id: network_security,      weight: 40 }
+  - { id: cloud_readiness,       weight: 35 }
+  - { id: agentic_ai_readiness,  weight: 25 }
+thresholds:
+  high_confidence_coverage: 70   # V1 "sufficiency gate": below this, prioritise discovery over actions
+  grade_a: 85
+  grade_b: 70
+  grade_c: 50
+rules:
+  met_min_signals: 2             # distinct signals needed for PASS without a strong signal
+  partial_points_ratio: 0.5
+  negative_overrides: true
+  llm_override_min_confidence: 0.6
+target_providers: [gcp, aws, oss]   # preference order shown in recommendations
+max_recommendations: 40

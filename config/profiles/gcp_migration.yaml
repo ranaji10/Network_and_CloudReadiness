@@ -1,0 +1,12 @@
+id: gcp_migration
+name: GCP migration focus
+version: "1.0"
+description: Successor to the V1 "GCP roadmap" flow - cloud readiness dominates, GCP products listed first.
+domains:
+  - { id: cloud_readiness,       weight: 50 }
+  - { id: network_security,      weight: 35 }
+  - { id: agentic_ai_readiness,  weight: 15 }
+thresholds: { high_confidence_coverage: 70, grade_a: 85, grade_b: 70, grade_c: 50 }
+rules: { met_min_signals: 2, partial_points_ratio: 0.5, negative_overrides: true, llm_override_min_confidence: 0.6 }
+target_providers: [gcp, oss, aws]
+max_recommendations: 40

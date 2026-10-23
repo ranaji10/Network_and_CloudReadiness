@@ -1,0 +1,49 @@
+epic: MIG
+name: Portability and migration
+owner_hint: infra/, docs/architecture/MIGRATION_PLAYBOOK.md, scripts/check_portability.py
+stories:
+  - id: MIG-01
+    title: Migrate the GCP project from the personal account to an organisation
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [INF-05]
+    acceptance: "new project applied from the same Terraform with a new tfvars and backend; old project decommissioned"
+    notes: "follow docs/architecture/MIGRATION_PLAYBOOK.md"
+  - id: MIG-02
+    title: Terraform state move drill
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [INF-05]
+    acceptance: "terraform init -migrate-state to a fresh bucket with no diff"
+    notes: ""
+  - id: MIG-03
+    title: Portability check script in CI (no project ids, buckets, emails in code or IaC)
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "scripts/check_portability.py runs in cloudbuild and GitHub Actions"
+    notes: ""
+  - id: MIG-04
+    title: Provider switch drill (local to gcp to aws) with the same report output
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [INF-06, LLM-03]
+    acceptance: "same fixture pack scores identically on all three providers"
+    notes: ""
+  - id: MIG-05
+    title: Data export and deletion procedure per tenant
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [API-02]
+    acceptance: "one command exports and one deletes every object for a tenant; documented"
+    notes: ""

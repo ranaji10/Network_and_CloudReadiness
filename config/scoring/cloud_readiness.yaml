@@ -1,0 +1,154 @@
+# Cloud readiness domain. Carries forward the five V1 pillars (compute, data, networking/identity,
+# security/compliance, cost/licensing) and adds operations maturity.
+id: cloud_readiness
+name: Cloud Readiness
+version: "1.0"
+description: How ready the estate, people and processes are to migrate to and operate well on a public cloud.
+pillars:
+  - id: compute
+    name: Compute & Runtime Inventory
+    weight: 20
+    checks:
+      - id: CR-CMP-01
+        title: Complete server / VM inventory with specs and OS versions
+        points: 5
+        ccm: [DCS-06, DCS-07, UEM-04]
+        signals: [inventory, cmdb, "vm list", "server list", "asset register", vcpu, "ram", "os version", "windows server", "rhel", ubuntu, "hypervisor", vmware, "hyper-v"]
+        doc_classes: [inventory, architecture]
+        question: Is there a complete inventory of servers/VMs with CPU, RAM, OS and ownership?
+      - id: CR-CMP-02
+        title: Application portfolio with dependencies and criticality
+        points: 5
+        ccm: [BCR-02, AIS-01]
+        signals: ["application portfolio", "application inventory", "dependency map", "dependencies", "business criticality", "tier 1", "mission critical", "application owner"]
+        question: Are applications catalogued with dependencies and business criticality?
+      - id: CR-CMP-03
+        title: Containerisation / orchestration experience
+        points: 4
+        ccm: [AIS-06, CCC-03]
+        signals: [docker, kubernetes, k8s, gke, eks, aks, openshift, "cloud run", container, helm, "ci/cd"]
+        question: Are workloads containerised or is there orchestration experience?
+      - id: CR-CMP-04
+        title: Utilisation data available for right-sizing
+        points: 3
+        ccm: [DCS-17]
+        signals: [utilization, utilisation, "cpu usage", "peak load", "capacity report", "performance baseline", "monitoring data", "right-sizing", "rightsizing"]
+        question: Is utilisation data available to right-size cloud instances?
+  - id: data
+    name: Data & Storage
+    weight: 20
+    checks:
+      - id: CR-DAT-01
+        title: Database engines, versions and sizes documented
+        points: 5
+        ccm: [DSP-03]
+        signals: ["sql server", oracle, postgres, postgresql, mysql, mariadb, mongodb, "db2", "database size", "database version", "schema"]
+        question: Are all databases, versions and sizes documented?
+      - id: CR-DAT-02
+        title: Storage volumes, file shares and IOPS requirements known
+        points: 4
+        ccm: [DSP-03]
+        signals: [nfs, smb, cifs, san, nas, "file share", iops, "storage volume", "terabyte", "tb", "object storage", "block storage"]
+        question: Are storage volumes, file shares and performance needs quantified?
+      - id: CR-DAT-03
+        title: Data classification and residency requirements defined
+        points: 5
+        ccm: [DSP-04, DSP-19]
+        signals: ["data classification", "data residency", "residency", "data sovereignty", "pii", "personal data", "confidential", "restricted", "gdpr", "dpdp"]
+        question: Is data classified and are residency constraints documented?
+      - id: CR-DAT-04
+        title: Backup and retention policies documented
+        points: 3
+        ccm: [BCR-08, DSP-16]
+        signals: ["backup policy", "retention", "retention period", "backup schedule", "snapshot", "archive"]
+        question: Are backup schedules and retention periods documented?
+  - id: network_identity
+    name: Networking & Identity for Cloud
+    weight: 20
+    checks:
+      - id: CR-NET-01
+        title: Connectivity plan (VPN / interconnect / bandwidth) for hybrid operation
+        points: 5
+        ccm: [I&S-07]
+        signals: [interconnect, "direct connect", "express route", "cloud vpn", "site-to-site", bandwidth, mbps, gbps, latency, "hybrid connectivity", "partner interconnect"]
+        question: Is there a hybrid connectivity design with bandwidth and latency requirements?
+      - id: CR-NET-02
+        title: IP address space planned to avoid overlap with cloud VPCs
+        points: 4
+        ccm: [I&S-08]
+        signals: [cidr, "ip plan", "address space", "rfc 1918", "10.0.0.0", "172.16", "192.168", "non-overlapping", "vpc design", "subnet"]
+        question: Is the IP plan documented with non-overlapping ranges reserved for cloud?
+      - id: CR-NET-03
+        title: Identity federation to cloud (SSO / workload identity)
+        points: 5
+        ccm: [IAM-01, IAM-03]
+        signals: ["identity federation", "workload identity", "cloud identity", "federated", saml, oidc, "iam roles", "directory sync", "entra", "okta"]
+        question: Is identity federated to the cloud provider for users and workloads?
+      - id: CR-NET-04
+        title: DNS and certificate management strategy
+        points: 3
+        ccm: [CEK-01, I&S-04]
+        signals: [dns, "cloud dns", "route 53", "certificate", "acme", "let's encrypt", "pki", "certificate authority"]
+        question: Is there a plan for DNS and certificate lifecycle in the cloud?
+  - id: security_compliance
+    name: Security & Compliance Alignment
+    weight: 20
+    checks:
+      - id: CR-SEC-01
+        title: Compliance obligations identified (SOC 2, ISO 27001, PCI DSS, HIPAA, local regulation)
+        points: 5
+        ccm: [GRC-07, A&A-04]
+        signals: ["soc 2", "soc2", "iso 27001", "iso27001", "pci dss", "pci-dss", hipaa, gdpr, "dpdp", "rbi", "sebi", "nist", "compliance"]
+        question: Are the compliance regimes that apply to the organisation identified?
+      - id: CR-SEC-02
+        title: Cloud security baseline / landing zone standard chosen
+        points: 5
+        ccm: [GRC-05, CCC-06]
+        signals: ["landing zone", "security baseline", "cis benchmark", "organization policy", "org policy", "scp", "guardrails", "well-architected", "security foundations"]
+        question: Is a landing zone / cloud security baseline standard defined?
+      - id: CR-SEC-03
+        title: Encryption and key management approach for cloud
+        points: 5
+        ccm: [CEK-01, CEK-08]
+        signals: [kms, "cloud kms", cmek, "customer-managed", hsm, "key management", "byok", "envelope encryption"]
+        question: Is a cloud key-management approach (CMEK/BYOK) defined?
+      - id: CR-SEC-04
+        title: Security monitoring extended to cloud (CSPM / cloud-native logging)
+        points: 5
+        ccm: [LOG-03, TVM-04]
+        signals: ["security command center", "guardduty", "security hub", cspm, "cloud audit log", "cloudtrail", "cloud logging", "posture management"]
+        question: Will cloud posture and audit logs be monitored centrally?
+  - id: cost_licensing
+    name: Cost, Licensing & Operations
+    weight: 20
+    checks:
+      - id: CR-COS-01
+        title: Software licences and enterprise agreements inventoried
+        points: 5
+        ccm: [STA-03, GRC-01]
+        signals: [license, licence, "enterprise agreement", "software assurance", "byol", "subscription", "support contract", "renewal date"]
+        question: Are licences and agreements inventoried with renewal dates and portability?
+      - id: CR-COS-02
+        title: Current infrastructure cost baseline (TCO) known
+        points: 4
+        ccm: [GRC-02]
+        signals: [tco, "total cost of ownership", "capex", "opex", "cost baseline", "hardware amortization", "depreciation", "monthly cost", "annual cost", "budget"]
+        question: Is the current cost baseline documented for TCO comparison?
+      - id: CR-COS-03
+        title: Cloud cost governance (budgets, tagging, FinOps owner)
+        points: 4
+        ccm: [GRC-06]
+        signals: [finops, "cost allocation", "tagging policy", "labels", "budget alert", "chargeback", "showback", "cost center"]
+        question: Is there a cost governance model (budgets, tags, owner)?
+      - id: CR-COS-04
+        title: "Operations maturity: IaC, CI/CD, monitoring, runbooks"
+        points: 5
+        ccm: [CCC-03, LOG-07, BCR-05]
+        signals: [terraform, "infrastructure as code", iac, ansible, "ci/cd", "pipeline", "github actions", "cloud build", runbook, "observability", prometheus, grafana, datadog, "sre"]
+        question: Are infrastructure-as-code, CI/CD, monitoring and runbooks in place?
+      - id: CR-COS-05
+        title: Cloud skills and change plan for the team
+        points: 2
+        ccm: [HRS-11, GRC-01]
+        signals: ["training", "certification", "cloud skills", "upskilling", "center of excellence", "centre of excellence", "ccoe", "change management plan", "training plan"]
+        question: Is there a skills and organisational change plan for cloud adoption?

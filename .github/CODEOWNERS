@@ -1,0 +1,25 @@
+# Replace the placeholder handles with real GitHub users or teams (e.g. @org/security).
+# Order matters: the last matching pattern wins.
+
+*                                           @OWNER-MAINTAINER
+
+# Security-sensitive: redaction, egress policy, model adapters, security docs
+/src/readiness/guardrails/                  @OWNER-SECURITY
+/config/redaction.yaml                      @OWNER-SECURITY
+/src/readiness/adapters/llm/                @OWNER-SECURITY
+/docs/security/                             @OWNER-SECURITY
+/SECURITY.md                                @OWNER-SECURITY
+/.gitleaks.toml                             @OWNER-SECURITY
+/scripts/check_no_client_data.py            @OWNER-SECURITY
+/scripts/check_portability.py               @OWNER-SECURITY
+
+# Infrastructure and CI
+/infra/                                     @OWNER-INFRA
+/cloudbuild.yaml                            @OWNER-INFRA
+/Dockerfile                                 @OWNER-INFRA
+/.github/workflows/                         @OWNER-INFRA
+
+# Scoring is the product
+/config/scoring/                            @OWNER-PRODUCT
+/config/profiles/                           @OWNER-PRODUCT
+/config/recommendations/                    @OWNER-PRODUCT

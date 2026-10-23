@@ -1,0 +1,6 @@
+hostname,role,os version,vcpu,ram gb,database,notes
+app-01.acme.internal,web,Ubuntu 22.04,4,16,,docker containers behind load balancer
+app-02.acme.internal,web,Ubuntu 22.04,4,16,,
+db-01.acme.internal,database,Windows Server 2019,8,64,SQL Server 2019 (Software Assurance license),size 900 GB
+erp-01.acme.internal,erp,RHEL 8,8,32,Oracle 19c,mission critical tier 1
+files-01.acme.internal,files,Windows Server 2016,2,8,,SMB file share 6 TB on SAN; nightly backup

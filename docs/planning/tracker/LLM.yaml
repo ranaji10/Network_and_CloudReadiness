@@ -1,0 +1,58 @@
+epic: LLM
+name: Model providers
+owner_hint: src/readiness/adapters/llm and guardrails/policy.py
+stories:
+  - id: LLM-01
+    title: Gemini judge verified end to end on Vertex AI
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [GRD-04, INF-03]
+    acceptance: "READINESS_LLM_PROVIDER=gemini with egress allowed produces llm-judged checks; audit shows llm.ok"
+    notes: "adapter in adapters/llm/gemini.py; global location for gemini-3 family"
+  - id: LLM-02
+    title: Anthropic adapter verified end to end
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [GRD-04]
+    acceptance: "messages.parse structured output validated against JudgeBatch; refusal handled"
+    notes: ""
+  - id: LLM-03
+    title: Amazon Bedrock adapter
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [LLM-02]
+    acceptance: "READINESS_LLM_PROVIDER=bedrock works from an AWS runtime role"
+    notes: ""
+  - id: LLM-04
+    title: Mock provider with canned responses for tests
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "MockLLM returns conservative defaults or canned schema instances"
+    notes: ""
+  - id: LLM-05
+    title: Token and cost accounting per run in the audit log
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [LLM-01]
+    acceptance: "llm.ok events carry input/output token counts; report shows model cost"
+    notes: ""
+  - id: LLM-06
+    title: Prompt caching and batching for large document sets
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [LLM-01]
+    acceptance: "judge cost per run halves on a 100-document pack"
+    notes: ""

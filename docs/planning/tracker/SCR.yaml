@@ -1,0 +1,85 @@
+epic: SCR
+name: Scoring
+owner_hint: config/scoring, config/profiles, src/readiness/scoring
+stories:
+  - id: SCR-01
+    title: Three scoring domains (network_security, cloud_readiness, agentic_ai_readiness)
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "59 checks, each mapped to CCM v4.1 controls, all with signals"
+    notes: ""
+  - id: SCR-02
+    title: Profiles with domain weights, thresholds and provider preference
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [SCR-01]
+    acceptance: "default, gcp_migration, security_only load and validate"
+    notes: ""
+  - id: SCR-03
+    title: Rule engine with posture score and evidence coverage kept separate
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [SCR-01]
+    acceptance: "met/partial/not_met/unknown; negative signals override; composite across domains"
+    notes: ""
+  - id: SCR-04
+    title: Tune signals against three anonymised real document packs
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [SCR-03]
+    acceptance: "false positives and misses recorded; signals adjusted; packs never committed"
+    notes: ""
+  - id: SCR-05
+    title: Evaluation set of 20 synthetic document packs with expected scores
+    status: todo
+    phase: 4
+    owner: ""
+    branch: ""
+    depends_on: [SCR-03]
+    acceptance: "tests/evals runs rules and judge; score drift fails CI beyond a tolerance"
+    notes: ""
+  - id: SCR-06
+    title: Agentic-AI domain reviewed with two external practitioners
+    status: todo
+    phase: 4
+    owner: ""
+    branch: ""
+    depends_on: [SCR-01]
+    acceptance: "review notes recorded in an ADR; checks updated"
+    notes: ""
+  - id: SCR-07
+    title: LLM judge hook with confidence-gated override
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [SCR-03]
+    acceptance: "llm_refine overrides only above llm_override_min_confidence; tested with mock"
+    notes: ""
+  - id: SCR-08
+    title: Per-check signal weights and regex signals documented in config README
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [SCR-03]
+    acceptance: "config/README.md explains every field with an example"
+    notes: ""
+  - id: SCR-09
+    title: Industry profiles (healthcare, finance, public sector)
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [SCR-02]
+    acceptance: "three new profiles with domain weights and compliance emphasis"
+    notes: ""

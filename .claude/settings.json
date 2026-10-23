@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make check)",
+      "Bash(make test)",
+      "Bash(make lint)",
+      "Bash(make fmt)",
+      "Bash(make tracker)",
+      "Bash(make demo)",
+      "Bash(uv sync*)",
+      "Bash(uv run pytest*)",
+      "Bash(uv run ruff*)",
+      "Bash(uv run readiness*)",
+      "Bash(uv run python scripts/*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(ls*)",
+      "Bash(cat *)",
+      "Bash(grep *)",
+      "Bash(rg *)",
+      "Bash(find *)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(rm -rf *)",
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(gcloud * delete*)",
+      "Bash(gsutil rm*)",
+      "Bash(aws * delete*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./infra/terraform/**/*.tfvars)",
+      "Read(./data/**)",
+      "Read(./workspace/**)"
+    ]
+  }
+}

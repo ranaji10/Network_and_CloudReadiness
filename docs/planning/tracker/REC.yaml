@@ -1,0 +1,58 @@
+epic: REC
+name: Recommendations
+owner_hint: config/recommendations and src/readiness/recommend
+stories:
+  - id: REC-01
+    title: Catalog covering every check with GCP, AWS, open-source and process options
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [SCR-01]
+    acceptance: "test_every_check_has_catalog_entry passes"
+    notes: ""
+  - id: REC-02
+    title: Discovery items with CAIQ questions for checks without evidence
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [FND-04]
+    acceptance: "unknown checks produce D-<check> items with up to six CAIQ questions"
+    notes: ""
+  - id: REC-03
+    title: Catalog expansion with sizing hints and documentation links
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [REC-01]
+    acceptance: "every option has a url; notes mention when the option is wrong"
+    notes: ""
+  - id: REC-04
+    title: Rough cost bands per option
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [REC-03]
+    acceptance: "low/medium/high monthly cost band shown in the report"
+    notes: ""
+  - id: REC-05
+    title: Migration wave planning (quick wins, core, legacy) from inventory documents
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [ING-07]
+    acceptance: "gcp_migration report has a wave table derived from classified inventory"
+    notes: "V1 roadmap generator behaviour"
+  - id: REC-06
+    title: Recommendation de-duplication across checks sharing a product
+    status: todo
+    phase: 4
+    owner: ""
+    branch: ""
+    depends_on: [REC-01]
+    acceptance: "one action per product family with the checks it closes listed"
+    notes: ""

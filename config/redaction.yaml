@@ -1,0 +1,67 @@
+# Redaction rules applied before any text leaves the process (LLM calls) and, in `mask` mode, to reports.
+# kind: secret  -> ALWAYS masked, in every mode, irreversibly.
+#       pii     -> masked (mask mode) or pseudonymised (pseudonymize mode).
+#       identifier -> same as pii; pseudonyms are stable within a run so the analysis stays coherent.
+# Order matters: more specific patterns first.
+version: 1
+rules:
+  - name: private_key_block
+    kind: secret
+    placeholder: private-key
+    pattern: '-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----'
+  - name: aws_access_key
+    kind: secret
+    placeholder: aws-access-key
+    pattern: '\b(?:AKIA|ASIA)[0-9A-Z]{16}\b'
+  - name: google_api_key
+    kind: secret
+    placeholder: google-api-key
+    pattern: '\bAIza[0-9A-Za-z_\-]{35}\b'
+  - name: anthropic_api_key
+    kind: secret
+    placeholder: anthropic-api-key
+    pattern: '\bsk-ant-[A-Za-z0-9_\-]{20,}\b'
+  - name: github_token
+    kind: secret
+    placeholder: github-token
+    pattern: '\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36,}\b'
+  - name: slack_token
+    kind: secret
+    placeholder: slack-token
+    pattern: '\bxox[baprs]-[A-Za-z0-9\-]{10,}\b'
+  - name: jwt
+    kind: secret
+    placeholder: jwt
+    pattern: '\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\b'
+  - name: generic_credential_assignment
+    kind: secret
+    placeholder: credential
+    pattern: '(?i)\b(password|passwd|pwd|secret|api[_\-]?key|token|client[_\-]?secret)\b\s*[:=]\s*["'']?[^\s"'',;]{6,}'
+  - name: connection_string_password
+    kind: secret
+    placeholder: credential
+    pattern: '(?i)\b[a-z][a-z0-9+.\-]*://[^:/\s]+:[^@/\s]+@'
+  - name: email
+    kind: pii
+    placeholder: email
+    pattern: '\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b'
+  - name: phone
+    kind: pii
+    placeholder: phone
+    pattern: '(?<![\w.])\+?\d{1,3}[\s\-]?\(?\d{2,4}\)?[\s\-]?\d{3,4}[\s\-]?\d{3,4}\b'
+  - name: aws_account_id
+    kind: identifier
+    placeholder: aws-account
+    pattern: '\b\d{12}\b'
+  - name: ipv4
+    kind: identifier
+    placeholder: ip
+    pattern: '\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:/\d{1,2})?\b'
+  - name: ipv6
+    kind: identifier
+    placeholder: ip6
+    pattern: '\b(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}\b'
+  - name: fqdn
+    kind: identifier
+    placeholder: host
+    pattern: '\b(?=.{4,253}\b)(?:[a-z0-9](?:[a-z0-9\-]{0,61}[a-z0-9])?\.)+(?:com|net|org|io|internal|local|corp|lan|cloud|dev|app|co|in|uk|de|eu)\b'

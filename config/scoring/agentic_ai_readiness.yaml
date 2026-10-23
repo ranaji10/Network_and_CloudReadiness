@@ -1,0 +1,138 @@
+# Agentic AI readiness domain: can the organisation safely build, run and govern AI agents that act on
+# its systems and data? Deliberately spans data, platform, governance and security of agents.
+id: agentic_ai_readiness
+name: Agentic AI Readiness
+version: "1.0"
+description: Data foundations, integration surfaces, governance and controls needed to run AI agents safely.
+pillars:
+  - id: data_foundations
+    name: Data Foundations
+    weight: 25
+    checks:
+      - id: AI-DAT-01
+        title: Data catalogue / inventory with owners and classification
+        points: 5
+        ccm: [DSP-03, DSP-04, DSP-06]
+        signals: ["data catalog", "data catalogue", "data inventory", "data owner", "data steward", "dataplex", "glue catalog", "metadata", "data classification"]
+        question: Is there a data catalogue with owners and classification agents can rely on?
+      - id: AI-DAT-02
+        title: Analytical data platform / warehouse in place
+        points: 5
+        ccm: [DSP-05]
+        signals: ["data warehouse", bigquery, snowflake, redshift, databricks, "data lake", lakehouse, "etl", "elt", "data pipeline", airflow, dbt]
+        question: Is there a governed analytical data platform?
+      - id: AI-DAT-03
+        title: Unstructured content searchable (document store / vector search)
+        points: 4
+        ccm: [DSP-05]
+        signals: ["vector", embeddings, "semantic search", "vertex ai search", "opensearch", "elasticsearch", "pgvector", pinecone, weaviate, "rag", "knowledge base", "document management"]
+        question: Is unstructured content indexed and searchable for retrieval-augmented agents?
+      - id: AI-DAT-04
+        title: Data quality and lineage practices
+        points: 3
+        ccm: [DSP-05, DSP-07]
+        signals: ["data quality", lineage, "data validation", "great expectations", "data contract", "master data"]
+        question: Are data quality and lineage tracked?
+  - id: integration
+    name: Integration & Platform
+    weight: 25
+    checks:
+      - id: AI-INT-01
+        title: Core systems expose APIs (REST/GraphQL/events) agents can call
+        points: 5
+        ccm: [AIS-08, IPY-03]
+        signals: [api, rest, graphql, openapi, swagger, webhook, "event-driven", "pub/sub", pubsub, kafka, "message queue", "api gateway", apigee]
+        question: Do core systems expose documented APIs or events for automation?
+      - id: AI-INT-02
+        title: API gateway with authentication, quotas and logging
+        points: 4
+        ccm: [AIS-08, IAM-13]
+        signals: ["api gateway", apigee, "api management", "rate limit", "quota", "api key management", "oauth2", "api logging"]
+        question: Are APIs fronted by a gateway with auth, quotas and logs?
+      - id: AI-INT-03
+        title: Managed AI/ML platform or model access in place
+        points: 5
+        ccm: [AIS-02]
+        signals: ["vertex ai", gemini, bedrock, sagemaker, "azure openai", openai, anthropic, claude, "model garden", "foundation model", "llm", "mlops", "model registry", "agent builder", "adk", "agentspace"]
+        question: Is there a managed platform for model access and agent hosting?
+      - id: AI-INT-04
+        title: Tool/agent protocols and orchestration (MCP, A2A, function calling, workflows)
+        points: 3
+        ccm: [AIS-04]
+        signals: ["mcp", "model context protocol", "a2a", "function calling", "tool use", "agent framework", langchain, langgraph, "crewai", "agent engine", "workflows", "orchestration"]
+        question: Is there an agent/tool orchestration approach or framework?
+      - id: AI-INT-05
+        title: Scalable, elastic compute for inference and batch workloads
+        points: 3
+        ccm: [I&S-02]
+        signals: [autoscaling, "auto-scaling", serverless, "cloud run", gpu, tpu, "kubernetes", "batch", "spot", "preemptible"]
+        question: Can compute scale elastically for inference and batch AI jobs?
+  - id: governance
+    name: AI Governance & Risk
+    weight: 25
+    checks:
+      - id: AI-GOV-01
+        title: AI acceptable-use / responsible AI policy
+        points: 5
+        ccm: [GRC-01, HRS-02]
+        signals: ["ai policy", "acceptable use of ai", "responsible ai", "ai governance", "ai ethics", "generative ai policy", "ai usage policy", "ai act"]
+        question: Is there an approved AI usage / responsible AI policy?
+      - id: AI-GOV-02
+        title: Risk assessment process for AI use cases (incl. DPIA where personal data)
+        points: 4
+        ccm: [GRC-02, DSP-09]
+        signals: ["ai risk", "risk assessment", "dpia", "impact assessment", "model risk", "nist ai rmf", "iso 42001", "iso/iec 42001"]
+        question: Are AI use cases risk-assessed before deployment?
+      - id: AI-GOV-03
+        title: Human oversight and approval gates for agent actions
+        points: 5
+        ccm: [CCC-01, IAM-04]
+        signals: ["human in the loop", "human-in-the-loop", "approval", "approval gate", "oversight", "review before", "four-eyes", "dual control", "kill switch"]
+        question: Are consequential agent actions gated by human approval?
+      - id: AI-GOV-04
+        title: Model / agent inventory and ownership
+        points: 3
+        ccm: [DCS-07, GRC-06]
+        signals: ["model inventory", "agent inventory", "model card", "ai inventory", "model owner", "agent owner", "ai register"]
+        question: Is there an inventory of models and agents with owners?
+      - id: AI-GOV-05
+        title: Vendor / model provider due diligence and data-use terms
+        points: 3
+        ccm: [STA-01, STA-07, DSP-13]
+        signals: ["data processing agreement", "dpa", "zero data retention", "no training on", "vendor assessment", "third-party risk", "sub-processor", "terms of service"]
+        question: Have model providers been assessed and data-use terms agreed?
+  - id: agent_security
+    name: Agent Security & Operations
+    weight: 25
+    checks:
+      - id: AI-SEC-01
+        title: Least-privilege identities for agents and service accounts
+        points: 5
+        ccm: [IAM-05, IAM-09]
+        signals: ["service account", "workload identity", "least privilege", "scoped token", "short-lived credential", "iam role", "agent identity", "non-human identity"]
+        question: Do agents run under least-privilege, auditable identities?
+      - id: AI-SEC-02
+        title: Secrets management and no credentials in prompts or code
+        points: 4
+        ccm: [IAM-02, CEK-21]
+        signals: ["secret manager", "secrets manager", vault, "key rotation", "no secrets in", "secret scanning"]
+        negative_signals: ["hardcoded api key", "api key in code", "credentials in prompt"]
+        question: Are secrets kept in a manager and never placed in prompts or code?
+      - id: AI-SEC-03
+        title: Prompt-injection and data-leakage controls (input/output filtering, DLP)
+        points: 5
+        ccm: [AIS-02, DSP-17]
+        signals: ["prompt injection", "jailbreak", "dlp", "data loss prevention", "sensitive data protection", "content filter", "guardrail", "output filtering", "pii redaction", "model armor"]
+        question: Are prompt-injection and data-leakage mitigations in place for agents?
+      - id: AI-SEC-04
+        title: Observability and audit trail for agent actions and model calls
+        points: 4
+        ccm: [LOG-01, LOG-08]
+        signals: ["tracing", "audit trail", "audit log", opentelemetry, "langfuse", "model monitoring", "llm observability", "token usage", "cloud trace"]
+        question: Are agent actions and model calls logged and traceable?
+      - id: AI-SEC-05
+        title: Evaluation and testing of agents before and after release
+        points: 3
+        ccm: [AIS-05, CCC-02]
+        signals: ["evaluation", "eval", "test set", "golden set", "red team", "red-teaming", "regression test", "benchmark", "quality gate"]
+        question: Are agents evaluated against test sets and red-teamed before release?

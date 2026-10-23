@@ -1,0 +1,151 @@
+# Network security domain. Edit freely: weights, points, signals and CCM mappings are all configuration.
+# signals: case-insensitive words/regexes that count as evidence. strong_signals: one hit = PASS.
+# negative_signals: evidence the control is explicitly absent -> FAIL. ccm: CSA CCM v4.1 control ids.
+id: network_security
+name: Network Security
+version: "1.0"
+description: Perimeter, segmentation, identity, detection and resilience of the current network estate.
+pillars:
+  - id: perimeter
+    name: Perimeter & Edge Defence
+    weight: 25
+    checks:
+      - id: NS-PER-01
+        title: Stateful / next-generation firewall at every internet ingress
+        points: 5
+        ccm: [I&S-03]
+        signals: [firewall, ngfw, "palo alto", fortigate, "check point", "cloud armor", "security group", "network firewall"]
+        strong_signals: ["next-generation firewall", "next generation firewall"]
+        negative_signals: ["no firewall", "without a firewall", "firewall is not"]
+        question: Is every internet-facing ingress protected by a stateful or next-generation firewall?
+      - id: NS-PER-02
+        title: Web application firewall and DDoS protection for public applications
+        points: 5
+        ccm: [I&S-09, AIS-08]
+        signals: [waf, "web application firewall", ddos, "cloud armor", "aws shield", cloudflare, akamai, imperva]
+        question: Are public web applications fronted by a WAF with DDoS mitigation?
+      - id: NS-PER-03
+        title: Documented ingress/egress filtering rules with a review cadence
+        points: 4
+        ccm: [I&S-03, CCC-01]
+        signals: ["egress filter", "outbound rule", "ingress rule", "firewall rule review", "rule review", "deny by default", "default deny", "allow list", allowlist]
+        question: Are firewall rules documented, default-deny, and reviewed on a schedule?
+      - id: NS-PER-04
+        title: Secure remote access (VPN / zero-trust access) with MFA
+        points: 4
+        ccm: [IAM-14, I&S-07]
+        signals: [vpn, ipsec, wireguard, openvpn, "zero trust", ztna, "beyondcorp", "identity-aware proxy", "verified access", "remote access"]
+        negative_signals: ["rdp exposed", "ssh open to the internet", "0.0.0.0/0"]
+        question: Is remote access via VPN or zero-trust proxy and protected by MFA?
+  - id: segmentation
+    name: Segmentation & Architecture
+    weight: 25
+    checks:
+      - id: NS-SEG-01
+        title: Network segmented into zones (DMZ / app / data / management)
+        points: 5
+        ccm: [I&S-06]
+        signals: [dmz, vlan, segmentation, microsegmentation, "security zone", "network zone", "subnet", "private subnet", "vpc"]
+        strong_signals: ["micro-segmentation", microsegmentation]
+        negative_signals: ["flat network", "single vlan", "no segmentation"]
+        question: Is the network segmented into security zones with controlled east-west traffic?
+      - id: NS-SEG-02
+        title: Current network topology diagram and IP/CIDR schema exist
+        points: 5
+        ccm: [I&S-08]
+        signals: ["network diagram", "topology", "ip plan", "ip schema", "cidr", "address plan", "routing table", "subnet plan"]
+        doc_classes: [network, architecture]
+        question: Is there a current network topology diagram with CIDR allocations and routing?
+      - id: NS-SEG-03
+        title: Management plane isolated (out-of-band or dedicated management network)
+        points: 3
+        ccm: [I&S-06, IAM-09]
+        signals: ["management network", "out-of-band", "oob", "jump host", "bastion", "management vlan", "privileged access workstation"]
+        question: Is administrative access isolated on a management network or via bastion hosts?
+      - id: NS-SEG-04
+        title: Wireless networks separated (guest vs corporate) with WPA2/3-Enterprise
+        points: 2
+        ccm: [I&S-06, UEM-01]
+        signals: ["guest wifi", "guest network", "wpa2-enterprise", "wpa3", "802.1x", "wireless segmentation", "corporate wifi"]
+        question: Are guest and corporate wireless networks separated and using enterprise authentication?
+  - id: identity
+    name: Identity & Access
+    weight: 20
+    checks:
+      - id: NS-IAM-01
+        title: Central identity provider with SSO
+        points: 5
+        ccm: [IAM-01, IAM-03]
+        signals: ["active directory", okta, "azure ad", entra, "cloud identity", "google workspace", ldap, saml, oidc, sso, "single sign-on", "identity provider"]
+        question: Is there a central identity provider used for SSO across systems?
+      - id: NS-IAM-02
+        title: MFA enforced for all users and privileged accounts
+        points: 5
+        ccm: [IAM-14]
+        signals: [mfa, "multi-factor", "2fa", "two-factor", "hardware key", fido2, yubikey, passkey]
+        negative_signals: ["mfa is not enforced", "no mfa", "without mfa"]
+        question: Is multi-factor authentication enforced for all users, especially administrators?
+      - id: NS-IAM-03
+        title: Least privilege and periodic access reviews
+        points: 4
+        ccm: [IAM-05, IAM-08, IAM-10]
+        signals: ["least privilege", rbac, "access review", "access recertification", "privileged access management", pam, "just-in-time", "role-based"]
+        question: Are privileges least-privilege by design and reviewed periodically?
+      - id: NS-IAM-04
+        title: Service accounts and machine credentials managed and rotated
+        points: 3
+        ccm: [IAM-02, CEK-12]
+        signals: ["service account", "secret manager", "key rotation", "credential rotation", vault, "workload identity", "secrets manager"]
+        negative_signals: ["hard-coded credentials", "hardcoded password", "shared admin account"]
+        question: Are service credentials stored in a secret manager and rotated?
+  - id: detection
+    name: Detection, Logging & Response
+    weight: 20
+    checks:
+      - id: NS-DET-01
+        title: Centralised logging / SIEM with retention policy
+        points: 5
+        ccm: [LOG-01, LOG-03, LOG-05]
+        signals: [siem, splunk, sentinel, "chronicle", "cloud logging", "security command center", "log retention", "centralized logging", "centralised logging", elastic, "log aggregation", syslog]
+        question: Are security logs centralised with defined retention and monitoring?
+      - id: NS-DET-02
+        title: Intrusion detection / prevention and traffic inspection
+        points: 5
+        ccm: [I&S-09, LOG-05]
+        signals: [ids, ips, "intrusion detection", "intrusion prevention", suricata, snort, zeek, "cloud ids", "guardduty", "traffic inspection", "packet mirroring", edr, "endpoint detection"]
+        question: Is network and endpoint traffic inspected for intrusions?
+      - id: NS-DET-03
+        title: Vulnerability management and patching cadence
+        points: 5
+        ccm: [TVM-01, TVM-03, TVM-07]
+        signals: ["vulnerability scan", nessus, qualys, "patch management", "patching cadence", "patch cycle", "cve", "penetration test", "pen test", "pentest"]
+        question: Are vulnerabilities scanned and patched on a defined cadence?
+      - id: NS-DET-04
+        title: Incident response plan tested in the last 12 months
+        points: 3
+        ccm: [SEF-03, SEF-06]
+        signals: ["incident response", "ir plan", "tabletop", "incident playbook", "security incident", "post-incident"]
+        question: Is there an incident response plan that is exercised at least yearly?
+  - id: resilience
+    name: Resilience & Data Protection
+    weight: 10
+    checks:
+      - id: NS-RES-01
+        title: Encryption in transit (TLS 1.2+) and at rest
+        points: 4
+        ccm: [CEK-03, CEK-04]
+        signals: ["tls 1.2", "tls 1.3", "encryption at rest", "encrypted at rest", "encryption in transit", "aes-256", kms, cmek, "customer-managed key", "disk encryption"]
+        negative_signals: ["tls 1.0", "sslv3", unencrypted]
+        question: Is data encrypted in transit (TLS 1.2+) and at rest?
+      - id: NS-RES-02
+        title: Backups tested, offsite/immutable, with RPO/RTO defined
+        points: 4
+        ccm: [BCR-08]
+        signals: [backup, "restore test", rpo, rto, immutable, "offsite", "air-gap", "object lock", "backup retention", "disaster recovery"]
+        question: Are backups immutable or offsite, restore-tested, with defined RPO/RTO?
+      - id: NS-RES-03
+        title: Redundant connectivity and HA for critical services
+        points: 2
+        ccm: [BCR-11, I&S-07]
+        signals: ["redundant", "high availability", "failover", "dual isp", "dual wan", "multi-az", "multi-zone", "load balancer"]
+        question: Do critical services and links have redundancy and failover?
