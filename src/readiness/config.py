@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     # --- GCP (read only when provider == gcp or llm_provider == gemini via Vertex) ---
     gcp_project: str = Field(default="", validation_alias="GOOGLE_CLOUD_PROJECT")
     gcp_location: str = Field(default="global", validation_alias="GOOGLE_CLOUD_LOCATION")
+    # Vertex location for Gemini calls. Kept separate from GOOGLE_CLOUD_LOCATION on purpose: hosted runtimes
+    # (Agent Runtime, Cloud Run) set that variable to their own region, while recent Gemini models are only
+    # served from `global` (the V1.1 lesson). Override with READINESS_GEMINI_LOCATION if a region is required.
+    gemini_location: str = "global"
     gcs_bucket_uploads: str = ""
     gcs_bucket_reports: str = ""
 

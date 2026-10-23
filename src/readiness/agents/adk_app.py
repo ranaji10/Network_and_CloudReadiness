@@ -66,11 +66,11 @@ def build_root_agent():
     settings = get_settings()
 
     class GlobalGemini(Gemini):
-        """Pins Vertex calls to the `global` location (gemini-3 family is only served there)."""
+        """Pins Vertex calls to READINESS_GEMINI_LOCATION (default `global`), not the runtime's own region."""
 
         @cached_property
         def api_client(self) -> Client:
-            return Client(vertexai=True, project=settings.gcp_project or None, location=settings.gcp_location)
+            return Client(vertexai=True, project=settings.gcp_project or None, location=settings.gemini_location)
 
     return LlmAgent(
         name="readiness_coordinator",
