@@ -1,0 +1,421 @@
+
+  "agentRevision": {
+    "name": "15693032606988293530/revisions/10025376717051238050",
+    "label": "Version 6",
+    "snapshot": {
+      "name": "15693032606988293530",
+      "displayName": "Cloud Migration Discovery & GCP Roadmap Generator",
+      "description": "Discovers and semantically filters infrastructure documentation from Google Drive, assesses footprint sufficiency across five pillars, routes based on a 70% confidence threshold, and produces GCP migration roadmaps and wave scorecards.",
+      "createTime": "2026-09-29T10:09:41.289784Z",
+      "updateTime": "2026-09-29T13:26:42.944268911Z",
+      "state": "ENABLED",
+      "sharingConfig": {
+        "scope": "RESTRICTED"
+      },
+      "workflowAgentDefinition": {
+        "agentFlow": {
+          "nodes": [
+            {
+              "id": "manual_trigger",
+              "displayName": "Manual Trigger",
+              "description": "The manual entry point to the agent. The user runs the workflow and provides its inputs.",
+              "nodeType": "MANUAL_TRIGGER",
+              "outputSchema": {
+                "properties": {
+                  "folder_identifier": {
+                    "description": "The Google Drive folder link or folder ID containing cloud migration discovery documentation.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 0
+                    }
+                  }
+                }
+              },
+              "manualTrigger": {}
+            },
+            {
+              "id": "semantic_discovery",
+              "displayName": "Ingestion and Semantic Discovery",
+              "description": "Inspects the target Google Drive folder, retrieves document metadata and content, filters for relevant architecture, network, compliance, database, and contract assets, and produces structured technical summaries.",
+              "agentNode": {
+                "model": "gemini-3.1-pro-preview",
+                "instruction": "1. Resolve the Google Drive folder target from ${manual_trigger.folder_identifier}:\n- If provided as a URL or web link (such as containing '/folders/\u003cfolderId\u003e' or '?id=\u003cfolderId\u003e'), parse and extract the folder ID string.\n- If provided as a raw folder ID, use it directly.\n\n2. Explore and traverse the target folder and all nested subfolders:\n- Search and list files within the root target folder.\n- Recursively inspect and list all child folders and nested subdirectories within the hierarchy, ensuring documents stored in subfolders are discovered and collected alongside root-level files.\n\n3. Retrieve and inspect document metadata and content across all collected files using Google Drive tools.\n\n4. Perform semantic classification to separate relevant infrastructure architecture materials from non-technical files:\n- Retain: architecture diagrams, network topographies, database schemas, vendor contracts, hardware inventories, backup configurations, and compliance audits (such as SOC2, ISO 27001, HIPAA, PCI-DSS).\n- Discard: non-technical files such as meeting minutes, generic slide decks, marketing collateral, and billing receipts.\n\n5. Extract technical facts and configuration details for the retained documents.\n\n6. Compile and emit the structured discovery summary in 'technical_inventory' and list retained technical artifacts in 'retained_files'. If no files or folder are found, set 'retained_files' to an empty list and indicate missing documentation in 'technical_inventory'.",
+                "dataStoreSpecs": {
+                  "specs": [
+                    {
+                      "dataStore": "collections/default_collection/dataStores/google-drive_1783950041708_google_drive"
+                    }
+                  ]
+                },
+                "connectorToolSelections": [
+                  {
+                    "dataConnector": {
+                      "name": "collections/google-drive_1783950041708/dataConnector",
+                      "dataSource": "google_drive"
+                    },
+                    "enabled": true,
+                    "searchToolEnabled": true
+                  }
+                ]
+              },
+              "nodeType": "AGENT_NODE",
+              "outputSchema": {
+                "properties": {
+                  "technical_inventory": {
+                    "description": "Consolidated technical summary of discovered infrastructure, compute, storage, networking, database, and security configurations.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 0
+                    }
+                  },
+                  "retained_files": {
+                    "description": "List of identified and classified technical documentation files.",
+                    "type": "ARRAY",
+                    "items": {
+                      "description": "Filename and classification category of the retained technical asset.",
+                      "type": "STRING"
+                    },
+                    "additionalProperties": {
+                      "display_order": 1
+                    }
+                  }
+                },
+                "required": [
+                  "technical_inventory",
+                  "retained_files"
+                ]
+              }
+            },
+            {
+              "id": "sufficiency_evaluator",
+              "displayName": "Footprint Sufficiency Evaluator",
+              "description": "Evaluates whether discovered technical assets satisfy data requirements across the five foundational migration pillars and computes a confidence score.",
+              "agentNode": {
+                "model": "gemini-3.1-pro-preview",
+                "instruction": "Review the discovered infrastructure inventory from ${semantic_discovery.technical_inventory} and the retained files from ${semantic_discovery.retained_files}.\n\nAssess data coverage against the five foundational pillars:\n1. Compute and Runtime: Virtual machine count, on-premises servers, CPU/RAM specs, Kubernetes/container clusters, serverless functions, OS distributions.\n2. Data and Storage: Database engines (MS SQL, Oracle, PostgreSQL, MySQL), storage volumes, IOPS, file shares (NFS/SMB), backup policies, and retention periods.\n3. Networking and Identity: Identity providers (Active Directory, Okta, LDAP), VPN tunnels, interconnects, public/private IPs, CIDR blocks, VPCs, and firewalls.\n4. Security and Compliance: Data residency requirements, encryption at rest/in transit standards, certifications (SOC2, ISO 27001), IAM policies, and audit logging.\n5. Cost and Licensing: Enterprise agreements, software licenses (e.g., Windows Server, SQL Server licenses with Software Assurance), and amortized hardware costs.\n\nCalculate an overall confidence score from 0 to 100 based on information completeness across all 5 pillars (each pillar accounts for up to 20 points).\n\nProduce:\n- 'confidence_score': an integer from 0 to 100.\n- 'pillar_breakdown': an evaluation detailing the findings and completeness score for each pillar.\n- 'missing_information': a list of specific missing technical data points necessary to complete a migration design."
+              },
+              "nodeType": "AGENT_NODE",
+              "outputSchema": {
+                "properties": {
+                  "missing_information": {
+                    "description": "List of critical missing data points required for complete migration planning.",
+                    "type": "ARRAY",
+                    "items": {
+                      "description": "Description of the missing technical data point.",
+                      "type": "STRING"
+                    },
+                    "additionalProperties": {
+                      "display_order": 2
+                    }
+                  },
+                  "confidence_score": {
+                    "description": "Overall infrastructure confidence score ranging from 0 to 100.",
+                    "type": "NUMBER",
+                    "additionalProperties": {
+                      "display_order": 0
+                    }
+                  },
+                  "pillar_breakdown": {
+                    "description": "Detailed sufficiency analysis across Compute, Data, Networking, Security, and Licensing pillars.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 1
+                    }
+                  }
+                },
+                "required": [
+                  "confidence_score",
+                  "pillar_breakdown",
+                  "missing_information"
+                ]
+              }
+            },
+            {
+              "id": "confidence_routing",
+              "displayName": "Sufficiency Logic Gate",
+              "description": "Directs execution based on the sufficiency evaluation: routes to direct roadmap generation if confidence is \u003e= 70%, otherwise initiates user discovery.",
+              "nodeType": "CONDITION_NODE",
+              "conditionNode": {
+                "ruleBasedRouting": {
+                  "rules": [
+                    {
+                      "branch": "High_Confidence",
+                      "rule": {
+                        "rootExpression": {
+                          "logicalGroup": {
+                            "logicalOperator": "AND",
+                            "expressions": [
+                              {
+                                "condition": {
+                                  "left": {
+                                    "variablePath": "sufficiency_evaluator.confidence_score"
+                                  },
+                                  "conditionOperator": "GREATER_THAN_OR_EQUAL",
+                                  "right": {
+                                    "literal": 70
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "elseBranch": "Else"
+                }
+              }
+            },
+            {
+              "id": "direct_roadmap_generator",
+              "displayName": "High Confidence GCP Roadmap Generator",
+              "description": "Maps legacy workloads to target GCP services, creates migration waves, and writes proposal deliverables into Google Drive.",
+              "agentNode": {
+                "model": "gemini-3.1-pro-preview",
+                "instruction": "Using the verified technical inventory from ${semantic_discovery.technical_inventory}, the pillar evaluation from ${sufficiency_evaluator.pillar_breakdown}, and the overall confidence score from ${sufficiency_evaluator.confidence_score}:\n\n1. Deliverable Document Structure and Score Transparency:\nGenerate a comprehensive Cloud Migration Proposal and GCP Roadmap Report in Markdown format. The document MUST begin with a dedicated section at the very top:\n- Infrastructure Footprint Confidence Score: Publish the overall confidence score (${sufficiency_evaluator.confidence_score} out of 100).\n- Score Calculation Methodology: Detail exactly how the score was calculated across all five foundational pillars (Compute, Storage, Networking, Security, Licensing) citing the pillar findings from ${sufficiency_evaluator.pillar_breakdown}.\n- Discovered Source Artifacts: Provide an explicit citation and inventory of the specific files discovered from the Google Drive link (${semantic_discovery.retained_files}) that substantiated the evaluation and score.\n\n2. Architectural Service Mapping:\nMap each legacy, on-premise, or third-party component to its target Google Cloud Platform (GCP) service following the Google Cloud Well-Architected Framework:\n- Databases: MS SQL / Oracle / MySQL / Postgres -\u003e Cloud SQL, AlloyDB, or Cloud Spanner\n- Applications: On-prem VMs / containerized apps -\u003e Google Kubernetes Engine (GKE) or Cloud Run; batch jobs -\u003e Cloud Run jobs\n- Data and Analytics: Legacy data warehouses / reporting -\u003e BigQuery, Dataproc, and Looker\n- Storage: File shares and backups -\u003e Cloud Storage (Standard, Nearline, Coldline, Archive) and Filestore\n- Networking and Security: Cloud Interconnect/Cloud VPN, Cloud Armor, Google Cloud Armor, Cloud Identity / Workload Identity Federation\n\n3. Migration Wave Breakdown:\nOrganize all workloads into structured waves with complexity ratings (Low, Medium, High):\n- Wave 1 (Quick Wins): Stateless web apps, test/dev environments, non-critical batch jobs, pilot databases.\n- Wave 2 (Core Workloads): Production web tiers, core application backends, transactional databases, internal APIs.\n- Wave 3 (Legacy Monoliths): Complex enterprise monoliths, mission-critical legacy databases, heavily coupled systems, systems requiring refactoring.\n\n4. Additional Report Sections:\nInclude remaining report sections:\n- Executive Summary\n- Target Architecture Topology and GCP Services Matrix\n- Wave-by-Wave Migration Schedule and Complexity Scorecard\n- Security, Identity, and Compliance Alignment\n- Estimated Migration Effort and Risk Mitigation Strategies\n\n5. Save Deliverables:\nUpload the generated report as a new file named 'GCP_Cloud_Migration_Roadmap.md' into the Google Drive folder specified in ${manual_trigger.folder_identifier}.\n\nOutput 'roadmap_summary' containing the executive summary and 'drive_file_name' with the name of the file created.",
+                "dataStoreSpecs": {
+                  "specs": [
+                    {
+                      "dataStore": "collections/default_collection/dataStores/google-drive_1783950041708_google_drive"
+                    }
+                  ]
+                },
+                "connectorToolSelections": [
+                  {
+                    "dataConnector": {
+                      "name": "collections/google-drive_1783950041708/dataConnector",
+                      "dataSource": "google_drive"
+                    },
+                    "enabled": true,
+                    "mutateEnabled": true,
+                    "searchToolEnabled": true
+                  }
+                ]
+              },
+              "nodeType": "AGENT_NODE",
+              "outputSchema": {
+                "properties": {
+                  "roadmap_summary": {
+                    "description": "Executive summary of the target GCP architecture, migration waves, and roadmap.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 0
+                    }
+                  },
+                  "drive_file_name": {
+                    "description": "The name of the migration deliverable file created in Google Drive.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 1
+                    }
+                  }
+                },
+                "required": [
+                  "roadmap_summary",
+                  "drive_file_name"
+                ]
+              }
+            },
+            {
+              "id": "ccm_questionnaire_curator",
+              "displayName": "CCM Network Controls Curator",
+              "description": "Curates targeted questions from the Cloud Controls Matrix (CCM v4.1.0) and CAIQ for network architecture along with specific missing infrastructure items.",
+              "agentNode": {
+                "model": "gemini-3.1-pro-preview",
+                "instruction": "Analyze the discovered network architecture from ${sufficiency_evaluator.pillar_breakdown} and the technical inventory from ${semantic_discovery.technical_inventory}.\n\n1. Review the specific missing technical items identified in ${sufficiency_evaluator.missing_information} and summarize them as actionable, clear technical questions in 'missing_info_summary'.\n\n2. Align the identified network architecture with the Cloud Controls Matrix (CCM v4.1.0) Infrastructure Security domain, specifically selecting applicable controls and their corresponding Consensus Assessments Initiative Questionnaire (CAIQ) questions:\n- IS-03: Network Security (firewall rules, ingress/egress filtering, transit gateways)\n- IS-06: Segmentation and Segregation (VPC topologies, subnetting, microsegmentation, DMZ isolation)\n- IS-07: Migration to Cloud Environments (interconnects, VPN encryption, direct peering, bandwidth capacities)\n- IS-08: Network Architecture Documentation (topology diagrams, IP schemas, CIDR allocations, routing tables)\n- IS-09: Network Defense (IDS/IPS, DDoS protection, WAF policies, traffic inspection)\n\n3. Select the most critical questions tailored to resolve network ambiguities for the GCP roadmap design.\n\nEmit:\n- 'curated_ccm_questions': A numbered list of curated CCM and CAIQ questions targeted at network security and cloud migration.\n- 'missing_info_summary': A structured bullet-point list of the critical missing infrastructure specifications needed from the user."
+              },
+              "nodeType": "AGENT_NODE",
+              "outputSchema": {
+                "properties": {
+                  "missing_info_summary": {
+                    "description": "Structured summary of missing technical data points identified during discovery evaluation.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 0
+                    }
+                  },
+                  "curated_ccm_questions": {
+                    "description": "Curated list of high-priority CCM v4.1.0 and CAIQ network architecture questions.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 1
+                    }
+                  }
+                },
+                "required": [
+                  "missing_info_summary",
+                  "curated_ccm_questions"
+                ]
+              }
+            },
+            {
+              "id": "dynamic_discovery_form",
+              "displayName": "Dynamic Discovery Questionnaire",
+              "requestInfoNode": {
+                "message": "The discovered documents provided a confidence score of ${sufficiency_evaluator.confidence_score}%, which is below the 70% threshold required for automated migration planning.\\n\\nPlease provide the requested information below to complete discovery, including responses to the identified missing technical items and the Cloud Controls Matrix (CCM v4.1.0) network architecture questionnaire:\\n\\nMissing Infrastructure Items:\\n${ccm_questionnaire_curator.missing_info_summary}\\n\\nCCM Network Architecture Questions:\\n${ccm_questionnaire_curator.curated_ccm_questions}"
+              },
+              "nodeType": "REQUEST_INFO_NODE",
+              "outputSchema": {
+                "properties": {
+                  "data_storage_details": {
+                    "title": "Data and Storage Details",
+                    "type": "STRING",
+                    "format": "long-form",
+                    "additionalProperties": {
+                      "display_order": 6
+                    }
+                  },
+                  "missing_infrastructure_details": {
+                    "title": "Missing Infrastructure Information Details",
+                    "type": "STRING",
+                    "format": "long-form",
+                    "additionalProperties": {
+                      "display_order": 5
+                    }
+                  },
+                  "security_compliance_details": {
+                    "title": "Security, Governance, and Compliance Constraints",
+                    "type": "STRING",
+                    "format": "long-form",
+                    "additionalProperties": {
+                      "display_order": 4
+                    }
+                  },
+                  "compute_runtime_details": {
+                    "title": "Compute and Runtime Details",
+                    "type": "STRING",
+                    "format": "long-form",
+                    "additionalProperties": {
+                      "display_order": 2
+                    }
+                  },
+                  "ccm_network_architecture_responses": {
+                    "title": "Cloud Controls Matrix (CCM v4.1.0) Network Architecture Responses",
+                    "type": "STRING",
+                    "format": "long-form",
+                    "additionalProperties": {
+                      "display_order": 1
+                    }
+                  },
+                  "networking_identity_details": {
+                    "title": "Networking and Identity Specifications",
+                    "type": "STRING",
+                    "format": "long-form",
+                    "additionalProperties": {
+                      "display_order": 0
+                    }
+                  },
+                  "licensing_cost_details": {
+                    "title": "Licensing and Cost Considerations",
+                    "type": "STRING",
+                    "format": "long-form",
+                    "additionalProperties": {
+                      "display_order": 3
+                    }
+                  }
+                },
+                "required": [
+                  "networking_identity_details",
+                  "ccm_network_architecture_responses",
+                  "compute_runtime_details",
+                  "missing_infrastructure_details",
+                  "data_storage_details"
+                ]
+              }
+            },
+            {
+              "id": "assisted_roadmap_generator",
+              "displayName": "Assisted Discovery GCP Roadmap Generator",
+              "description": "Synthesizes initial Drive discovery data with supplemental questionnaire inputs, maps legacy architecture to GCP, defines migration waves, and writes deliverable documents to Google Drive.",
+              "agentNode": {
+                "model": "gemini-3.1-pro-preview",
+                "instruction": "Synthesize the initial discovery inventory from ${semantic_discovery.technical_inventory} with the supplemental user responses from:\n- Compute and Runtime: ${dynamic_discovery_form.compute_runtime_details}\n- Data and Storage: ${dynamic_discovery_form.data_storage_details}\n- Networking and Identity: ${dynamic_discovery_form.networking_identity_details}\n- Security and Compliance: ${dynamic_discovery_form.security_compliance_details}\n- Licensing and Costs: ${dynamic_discovery_form.licensing_cost_details}\n- Missing Infrastructure Details: ${dynamic_discovery_form.missing_infrastructure_details}\n- CCM Network Architecture Responses: ${dynamic_discovery_form.ccm_network_architecture_responses}\n\n1. Deliverable Document Structure and Score Transparency:\nGenerate the comprehensive Cloud Migration Proposal and GCP Roadmap Document in Markdown format. The document MUST begin with a dedicated section at the very top:\n- Baseline and Revised Sufficiency Confidence Score: State the initial confidence score from ${sufficiency_evaluator.confidence_score} and report how the supplemental discovery inputs resolved prior gaps.\n- Score Calculation Breakdown: Provide a detailed breakdown explaining how the baseline score was derived across each foundational pillar (Compute, Storage, Networking, Security, Licensing) based on ${sufficiency_evaluator.pillar_breakdown}.\n- Discovered Source Artifacts: Explicitly list and cite the specific files discovered from Google Drive (${semantic_discovery.retained_files}) that formed the baseline assessment alongside user-supplied supplemental inputs.\n\n2. Re-evaluate Footprint Sufficiency:\nIncorporate all supplemental responses into the five architectural pillars (Compute, Data, Networking, Security, Licensing) and resolve gaps identified in ${sufficiency_evaluator.missing_information}.\n\n3. Architectural Service Mapping:\nMap legacy and on-premise components to target Google Cloud Platform (GCP) services aligned with the Google Cloud Well-Architected Framework and CSA CAIQ v4 guidelines:\n- On-prem / legacy compute -\u003e GKE, Cloud Run, or Compute Engine\n- Databases -\u003e Cloud SQL, AlloyDB, or Cloud Spanner\n- Analytics and Reporting -\u003e BigQuery and Looker\n- Storage -\u003e Cloud Storage and Filestore\n- Identity and Networking -\u003e Cloud Interconnect/Cloud VPN, Cloud Identity, VPC Service Controls, and Cloud Armor based on CCM network control requirements\n\n4. Migration Wave Breakdown:\nOrganize workloads into sequenced waves with complexity ratings (Low, Medium, High):\n- Wave 1 (Quick Wins): Low complexity, isolated services, non-production or dev environments.\n- Wave 2 (Core Workloads): Business applications, transactional databases, and primary business logic.\n- Wave 3 (Legacy Monoliths): High complexity enterprise systems, tightly coupled architectures, and legacy databases.\n\n5. Deliverable Creation and Upload:\nFinalize the Markdown report detailing the target architecture, migration waves, wave scorecard, network security controls implementation, and risk mitigation plan.\nUpload this document as 'GCP_Cloud_Migration_Roadmap_Assisted.md' to the Google Drive folder specified in ${manual_trigger.folder_identifier}.\n\nEmit 'roadmap_summary' and 'drive_file_name'.",
+                "dataStoreSpecs": {
+                  "specs": [
+                    {
+                      "dataStore": "collections/default_collection/dataStores/google-drive_1783950041708_google_drive"
+                    }
+                  ]
+                },
+                "connectorToolSelections": [
+                  {
+                    "dataConnector": {
+                      "name": "collections/google-drive_1783950041708/dataConnector",
+                      "dataSource": "google_drive"
+                    },
+                    "enabled": true,
+                    "mutateEnabled": true,
+                    "searchToolEnabled": true
+                  }
+                ]
+              },
+              "nodeType": "AGENT_NODE",
+              "outputSchema": {
+                "properties": {
+                  "roadmap_summary": {
+                    "description": "Executive summary of the completed GCP migration roadmap and architecture design.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 0
+                    }
+                  },
+                  "drive_file_name": {
+                    "description": "The filename of the migration deliverable saved to Google Drive.",
+                    "type": "STRING",
+                    "additionalProperties": {
+                      "display_order": 1
+                    }
+                  }
+                },
+                "required": [
+                  "roadmap_summary",
+                  "drive_file_name"
+                ]
+              }
+            }
+          ],
+          "edges": [
+            {
+              "sourceNodeId": "manual_trigger",
+              "targetNodeId": "semantic_discovery"
+            },
+            {
+              "sourceNodeId": "semantic_discovery",
+              "targetNodeId": "sufficiency_evaluator"
+            },
+            {
+              "sourceNodeId": "sufficiency_evaluator",
+              "targetNodeId": "confidence_routing"
+            },
+            {
+              "sourceNodeId": "confidence_routing",
+              "targetNodeId": "direct_roadmap_generator",
+              "routeString": "High_Confidence"
+            },
+            {
+              "sourceNodeId": "confidence_routing",
+              "targetNodeId": "ccm_questionnaire_curator",
+              "routeString": "Else"
+            },
+            {
+              "sourceNodeId": "ccm_questionnaire_curator",
+              "targetNodeId": "dynamic_discovery_form"
+            },
+            {
+              "sourceNodeId": "dynamic_discovery_form",
+              "targetNodeId": "assisted_roadmap_generator"
+            }
+          ]
+        },
+        "owner": "gaia:0x4bed370e0e#"
+      },
+      "activeRevision": "15693032606988293530/revisions/13807144833306823214",
+      "agentIdentityInfo": {},
+      "observabilityConfig": {
+        "observabilityEnabled": true
+      }
+    },
+    "creator": "gaia:0x4bed370e0e#",
+    "createTime": "2026-09-29T13:46:45.437696260Z",
+    "updateTime": "2026-09-29T13:46:45.437696260Z"
+  }
