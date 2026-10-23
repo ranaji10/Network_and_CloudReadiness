@@ -34,6 +34,10 @@ finds the staged `config/` at runtime. Third-party dependencies come from
    `projects/<n>/locations/<region>/reasoningEngines/<id>`.
 4. Put `<id>` into `agent_engine_id` in your tfvars (or directly into the trigger substitution
    `_AGENT_ENGINE_ID`) and apply. From now on every main build updates that instance in place.
+   Until the id is pinned, the build looks up the newest instance with the same display name
+   (`scripts/find_agent_engine.py`) and updates it rather than creating another; if you still end up
+   with duplicates (builds that ran before this safeguard existed), keep the one whose id is on the
+   trigger and delete the rest from Agent Platform > Deployments (more actions > Delete).
 5. Register the agent in Gemini Enterprise: Google Cloud console > Gemini Enterprise > your app > Agents >
    Add agent > custom agent via Agent Engine, pick the reasoning engine above. Needs the Discovery Engine
    Admin role and the Discovery Engine API. Google's guide:
