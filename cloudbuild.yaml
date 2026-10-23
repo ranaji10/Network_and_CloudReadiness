@@ -90,10 +90,12 @@ steps:
         if [ "${_DEPLOY_AGENT}" != "true" ]; then echo "agent deploy skipped (_DEPLOY_AGENT=${_DEPLOY_AGENT})"; exit 0; fi
         uv sync --frozen --no-dev --extra gcp --extra adk
         # Never create a duplicate instance: when no id is pinned, reuse the newest one with this display name.
+        # Shell variables are written as $$VAR: Cloud Build expands single-$ references as substitutions
+        # and rejects unknown ones before the build starts.
         AGENT_ID="${_AGENT_ENGINE_ID}"
-        if [ -z "$AGENT_ID" ]; then
-          AGENT_ID="$(uv run python scripts/find_agent_engine.py --project "${PROJECT_ID}" --region "${_REGION}" --display-name "${_AGENT_DISPLAY_NAME}")"
-          [ -n "$AGENT_ID" ] && echo "reusing existing Agent Runtime instance $AGENT_ID (pin it as _AGENT_ENGINE_ID)"
+        if [ -z "$$AGENT_ID" ]; then
+          AGENT_ID="$$(uv run python scripts/find_agent_engine.py --project "${PROJECT_ID}" --region "${_REGION}" --display-name "${_AGENT_DISPLAY_NAME}")"
+          [ -n "$$AGENT_ID" ] && echo "reusing existing Agent Runtime instance $$AGENT_ID (pin it as _AGENT_ENGINE_ID)"
         fi
         # The agent folder is the ADK app; the package and its YAML config are staged next to it with
         # --extra_packages (they land at /app/readiness and /app/config, see readiness.config). The build
@@ -107,7 +109,7 @@ steps:
           --display_name "${_AGENT_DISPLAY_NAME}" \
           --extra_packages src/readiness \
           --extra_packages config \
-          ${AGENT_ID:+--agent_engine_id "$AGENT_ID"} \
+          $${AGENT_ID:+--agent_engine_id "$$AGENT_ID"} \
           ${_AGENT_SA:+--service_account "${_AGENT_SA}"} \
           --otel_to_cloud \
           src/readiness/agents
