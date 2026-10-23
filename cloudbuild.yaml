@@ -13,6 +13,7 @@ substitutions:
   _SERVICE: readiness-api
   _DEPLOY: "false"
   _RUNTIME_SA: ""              # e.g. readiness-runtime@PROJECT.iam.gserviceaccount.com (set by Terraform)
+  _INGRESS: all                # all (IAM-protected public endpoint) | internal-and-cloud-load-balancing (behind IAP/LB)
   _DEPLOY_AGENT: "false"
   _AGENT_ENGINE_ID: ""         # resource id of an existing Agent Engine instance to update; empty = create new
   _AGENT_SA: ""                # runtime identity for the agent (set by Terraform: readiness-agent-<env>)
@@ -73,7 +74,7 @@ steps:
           --region "${_REGION}" \
           --platform managed \
           --no-allow-unauthenticated \
-          --ingress internal-and-cloud-load-balancing \
+          --ingress "${_INGRESS}" \
           ${_RUNTIME_SA:+--service-account "${_RUNTIME_SA}"} \
           --set-env-vars "READINESS_PROVIDER=gcp,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},READINESS_LLM_PROVIDER=mock" \
           --quiet

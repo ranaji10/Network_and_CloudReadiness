@@ -13,13 +13,13 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | DOC | Docs and governance | 3 | 0 | 0 | 3 | 6 |
 | FND | Foundation | 2 | 0 | 0 | 6 | 8 |
 | GRD | Guardrails | 5 | 0 | 0 | 4 | 9 |
-| INF | Infrastructure | 6 | 1 | 0 | 3 | 10 |
+| INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
 | ING | Ingestion | 6 | 0 | 0 | 3 | 9 |
 | LLM | Model providers | 5 | 0 | 0 | 1 | 6 |
 | MIG | Portability and migration | 4 | 0 | 0 | 1 | 5 |
 | REC | Recommendations | 4 | 0 | 0 | 2 | 6 |
 | SCR | Scoring | 5 | 0 | 0 | 4 | 9 |
-| **All** | | 48 | 2 | 0 | 30 | 80 |
+| **All** | | 46 | 1 | 0 | 33 | 80 |
 
 ## By phase
 
@@ -53,7 +53,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-03** Rule engine with posture score and evidence coverage kept separate
 - `done` **SCR-07** LLM judge hook with confidence-gated override
 
-### Phase 1: MVP for one analyst (2/15 done)
+### Phase 1: MVP for one analyst (5/15 done)
 
 - `todo` **DOC-04** Config reference for scoring, profiles, catalog and redaction
 - `todo` **DOC-06** Tracker sync to GitHub Issues (optional script)
@@ -61,9 +61,9 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **FND-07** Type checking (mypy) added to make check
 - `done` **FND-08** Default config resolvable from a wheel, a checkout or an Agent Engine bundle (claude-code)
 - `todo` **GRD-04** Review redaction output on a real document pack before enabling egress
-- `in_progress` **INF-02** First green Cloud Build run on the existing trigger (claude-code)
-- `todo` **INF-03** Cloud Run deploy with _DEPLOY=true
-- `todo` **INF-05** Terraform applied for dev (buckets, SAs, secrets, registry)
+- `done` **INF-02** First green Cloud Build run on the existing trigger (claude-code)
+- `done` **INF-03** Cloud Run deploy with _DEPLOY=true (claude-code)
+- `done` **INF-05** Terraform applied for dev (buckets, SAs, secrets, registry) (claude-code)
 - `done` **INF-10** Publish the container image to GHCR on release tags (claude-code)
 - `todo` **ING-07** Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER
 - `todo` **LLM-01** Gemini judge verified end to end on Vertex AI
@@ -200,10 +200,10 @@ Owner hint: infra/, Dockerfile, cloudbuild.yaml, Makefile
 | Id | Title | Status | Phase | Owner | Branch | Depends on | Acceptance |
 |---|---|---|---:|---|---|---|---|
 | INF-01 | Dockerfile, cloudbuild.yaml, Terraform for GCP, AWS skeleton, Makefile and compose | done | 0 |  |  |  | cloudbuild quality gate runs without cloud resources; deploy gated by _DEPLOY |
-| INF-02 | First green Cloud Build run on the existing trigger | in_progress | 1 | claude-code | claude/trusting-keller-qe5w65 | INF-01 | build on main passes quality-gate, secret-scan and build-image |
-| INF-03 | Cloud Run deploy with _DEPLOY=true | todo | 1 |  |  | INF-02, INF-05 | /healthz answers from the Cloud Run URL with IAM auth |
+| INF-02 | First green Cloud Build run on the existing trigger | done | 1 | claude-code | claude/trusting-keller-qe5w65 | INF-01 | build on main passes quality-gate, secret-scan and build-image |
+| INF-03 | Cloud Run deploy with _DEPLOY=true | done | 1 | claude-code | main | INF-02, INF-05 | /healthz answers from the Cloud Run URL with IAM auth |
 | INF-04 | IAP in front of Cloud Run | todo | 2 |  |  | INF-03 | no public ingress; users authenticate with Google identity |
-| INF-05 | Terraform applied for dev (buckets, SAs, secrets, registry) | todo | 1 |  |  | INF-01 | make tf-apply ENV=dev succeeds; outputs pasted on the trigger |
+| INF-05 | Terraform applied for dev (buckets, SAs, secrets, registry) | done | 1 | claude-code | main | INF-01 | make tf-apply ENV=dev succeeds; outputs pasted on the trigger |
 | INF-06 | Validate AWS skeleton and add App Runner service | todo | 3 |  |  | INF-01 | infra/terraform/aws applies in a sandbox account; API served from App Runner |
 | INF-07 | Staging and prod environments in separate projects | todo | 5 |  |  | INF-05 | envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN |
 | INF-08 | Monitoring, alerting and uptime check for the API | todo | 2 |  |  | INF-03 | alert on 5xx rate and latency; uptime check on /healthz |

@@ -33,7 +33,6 @@
       "Bash(aws * delete*)",
       "Read(./.env)",
       "Read(./.env.*)",
-      "Read(./infra/terraform/**/*.tfvars)",
       "Read(./data/**)",
       "Read(./workspace/**)"
     ]

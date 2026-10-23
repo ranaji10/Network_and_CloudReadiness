@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_DIRS = ("data/", "workspace/", "uploads/", "reports/")
-FORBIDDEN_NAMES = ("pseudonym_mapping", ".env", ".tfvars", ".tfstate", "service-account", "-credentials")
+FORBIDDEN_NAMES = ("pseudonym_mapping", ".env", ".tfvars", ".tfstate", "service-account", "-credentials", "backend.")
 FORBIDDEN_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".jks")
 ALLOWED_NAME_SUFFIX = (".example",)
 SAMPLE_DIRS = ("samples/", "tests/fixtures/")
