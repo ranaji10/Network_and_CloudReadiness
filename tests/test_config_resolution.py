@@ -33,3 +33,14 @@ def test_agent_requirements_mirror_pyproject():
     req = cfg.REPO_ROOT / "src" / "readiness" / "agents" / "requirements.txt"
     have = {line.split(">=")[0] for line in req.read_text().splitlines() if line and not line.startswith("#")}
     assert wanted == have
+
+
+def test_agent_tool_uses_temp_workspace_when_unset(monkeypatch, fixtures_dir):
+    import tempfile
+
+    from readiness.agents.adk_app import run_readiness_assessment
+
+    monkeypatch.delenv("READINESS_WORKSPACE_DIR", raising=False)
+    out = run_readiness_assessment(str(fixtures_dir / "synthetic_acme"), "security_only")
+    assert out["domains"][0]["id"] == "network_security"
+    assert (Path(tempfile.gettempdir()) / "readiness-workspace").exists()
