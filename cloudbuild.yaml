@@ -91,9 +91,12 @@ steps:
         # The agent folder is the ADK app; the package and its YAML config are staged next to it with
         # --extra_packages (they land at /app/readiness and /app/config, see readiness.config). The build
         # service account's ADC is used; see docs/runbooks/DEPLOY_AGENT_ENGINE.md for the roles it needs.
+        # --temp_folder must be outside src/readiness: adk stages into a folder next to the agent app by
+        # default, which sits inside the very tree --extra_packages src/readiness copies (infinite recursion).
         uv run adk deploy agent_engine \
           --project "${PROJECT_ID}" \
           --region "${_REGION}" \
+          --temp_folder /tmp/readiness-agent-stage \
           --display_name "${_AGENT_DISPLAY_NAME}" \
           --extra_packages src/readiness \
           --extra_packages config \

@@ -49,8 +49,12 @@ READINESS_ALLOW_LLM_EGRESS=true READINESS_LLM_PROVIDER=gemini GOOGLE_CLOUD_PROJE
   uv run adk web src/readiness/agents           # chat locally; the agent calls run_readiness_assessment
 uv run adk deploy agent_engine --project <project> --region <region> \
   --display_name readiness-assessor --extra_packages src/readiness --extra_packages config \
+  --temp_folder /tmp/readiness-agent-stage \
   --service_account <agent SA email> src/readiness/agents
 ```
+
+`--temp_folder` must point outside `src/readiness`: by default adk stages into a timestamped folder next to
+the agent app, inside the tree that `--extra_packages src/readiness` copies, and the copy recurses into itself.
 
 The model used by the agent is `READINESS_LLM_MODEL` (default `gemini-2.5-flash`), pinned to the
 `global` Vertex location by `GlobalGemini` (the V1.1 workaround). The assessment tool itself stays
