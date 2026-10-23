@@ -13,13 +13,13 @@ stories:
     notes: ""
   - id: AGT-02
     title: Deploy the ADK agent to Vertex AI Agent Engine
-    status: todo
+    status: in_progress
     phase: 2
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [AGT-01, LLM-01]
     acceptance: "agent answers with the same scores as the CLI for the same folder"
-    notes: "continues the V1.1 path"
+    notes: "Cloud Build step deploy-agent-engine + Terraform identity added; needs first run with _DEPLOY_AGENT=true, then paste _AGENT_ENGINE_ID; register in Gemini Enterprise per docs/runbooks/DEPLOY_AGENT_ENGINE.md"
   - id: AGT-03
     title: Questionnaire round trip (answer discovery questions, re-score)
     status: todo

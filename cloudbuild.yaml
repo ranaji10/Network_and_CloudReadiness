@@ -2,6 +2,8 @@
 #
 # Stage 1 (always): lint, tests, policy checks, container build  -> fixes the "red build" with no cloud resources.
 # Stage 2 (gated):  push to Artifact Registry + deploy to Cloud Run when _DEPLOY=true.
+# Stage 3 (gated):  deploy the ADK agent to Vertex AI Agent Engine when _DEPLOY_AGENT=true, updating the
+#                   instance named by _AGENT_ENGINE_ID so the agent registered in Gemini Enterprise follows the repo.
 #
 # Nothing here is account-specific: PROJECT_ID comes from the build, everything else is a substitution
 # set on the trigger (see infra/terraform/gcp/trigger.tf and docs/runbooks/DEPLOY_GCP.md).
@@ -11,6 +13,10 @@ substitutions:
   _SERVICE: readiness-api
   _DEPLOY: "false"
   _RUNTIME_SA: ""              # e.g. readiness-runtime@PROJECT.iam.gserviceaccount.com (set by Terraform)
+  _DEPLOY_AGENT: "false"
+  _AGENT_ENGINE_ID: ""         # resource id of an existing Agent Engine instance to update; empty = create new
+  _AGENT_SA: ""                # runtime identity for the agent (set by Terraform: readiness-agent-<env>)
+  _AGENT_DISPLAY_NAME: readiness-assessor
   _IMAGE: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_AR_REPO}/${_SERVICE}
 
 options:
@@ -71,3 +77,27 @@ steps:
           ${_RUNTIME_SA:+--service-account "${_RUNTIME_SA}"} \
           --set-env-vars "READINESS_PROVIDER=gcp,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},READINESS_LLM_PROVIDER=mock" \
           --quiet
+
+  - id: deploy-agent-engine
+    name: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    entrypoint: bash
+    env: ["UV_LINK_MODE=copy", "UV_PYTHON_DOWNLOADS=never"]
+    args:
+      - -c
+      - |
+        set -euo pipefail
+        if [ "${_DEPLOY_AGENT}" != "true" ]; then echo "agent deploy skipped (_DEPLOY_AGENT=${_DEPLOY_AGENT})"; exit 0; fi
+        uv sync --frozen --no-dev --extra gcp --extra adk
+        # The agent folder is the ADK app; the package and its YAML config are staged next to it with
+        # --extra_packages (they land at /app/readiness and /app/config, see readiness.config). The build
+        # service account's ADC is used; see docs/runbooks/DEPLOY_AGENT_ENGINE.md for the roles it needs.
+        uv run adk deploy agent_engine \
+          --project "${PROJECT_ID}" \
+          --region "${_REGION}" \
+          --display_name "${_AGENT_DISPLAY_NAME}" \
+          --extra_packages src/readiness \
+          --extra_packages config \
+          ${_AGENT_ENGINE_ID:+--agent_engine_id "${_AGENT_ENGINE_ID}"} \
+          ${_AGENT_SA:+--service_account "${_AGENT_SA}"} \
+          --otel_to_cloud \
+          src/readiness/agents

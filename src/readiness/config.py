@@ -9,8 +9,25 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_DIR = REPO_ROOT / "config"
+PACKAGE_DIR = Path(__file__).resolve().parent
+REPO_ROOT = PACKAGE_DIR.parents[1]
+
+
+def resolve_default_config_dir() -> Path:
+    """Where the YAML configuration lives, in order of preference:
+
+    1. `<repo>/config` when running from a checkout (development, Docker image, Cloud Run);
+    2. `<package parent>/config` when the package was staged next to a `config` folder
+       (`adk deploy agent_engine --extra_packages src/readiness --extra_packages config`);
+    3. the copy bundled into the wheel (`readiness/_bundled_config`) for `pip install` users.
+    `READINESS_CONFIG_DIR` overrides all of them."""
+    for candidate in (REPO_ROOT / "config", PACKAGE_DIR.parent / "config", PACKAGE_DIR / "_bundled_config"):
+        if (candidate / "profiles").is_dir():
+            return candidate
+    return REPO_ROOT / "config"
+
+
+DEFAULT_CONFIG_DIR = resolve_default_config_dir()
 
 
 class Settings(BaseSettings):
@@ -51,7 +68,7 @@ class Settings(BaseSettings):
 
     # --- paths ---
     workspace_dir: Path = Path("./workspace")
-    config_dir: Path = DEFAULT_CONFIG_DIR
+    config_dir: Path = Field(default_factory=resolve_default_config_dir)
     default_profile: str = "default"
 
     def require_llm_egress(self) -> None:

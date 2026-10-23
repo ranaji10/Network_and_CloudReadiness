@@ -42,6 +42,8 @@ Create a second trigger on `^main$` with `_DEPLOY=true`, or set `create_build_tr
 `github_connection` and `github_repo_uri` and re-apply.
 
 Every push now runs: quality gate, gitleaks, container build; on `main` also push and `gcloud run deploy`.
+To also update the ADK agent on Vertex AI Agent Engine on every main build, follow
+`docs/runbooks/DEPLOY_AGENT_ENGINE.md` (`_DEPLOY_AGENT=true`, `_AGENT_ENGINE_ID`, `_AGENT_SA`).
 
 ## 5. Verify
 

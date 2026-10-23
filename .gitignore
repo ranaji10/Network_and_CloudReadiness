@@ -1,9 +1,10 @@
 # --- Confidentiality guardrail: client / organisation data never enters git ---
 # Anything an assessment reads or produces lives outside version control.
-data/
-workspace/
-uploads/
-reports/
+# Root-anchored on purpose: src/readiness/data/ is package data and must stay tracked.
+/data/
+/workspace/
+/uploads/
+/reports/
 *.client.*
 *.confidential.*
 *.secret

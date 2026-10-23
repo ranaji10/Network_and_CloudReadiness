@@ -28,10 +28,13 @@ resource "google_cloudbuild_trigger" "main" {
   }
 
   substitutions = {
-    _REGION     = var.region
-    _AR_REPO    = var.ar_repo
-    _SERVICE    = var.service_name
-    _DEPLOY     = var.deploy_cloud_run ? "true" : "false"
-    _RUNTIME_SA = google_service_account.runtime.email
+    _REGION          = var.region
+    _AR_REPO         = var.ar_repo
+    _SERVICE         = var.service_name
+    _DEPLOY          = var.deploy_cloud_run ? "true" : "false"
+    _RUNTIME_SA      = google_service_account.runtime.email
+    _DEPLOY_AGENT    = var.deploy_agent_engine ? "true" : "false"
+    _AGENT_ENGINE_ID = var.agent_engine_id
+    _AGENT_SA        = google_service_account.agent.email
   }
 }

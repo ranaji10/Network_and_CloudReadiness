@@ -111,3 +111,15 @@ variable "labels" {
   type    = map(string)
   default = {}
 }
+
+variable "deploy_agent_engine" {
+  description = "Let the main-branch build deploy the ADK agent to Vertex AI Agent Engine (_DEPLOY_AGENT=true)."
+  type        = bool
+  default     = false
+}
+
+variable "agent_engine_id" {
+  description = "Resource id of the Agent Engine instance to update on each deploy. Empty = create a new one on the first run, then paste the id here."
+  type        = string
+  default     = ""
+}
