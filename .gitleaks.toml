@@ -13,6 +13,8 @@ paths = [
   '''^tests/fixtures/synthetic_acme/''',  # SYNTHETIC, see its README
   '''^src/readiness/data/ccm_v4\.1\.json$''',
   '''(^|/)uv\.lock$''',
+  '''(^|/)__pycache__/''',
+  '''(^|/)\.venv/''',
 ]
 regexes = [
   '''REPLACE-[A-Za-z0-9\-]+''',

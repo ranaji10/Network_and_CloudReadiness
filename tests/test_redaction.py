@@ -1,12 +1,20 @@
 from readiness.guardrails.redaction import Redactor
 
 GKEY = "AIza" + "Sy" + "F" * 33  # built at runtime so no key-shaped string is committed
+JWT = (
+    "eyJ"
+    + "hbGciOiJIUzI1NiJ9"
+    + "."
+    + "eyJ"
+    + "zdWIiOiIxMjM0NTY3ODkwIn0"
+    + "."
+    + "sflKxwRJSMeKKF2QT4fwpMeJf36POk6yJVadQssw5c"
+)
+PEM = "-----BEGIN " + "RSA PRIVATE KEY-----\nMIIabc\n-----END " + "RSA PRIVATE KEY-----"
 SAMPLE = f"""host db-01.acme.internal at 10.10.0.5 and 10.10.0.6; again 10.10.0.5
 email ops@acme-widgets.example password = Sup3rSecretValue1
-key {GKEY} token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.sflKxwRJSMeKKF2QT4fwpMeJf36POk6yJVadQssw5c
------BEGIN RSA PRIVATE KEY-----
-MIIabc
------END RSA PRIVATE KEY-----
+key {GKEY} token {JWT}
+{PEM}
 """
 
 
