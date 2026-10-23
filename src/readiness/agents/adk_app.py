@@ -7,7 +7,10 @@ Run locally:  adk web src/readiness/agents   (after `uv sync --extra adk --extra
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from functools import cached_property
+from pathlib import Path
 
 from readiness.agents.prompts import COORDINATOR
 from readiness.config import get_settings
@@ -22,7 +25,11 @@ def run_readiness_assessment(source_uri: str, profile: str = "default") -> dict:
     """
     from readiness.pipeline import run_assessment
 
-    report, _ = run_assessment(source_uri, get_settings(), profile)
+    settings = get_settings()
+    if not os.environ.get("READINESS_WORKSPACE_DIR"):
+        # Hosted runtimes (Agent Engine) may not allow writes next to the code; use the temp dir.
+        settings = settings.model_copy(update={"workspace_dir": Path(tempfile.gettempdir()) / "readiness-workspace"})
+    report, _ = run_assessment(source_uri, settings, profile)
     summary = {
         "run_id": report.id,
         "overall_score": report.overall_score,
