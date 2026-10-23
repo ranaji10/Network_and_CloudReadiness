@@ -1,0 +1,67 @@
+epic: API
+name: API and UI
+owner_hint: src/readiness/api and src/readiness/cli.py
+stories:
+  - id: API-01
+    title: FastAPI service and typer CLI over the same pipeline
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "test_api.py round trip; readiness assess works offline"
+    notes: ""
+  - id: API-02
+    title: Per-tenant tokens and report keys
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [INF-04]
+    acceptance: "tenant resolved from token; keys prefixed; cross-tenant read returns 404"
+    notes: ""
+  - id: API-03
+    title: Web UI (upload, progress, report view)
+    status: todo
+    phase: 4
+    owner: ""
+    branch: ""
+    depends_on: [API-02]
+    acceptance: "an analyst completes an assessment without the CLI"
+    notes: ""
+  - id: API-04
+    title: PDF export of the report
+    status: todo
+    phase: 4
+    owner: ""
+    branch: ""
+    depends_on: [API-01]
+    acceptance: "GET /assessments/{id}/report.pdf"
+    notes: ""
+  - id: API-05
+    title: SSO for the UI and API
+    status: todo
+    phase: 5
+    owner: ""
+    branch: ""
+    depends_on: [API-03]
+    acceptance: "OIDC login; tokens issued per user; audit carries user id"
+    notes: ""
+  - id: API-06
+    title: Async assessments with job status endpoint
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [API-01]
+    acceptance: "POST returns 202 and a job id; GET /jobs/{id} reports progress"
+    notes: ""
+  - id: API-07
+    title: OpenAPI docs published and versioned
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [API-01]
+    acceptance: "/docs reachable behind auth; schema checked in CI"
+    notes: ""

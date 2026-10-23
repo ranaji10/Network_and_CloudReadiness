@@ -1,0 +1,85 @@
+epic: ING
+name: Ingestion
+owner_hint: sources and extraction; touches src/readiness/adapters/sources and src/readiness/ingestion
+stories:
+  - id: ING-01
+    title: Local folder source with root escape protection
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "symlinks outside root ignored; size limit enforced"
+    notes: ""
+  - id: ING-02
+    title: Text extraction for PDF, DOCX, XLSX, text, CSV, JSON, YAML
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "extract_text returns text, truncated flag and error; unsupported types skipped"
+    notes: ""
+  - id: ING-03
+    title: Keyword document classifier
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [ING-02]
+    acceptance: "noise documents classified irrelevant; classes drive doc_classes filters"
+    notes: ""
+  - id: ING-04
+    title: Google Drive source verified against a live Drive
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [ING-01]
+    acceptance: "gdrive://<folder> lists nested folders, exports Docs/Sheets/Slides, read-only scope"
+    notes: "adapter written in adapters/sources/gdrive.py, never run"
+  - id: ING-05
+    title: GCS source verified against a live bucket
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [INF-03]
+    acceptance: "gs://bucket/prefix assessed from Cloud Run with the runtime service account"
+    notes: ""
+  - id: ING-06
+    title: S3 source verified against a live bucket
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [INF-06]
+    acceptance: "s3://bucket/prefix assessed from an AWS runtime role"
+    notes: ""
+  - id: ING-07
+    title: Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [LLM-01]
+    acceptance: "classification confidence improves on the evaluation set; falls back to keywords"
+    notes: ""
+  - id: ING-08
+    title: OCR for scanned PDFs and images
+    status: todo
+    phase: 4
+    owner: ""
+    branch: ""
+    depends_on: [ING-02]
+    acceptance: "scanned PDF in fixtures yields text; optional dependency"
+    notes: ""
+  - id: ING-09
+    title: PPTX and legacy DOC/XLS extraction
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [ING-02]
+    acceptance: "slides and legacy Office files produce text"
+    notes: ""

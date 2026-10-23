@@ -1,0 +1,85 @@
+epic: GRD
+name: Guardrails
+owner_hint: src/readiness/guardrails, config/redaction.yaml, docs/security
+stories:
+  - id: GRD-01
+    title: Redaction with secret masking and stable pseudonyms
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "secrets masked in every mode; mapping stays local; tests in test_redaction.py"
+    notes: ""
+  - id: GRD-02
+    title: Egress policy and GuardedLLM wrapper
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: [GRD-01]
+    acceptance: "real provider without READINESS_ALLOW_LLM_EGRESS raises; prompts redacted and delimited"
+    notes: ""
+  - id: GRD-03
+    title: Audit log with hashes and counts only
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "fields over 200 chars rejected; audit.jsonl written per run"
+    notes: ""
+  - id: GRD-04
+    title: Review redaction output on a real document pack before enabling egress
+    status: todo
+    phase: 1
+    owner: ""
+    branch: ""
+    depends_on: [GRD-01]
+    acceptance: "readiness redact run on a real pack; gaps fixed in config/redaction.yaml; sign-off ADR written"
+    notes: ""
+  - id: GRD-05
+    title: Optional Presidio-based PII detection
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [GRD-04]
+    acceptance: "readiness[pii] extra adds names and addresses to pseudonymisation"
+    notes: ""
+  - id: GRD-06
+    title: Egress perimeter (VPC Service Controls or equivalent) around the runtime
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [INF-03]
+    acceptance: "runtime can reach only Vertex, Storage and Secret Manager"
+    notes: ""
+  - id: GRD-07
+    title: Tool assesses itself with security_only profile above grade B
+    status: todo
+    phase: 5
+    owner: ""
+    branch: ""
+    depends_on: [SCR-04]
+    acceptance: "docs/ and infra/ assessed; report committed under docs/security"
+    notes: ""
+  - id: GRD-08
+    title: Secret scanning in CI and pre-commit (gitleaks)
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: ".gitleaks.toml, pre-commit hook and cloudbuild step"
+    notes: ""
+  - id: GRD-09
+    title: Report redaction review step before sharing outside the tenant
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [GRD-01]
+    acceptance: "API flag to render a share-safe report with mask mode and no document names"
+    notes: ""

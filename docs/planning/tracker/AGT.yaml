@@ -1,0 +1,49 @@
+epic: AGT
+name: Agents and ADK
+owner_hint: src/readiness/agents
+stories:
+  - id: AGT-01
+    title: ADK wrapper exposing the assessment as a tool
+    status: done
+    phase: 0
+    owner: ""
+    branch: ""
+    depends_on: []
+    acceptance: "adk web src/readiness/agents loads; root_agent None without ADK installed"
+    notes: ""
+  - id: AGT-02
+    title: Deploy the ADK agent to Vertex AI Agent Engine
+    status: todo
+    phase: 2
+    owner: ""
+    branch: ""
+    depends_on: [AGT-01, LLM-01]
+    acceptance: "agent answers with the same scores as the CLI for the same folder"
+    notes: "continues the V1.1 path"
+  - id: AGT-03
+    title: Questionnaire round trip (answer discovery questions, re-score)
+    status: todo
+    phase: 4
+    owner: ""
+    branch: ""
+    depends_on: [AGT-02]
+    acceptance: "answers stored as a document in the tenant workspace; coverage rises on re-run"
+    notes: "V1 assisted discovery flow"
+  - id: AGT-04
+    title: Expose the assessment as an MCP server
+    status: todo
+    phase: 3
+    owner: ""
+    branch: ""
+    depends_on: [AGT-01]
+    acceptance: "run_readiness_assessment callable from Claude Code and other MCP clients"
+    notes: ""
+  - id: AGT-05
+    title: Agent evaluation set in CI (ADK evals)
+    status: todo
+    phase: 4
+    owner: ""
+    branch: ""
+    depends_on: [AGT-02, SCR-05]
+    acceptance: "five conversations with expected tool calls pass in CI"
+    notes: ""
