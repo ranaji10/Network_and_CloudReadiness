@@ -123,3 +123,9 @@ variable "agent_engine_id" {
   type        = string
   default     = ""
 }
+
+variable "ingress" {
+  description = "Cloud Run ingress. INGRESS_TRAFFIC_ALL keeps IAM auth but lets `gcloud run services proxy` reach the service; switch to INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER once IAP / a load balancer exists (INF-04)."
+  type        = string
+  default     = "INGRESS_TRAFFIC_ALL"
+}

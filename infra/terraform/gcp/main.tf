@@ -216,7 +216,7 @@ resource "google_cloud_run_v2_service" "api" {
   count    = var.deploy_cloud_run ? 1 : 0
   name     = var.service_name
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  ingress  = var.ingress
   labels   = local.labels
 
   template {
@@ -250,7 +250,7 @@ resource "google_cloud_run_v2_service" "api" {
     }
   }
   lifecycle {
-    ignore_changes = [template[0].containers[0].image] # Cloud Build owns the image after first apply
+    ignore_changes = [template[0].containers[0].image, scaling] # Cloud Build owns the image; scaling{} is a provider no-op diff
   }
   depends_on = [google_project_service.apis, google_secret_manager_secret_iam_member.runtime_reads]
 }

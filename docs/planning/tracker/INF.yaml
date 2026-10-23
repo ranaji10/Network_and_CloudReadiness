@@ -13,22 +13,22 @@ stories:
     notes: ""
   - id: INF-02
     title: First green Cloud Build run on the existing trigger
-    status: in_progress
+    status: done
     phase: 1
     owner: claude-code
     branch: claude/trusting-keller-qe5w65
     depends_on: [INF-01]
     acceptance: "build on main passes quality-gate, secret-scan and build-image"
-    notes: "first run failed: src/readiness/data was git-ignored by the data/ pattern (fixed: root-anchored ignores); Dockerfile no longer needs BuildKit"
+    notes: "green on main after the data/ gitignore fix, git in the quality-gate image and the Developer Connect role"
   - id: INF-03
     title: Cloud Run deploy with _DEPLOY=true
-    status: todo
+    status: done
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: main
     depends_on: [INF-02, INF-05]
     acceptance: "/healthz answers from the Cloud Run URL with IAM auth"
-    notes: ""
+    notes: "readiness-api running in dev as the runtime SA; ingress ALL + IAM until INF-04"
   - id: INF-04
     title: IAP in front of Cloud Run
     status: todo
@@ -40,13 +40,13 @@ stories:
     notes: ""
   - id: INF-05
     title: Terraform applied for dev (buckets, SAs, secrets, registry)
-    status: todo
+    status: done
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: main
     depends_on: [INF-01]
     acceptance: "make tf-apply ENV=dev succeeds; outputs pasted on the trigger"
-    notes: ""
+    notes: "44 resources applied in dev"
   - id: INF-06
     title: Validate AWS skeleton and add App Runner service
     status: todo

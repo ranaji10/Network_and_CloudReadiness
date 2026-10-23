@@ -53,10 +53,10 @@ docker-run: ## Run the container locally on :8080
 tf-init: ## terraform init for $(TF_DIR) using infra/terraform/backend.$(ENV).hcl
 	cd $(TF_DIR) && terraform init -backend-config=../backend.$(ENV).hcl
 
-tf-plan: ## terraform plan with envs/$(ENV).tfvars
-	cd $(TF_DIR) && terraform plan -var-file=envs/$(ENV).tfvars
+tf-plan: ## terraform plan with envs/$(ENV).tfvars (extra flags via TF_ARGS)
+	cd $(TF_DIR) && terraform plan -var-file=envs/$(ENV).tfvars $(TF_ARGS)
 
-tf-apply: ## terraform apply with envs/$(ENV).tfvars
-	cd $(TF_DIR) && terraform apply -var-file=envs/$(ENV).tfvars
+tf-apply: ## terraform apply with envs/$(ENV).tfvars (extra flags via TF_ARGS, e.g. TF_ARGS='-target=...')
+	cd $(TF_DIR) && terraform apply -var-file=envs/$(ENV).tfvars $(TF_ARGS)
 
 .PHONY: help setup lint fmt test policy secrets-scan check tracker catalog demo serve docker-build docker-run tf-init tf-plan tf-apply

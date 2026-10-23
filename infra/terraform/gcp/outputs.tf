@@ -29,6 +29,7 @@ output "cloudbuild_substitutions" {
     _AR_REPO         = var.ar_repo
     _SERVICE         = var.service_name
     _DEPLOY          = var.deploy_cloud_run ? "true" : "false"
+    _INGRESS         = var.ingress == "INGRESS_TRAFFIC_ALL" ? "all" : "internal-and-cloud-load-balancing"
     _RUNTIME_SA      = google_service_account.runtime.email
     _DEPLOY_AGENT    = var.deploy_agent_engine ? "true" : "false"
     _AGENT_ENGINE_ID = var.agent_engine_id
