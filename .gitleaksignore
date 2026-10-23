@@ -1,0 +1,5 @@
+# Historical findings that are already removed from the tree but remain in git history.
+# Format: <commit>:<file>:<rule>:<line>. Both were synthetic test vectors (a fake JWT and a fake PEM
+# block in the redaction tests); the tests now build those strings at runtime instead.
+19da276cfa1cba052b9d135aa659c8bac4240727:tests/test_redaction.py:jwt:6
+19da276cfa1cba052b9d135aa659c8bac4240727:tests/test_redaction.py:private-key:7
