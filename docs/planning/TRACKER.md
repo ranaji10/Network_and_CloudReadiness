@@ -9,17 +9,17 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | Epic | Name | todo | in_progress | blocked | done | total |
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 3 | 1 | 0 | 1 | 5 |
-| API | API and UI | 5 | 1 | 0 | 1 | 7 |
+| API | API and UI | 5 | 0 | 0 | 2 | 7 |
 | DOC | Docs and governance | 3 | 0 | 0 | 3 | 6 |
-| FND | Foundation | 2 | 1 | 0 | 5 | 8 |
+| FND | Foundation | 2 | 0 | 0 | 6 | 8 |
 | GRD | Guardrails | 5 | 0 | 0 | 4 | 9 |
-| INF | Infrastructure | 6 | 2 | 0 | 2 | 10 |
+| INF | Infrastructure | 6 | 1 | 0 | 3 | 10 |
 | ING | Ingestion | 6 | 0 | 0 | 3 | 9 |
 | LLM | Model providers | 5 | 0 | 0 | 1 | 6 |
 | MIG | Portability and migration | 4 | 0 | 0 | 1 | 5 |
 | REC | Recommendations | 4 | 0 | 0 | 2 | 6 |
 | SCR | Scoring | 5 | 0 | 0 | 4 | 9 |
-| **All** | | 48 | 5 | 0 | 27 | 80 |
+| **All** | | 48 | 2 | 0 | 30 | 80 |
 
 ## By phase
 
@@ -53,18 +53,18 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-03** Rule engine with posture score and evidence coverage kept separate
 - `done` **SCR-07** LLM judge hook with confidence-gated override
 
-### Phase 1: MVP for one analyst (0/15 done)
+### Phase 1: MVP for one analyst (2/15 done)
 
 - `todo` **DOC-04** Config reference for scoring, profiles, catalog and redaction
 - `todo` **DOC-06** Tracker sync to GitHub Issues (optional script)
 - `todo` **FND-06** Pin dependency upper bounds and add a monthly dependency refresh story
 - `todo` **FND-07** Type checking (mypy) added to make check
-- `in_progress` **FND-08** Default config resolvable from a wheel, a checkout or an Agent Engine bundle (claude-code)
+- `done` **FND-08** Default config resolvable from a wheel, a checkout or an Agent Engine bundle (claude-code)
 - `todo` **GRD-04** Review redaction output on a real document pack before enabling egress
 - `in_progress` **INF-02** First green Cloud Build run on the existing trigger (claude-code)
 - `todo` **INF-03** Cloud Run deploy with _DEPLOY=true
 - `todo` **INF-05** Terraform applied for dev (buckets, SAs, secrets, registry)
-- `in_progress` **INF-10** Publish the container image to GHCR on release tags (claude-code)
+- `done` **INF-10** Publish the container image to GHCR on release tags (claude-code)
 - `todo` **ING-07** Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER
 - `todo` **LLM-01** Gemini judge verified end to end on Vertex AI
 - `todo` **LLM-02** Anthropic adapter verified end to end
@@ -103,11 +103,11 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents
 - `todo` **SCR-09** Industry profiles (healthcare, finance, public sector)
 
-### Phase 4: Agentic-AI depth and product polish (0/8 done)
+### Phase 4: Agentic-AI depth and product polish (1/8 done)
 
 - `todo` **AGT-03** Questionnaire round trip (answer discovery questions, re-score)
 - `todo` **AGT-05** Agent evaluation set in CI (ADK evals)
-- `in_progress` **API-03** Web UI (upload, progress, report view) (claude-code)
+- `done` **API-03** Web UI (upload, progress, report view) (claude-code)
 - `todo` **API-04** PDF export of the report
 - `todo` **ING-08** OCR for scanned PDFs and images
 - `todo` **REC-06** Recommendation de-duplication across checks sharing a product
@@ -143,7 +143,7 @@ Owner hint: src/readiness/api and src/readiness/cli.py
 |---|---|---|---:|---|---|---|---|
 | API-01 | FastAPI service and typer CLI over the same pipeline | done | 0 |  |  |  | test_api.py round trip; readiness assess works offline |
 | API-02 | Per-tenant tokens and report keys | todo | 2 |  |  | INF-04 | tenant resolved from token; keys prefixed; cross-tenant read returns 404 |
-| API-03 | Web UI (upload, progress, report view) | in_progress | 4 | claude-code | claude/trusting-keller-qe5w65 | API-01 | an analyst completes an assessment without the CLI |
+| API-03 | Web UI (upload, progress, report view) | done | 4 | claude-code | claude/trusting-keller-qe5w65 | API-01 | an analyst completes an assessment without the CLI |
 | API-04 | PDF export of the report | todo | 4 |  |  | API-01 | GET /assessments/{id}/report.pdf |
 | API-05 | SSO for the UI and API | todo | 5 |  |  | API-03 | OIDC login; tokens issued per user; audit carries user id |
 | API-06 | Async assessments with job status endpoint | todo | 2 |  |  | API-01 | POST returns 202 and a job id; GET /jobs/{id} reports progress |
@@ -175,7 +175,7 @@ Owner hint: whoever touches repo layout, packaging or shared models
 | FND-05 | Mock LLM and offline test suite | done | 0 |  |  | FND-03 | pytest passes with no network; synthetic fixtures only |
 | FND-06 | Pin dependency upper bounds and add a monthly dependency refresh story | todo | 1 |  |  | FND-02 | uv lock refresh documented; CI runs on the lock file |
 | FND-07 | Type checking (mypy) added to make check | todo | 1 |  |  | FND-05 | mypy clean on src/readiness |
-| FND-08 | Default config resolvable from a wheel, a checkout or an Agent Engine bundle | in_progress | 1 | claude-code | claude/trusting-keller-qe5w65 | FND-02 | pip install from GitHub works without the repo; adk deploy bundles config; tests cover resolution order |
+| FND-08 | Default config resolvable from a wheel, a checkout or an Agent Engine bundle | done | 1 | claude-code | claude/trusting-keller-qe5w65 | FND-02 | pip install from GitHub works without the repo; adk deploy bundles config; tests cover resolution order |
 
 ### GRD: Guardrails
 
@@ -208,7 +208,7 @@ Owner hint: infra/, Dockerfile, cloudbuild.yaml, Makefile
 | INF-07 | Staging and prod environments in separate projects | todo | 5 |  |  | INF-05 | envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN |
 | INF-08 | Monitoring, alerting and uptime check for the API | todo | 2 |  |  | INF-03 | alert on 5xx rate and latency; uptime check on /healthz |
 | INF-09 | GitHub Actions mirror of the quality gate | done | 0 |  |  | INF-01 | .github/workflows/ci.yml runs lint, tests, policy checks |
-| INF-10 | Publish the container image to GHCR on release tags | in_progress | 1 | claude-code | claude/trusting-keller-qe5w65 | INF-09 | ghcr.io/<owner>/readiness:<tag> pullable after pushing a v* tag |
+| INF-10 | Publish the container image to GHCR on release tags | done | 1 | claude-code | claude/trusting-keller-qe5w65 | INF-09 | ghcr.io/<owner>/readiness:<tag> pullable after pushing a v* tag |
 
 ### ING: Ingestion
 

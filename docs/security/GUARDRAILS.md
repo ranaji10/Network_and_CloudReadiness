@@ -24,6 +24,8 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 | Document size and text length caps | `Settings.max_doc_bytes`, `max_text_chars`; `ingestion/extract.extract_text` | `tests/test_pipeline.py` (truncated flag) |
 | Tenant prefix on every output path and key | `pipeline.run_assessment`, `api/app._run` | `tests/test_api.py` round trip |
 
+- **Web UI (`/`) adds no data path.** `src/readiness/api/static/index.html` calls the same authenticated endpoints as any client; uploads go to a temporary directory that is deleted after the run, and the only thing kept in the browser is the API token in `sessionStorage` (cleared when the tab closes).
+
 ## In CI and the repo
 
 | Guardrail | Implemented in | How to test |

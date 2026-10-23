@@ -1,0 +1,4 @@
+{
+  "display_name": "Network & Cloud Readiness Assessor",
+  "description": "Scores a business's documents for network security, cloud readiness and agentic-AI readiness and recommends GCP / AWS / open-source actions."
+}

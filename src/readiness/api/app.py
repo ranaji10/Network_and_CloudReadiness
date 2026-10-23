@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
 
 from readiness import __version__
@@ -23,6 +23,7 @@ from readiness.config import Settings, get_settings
 from readiness.scoring.profiles import list_profiles
 
 app = FastAPI(title="Network & Cloud Readiness Assessor", version=__version__)
+STATIC = Path(__file__).resolve().parent / "static"
 
 
 def settings_dep() -> Settings:
@@ -43,6 +44,13 @@ class AssessRequest(BaseModel):
     source_uri: str
     profile: str = "default"
     include_evidence_snippets: bool = False
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def ui() -> str:
+    """Minimal single-page UI (upload documents, see scores and the report). No data is kept client-side
+    except the API token in sessionStorage; the page calls the same authenticated endpoints as any client."""
+    return (STATIC / "index.html").read_text()
 
 
 @app.get("/healthz")

@@ -63,6 +63,31 @@ resource "google_service_account" "build" {
   display_name = "Readiness Cloud Build (${var.env})"
 }
 
+# Agent Engine runtime identity: same data access as the API runtime, nothing project-wide.
+resource "google_service_account" "agent" {
+  account_id   = "readiness-agent-${var.env}"
+  display_name = "Readiness ADK agent on Agent Engine (${var.env})"
+}
+
+resource "google_storage_bucket_iam_member" "agent_uploads" {
+  bucket = google_storage_bucket.uploads.name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.agent.email}"
+}
+
+resource "google_storage_bucket_iam_member" "agent_reports" {
+  bucket = google_storage_bucket.reports.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.agent.email}"
+}
+
+resource "google_project_iam_member" "agent_roles" {
+  for_each = toset(["roles/logging.logWriter", "roles/monitoring.metricWriter", "roles/aiplatform.user", "roles/cloudtrace.agent"])
+  project  = var.project_id
+  role     = each.value
+  member   = "serviceAccount:${google_service_account.agent.email}"
+}
+
 # Runtime: read uploads, write reports, read secrets, call Vertex, write logs. Nothing project-wide.
 resource "google_storage_bucket_iam_member" "runtime_uploads" {
   bucket = google_storage_bucket.uploads.name
@@ -83,16 +108,24 @@ resource "google_project_iam_member" "runtime_roles" {
   member   = "serviceAccount:${google_service_account.runtime.email}"
 }
 
-# Build: push images, deploy Cloud Run, act as runtime SA, write logs.
+# Build: push images, deploy Cloud Run, deploy to Agent Engine, act as the runtime SAs, write logs.
 resource "google_project_iam_member" "build_roles" {
-  for_each = toset(["roles/artifactregistry.writer", "roles/run.developer", "roles/logging.logWriter"])
-  project  = var.project_id
-  role     = each.value
-  member   = "serviceAccount:${google_service_account.build.email}"
+  for_each = toset([
+    "roles/artifactregistry.writer",
+    "roles/run.developer",
+    "roles/logging.logWriter",
+    "roles/aiplatform.user",          # adk deploy agent_engine (create/update reasoning engines)
+    "roles/storage.objectAdmin",      # Agent Engine stages the source bundle in a bucket during deploy
+    "roles/cloudbuild.builds.editor", # Agent Engine builds the agent image with Cloud Build
+  ])
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.build.email}"
 }
 
 resource "google_service_account_iam_member" "build_acts_as_runtime" {
-  service_account_id = google_service_account.runtime.name
+  for_each           = { runtime = google_service_account.runtime.name, agent = google_service_account.agent.name }
+  service_account_id = each.value
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.build.email}"
 }

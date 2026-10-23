@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Readiness Assessor</title>
+<style>
+  :root { --bg:#f6f7f9; --fg:#1b1f24; --muted:#5b6672; --card:#fff; --line:#dfe3e8; --accent:#1a5fb4; --ok:#1f7a3a; --warn:#b26a00; --bad:#b3261e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1419; --fg:#e6e9ee; --muted:#9aa5b1; --card:#171d24; --line:#2a333d; --accent:#6ea8fe; } }
+  * { box-sizing:border-box } body { margin:0; font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--fg) }
+  main { max-width:960px; margin:0 auto; padding:24px 16px }
+  h1 { font-size:22px; margin:0 0 4px } .sub { color:var(--muted); margin:0 0 20px }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:16px }
+  label { display:block; font-weight:600; margin:10px 0 4px } input,select { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg) }
+  button { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:10px 16px; font-weight:600; cursor:pointer; margin-top:14px } button[disabled]{opacity:.6}
+  table { width:100%; border-collapse:collapse; margin-top:8px } th,td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line) } td.num{ text-align:right }
+  .grade-A,.grade-B{color:var(--ok)} .grade-C{color:var(--warn)} .grade-D{color:var(--bad)}
+  pre { white-space:pre-wrap; font-size:13px; background:var(--bg); padding:12px; border-radius:6px; max-height:60vh; overflow:auto }
+  .note { color:var(--muted); font-size:13px } #status { margin-top:10px; color:var(--muted) }
+</style>
+</head>
+<body>
+<main>
+  <h1>Network, Cloud &amp; Agentic-AI Readiness Assessor</h1>
+  <p class="sub">Upload a business's documents, get posture scores, evidence coverage and prioritised actions. Documents are redacted before any model sees them and are not retained after the run.</p>
+
+  <form class="card" id="f">
+    <label for="files">Documents (PDF, DOCX, XLSX, Markdown, text, CSV, JSON)</label>
+    <input id="files" type="file" multiple required>
+    <label for="profile">Scoring profile</label>
+    <select id="profile"></select>
+    <label for="token">API token <span class="note">(leave empty if the server runs with auth disabled)</span></label>
+    <input id="token" type="password" autocomplete="off" placeholder="Bearer token">
+    <button id="go" type="submit">Assess</button>
+    <div id="status"></div>
+  </form>
+
+  <section class="card" id="scores" hidden>
+    <h2 style="margin-top:0">Scores</h2>
+    <table><thead><tr><th>Area</th><th class="num">Posture</th><th>Grade</th><th class="num">Evidence coverage</th></tr></thead><tbody id="rows"></tbody></table>
+    <p class="note" id="covnote"></p>
+  </section>
+
+  <section class="card" id="report" hidden>
+    <h2 style="margin-top:0">Report <a id="dl" download="report.md" class="note" style="font-weight:400;margin-left:8px">download .md</a></h2>
+    <pre id="md"></pre>
+  </section>
+</main>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const headers = () => { const t = $('token').value.trim(); return t ? { Authorization: 'Bearer ' + t } : {}; };
+  try { $('token').value = sessionStorage.getItem('readiness.token') || ''; } catch (e) {}
+
+  async function loadProfiles() {
+    try {
+      const r = await fetch('profiles', { headers: headers() });
+      if (!r.ok) throw new Error(r.status);
+      const ps = await r.json();
+      $('profile').innerHTML = ps.map(p => `<option value="${p.id}">${p.name} (${p.id})</option>`).join('');
+    } catch (e) {
+      $('profile').innerHTML = '<option value="default">default</option>';
+    }
+  }
+  loadProfiles();
+  $('token').addEventListener('change', () => { try { sessionStorage.setItem('readiness.token', $('token').value); } catch (e) {} loadProfiles(); });
+
+  $('f').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData();
+    for (const f of $('files').files) fd.append('files', f);
+    $('go').disabled = true; $('status').textContent = 'Assessing…'; $('scores').hidden = true; $('report').hidden = true;
+    try {
+      const r = await fetch('assessments/upload?profile=' + encodeURIComponent($('profile').value), { method: 'POST', body: fd, headers: headers() });
+      if (!r.ok) throw new Error(r.status + ' ' + (await r.text()).slice(0, 300));
+      const rep = await r.json();
+      const rows = [`<tr><th>Overall</th><td class="num"><b>${Math.round(rep.overall_score)} / 100</b></td><td></td><td class="num"><b>${Math.round(rep.overall_coverage)}%</b></td></tr>`]
+        .concat(rep.domains.map(d => `<tr><td>${d.name}</td><td class="num">${Math.round(d.score)} / 100</td><td class="grade-${d.grade}">${d.grade}</td><td class="num">${Math.round(d.coverage)}%</td></tr>`));
+      $('rows').innerHTML = rows.join('');
+      const hc = (rep.domains[0] && rep.domains[0].thresholds && rep.domains[0].thresholds.high_confidence_coverage) || 70;
+      $('covnote').textContent = rep.overall_coverage < hc
+        ? `Evidence coverage is below the ${hc}% confidence threshold: collect the discovery items in the report before acting on the scores.`
+        : `Evidence coverage meets the ${hc}% confidence threshold.`;
+      $('scores').hidden = false;
+      const m = await fetch('assessments/' + rep.id + '/report.md', { headers: headers() });
+      const md = await m.text();
+      $('md').textContent = md; $('dl').href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+      $('report').hidden = false; $('status').textContent = 'Done. Run ' + rep.id + '.';
+    } catch (e) {
+      $('status').textContent = 'Failed: ' + e.message;
+    } finally { $('go').disabled = false; }
+  });
+})();
+</script>
+</body>
+</html>

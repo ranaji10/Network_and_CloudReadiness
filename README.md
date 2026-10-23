@@ -74,3 +74,14 @@ Change weights, add checks or products by editing YAML. No code change is needed
 The Cloud Controls Matrix (CCM) v4.1 and Consensus Assessments Initiative Questionnaire (CAIQ) v4.1 in
 `reference/` are Cloud Security Alliance material, used under their licence terms. The generated
 `src/readiness/data/ccm_v4.1.json` is derived from them and carries the same attribution.
+
+## Running it in your organisation (distribution channels)
+
+| You are | Use | How |
+|---|---|---|
+| Any cloud, VM or laptop with Docker | Container with API + web UI | `docker run -p 8080:8080 -e READINESS_AUTH_DISABLED=true ghcr.io/<owner>/<repo>:<tag>` then open http://localhost:8080 (published on `v*` tags by `.github/workflows/release.yml`) |
+| Google Cloud | Cloud Run via Cloud Build | `docs/runbooks/DEPLOY_GCP.md` (`_DEPLOY=true`) |
+| Gemini Enterprise users | ADK agent on Vertex AI Agent Engine | `docs/runbooks/DEPLOY_AGENT_ENGINE.md` (`_DEPLOY_AGENT=true`; registered once in Gemini Enterprise, updated on every main build) |
+| Python integrators | Package with bundled default config | `pip install "readiness[gcp] @ git+https://github.com/<owner>/<repo>@<tag>"` then `readiness assess <folder>` |
+
+All channels are built from the same commit and run the same engine, so scores never differ by channel.

@@ -7,6 +7,8 @@ def test_api_roundtrip(settings, fixtures_dir, monkeypatch):
     api_module.app.dependency_overrides[api_module.settings_dep] = lambda: settings
     client = TestClient(api_module.app)
     assert client.get("/healthz").json()["status"] == "ok"
+    ui = client.get("/")
+    assert ui.status_code == 200 and "<title>Readiness Assessor</title>" in ui.text
     r = client.post(
         "/assessments", json={"source_uri": f"file://{fixtures_dir / 'synthetic_acme'}", "profile": "default"}
     )

@@ -67,7 +67,7 @@ stories:
     notes: ""
   - id: FND-08
     title: Default config resolvable from a wheel, a checkout or an Agent Engine bundle
-    status: in_progress
+    status: done
     phase: 1
     owner: claude-code
     branch: claude/trusting-keller-qe5w65

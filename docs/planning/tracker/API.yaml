@@ -22,13 +22,13 @@ stories:
     notes: ""
   - id: API-03
     title: Web UI (upload, progress, report view)
-    status: in_progress
+    status: done
     phase: 4
     owner: claude-code
     branch: claude/trusting-keller-qe5w65
     depends_on: [API-01]
     acceptance: "an analyst completes an assessment without the CLI"
-    notes: ""
+    notes: "v0: upload, scores table, report text and download served at /; async progress view is API-06"
   - id: API-04
     title: PDF export of the report
     status: todo
