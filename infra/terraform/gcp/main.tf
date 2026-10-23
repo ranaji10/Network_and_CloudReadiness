@@ -114,9 +114,10 @@ resource "google_project_iam_member" "build_roles" {
     "roles/artifactregistry.writer",
     "roles/run.developer",
     "roles/logging.logWriter",
-    "roles/aiplatform.user",          # adk deploy agent_engine (create/update reasoning engines)
-    "roles/storage.objectAdmin",      # Agent Engine stages the source bundle in a bucket during deploy
-    "roles/cloudbuild.builds.editor", # Agent Engine builds the agent image with Cloud Build
+    "roles/aiplatform.user",                    # adk deploy agent_engine (create/update reasoning engines)
+    "roles/storage.objectAdmin",                # Agent Engine stages the source bundle in a bucket during deploy
+    "roles/cloudbuild.builds.editor",           # Agent Engine builds the agent image with Cloud Build
+    "roles/developerconnect.readTokenAccessor", # trigger fetches source through a Developer Connect (2nd-gen GitHub) link
   ])
   project = var.project_id
   role    = each.value
