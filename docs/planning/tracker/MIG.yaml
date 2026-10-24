@@ -40,10 +40,10 @@ stories:
     notes: ""
   - id: MIG-05
     title: Data export and deletion procedure per tenant
-    status: todo
+    status: in_progress
     phase: 2
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [API-02]
     acceptance: "one command exports and one deletes every object for a tenant; documented"
     notes: ""

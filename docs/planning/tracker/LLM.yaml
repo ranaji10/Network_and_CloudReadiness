@@ -4,13 +4,13 @@ owner_hint: src/readiness/adapters/llm and guardrails/policy.py
 stories:
   - id: LLM-01
     title: Gemini judge verified end to end on Vertex AI
-    status: in_progress
+    status: done
     phase: 1
     owner: claude-code (remote session on the analyst Mac)
     branch: claude/trusting-keller-qe5w65
     depends_on: [GRD-04, INF-03]
     acceptance: "READINESS_LLM_PROVIDER=gemini with egress allowed produces llm-judged checks; audit shows llm.ok"
-    notes: "adapter in adapters/llm/gemini.py; global location for gemini-3 family"
+    notes: "verified on Vertex (gemini-3.5-flash, global): 14/14 judge calls ok, synthetic pack 58/63 -> 47/71, 18 verdicts changed with specific rationales; CLI flag no longer clobbers READINESS_USE_LLM_JUDGE"
   - id: LLM-02
     title: Anthropic adapter verified end to end
     status: todo
@@ -40,10 +40,10 @@ stories:
     notes: ""
   - id: LLM-05
     title: Token and cost accounting per run in the audit log
-    status: todo
+    status: in_progress
     phase: 2
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [LLM-01]
     acceptance: "llm.ok events carry input/output token counts; report shows model cost"
     notes: ""

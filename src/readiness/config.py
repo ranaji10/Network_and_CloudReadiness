@@ -59,7 +59,8 @@ class Settings(BaseSettings):
     # --- secrets (local dev only; production uses the SecretStore port) ---
     gemini_api_key: str = Field(default="", validation_alias="GEMINI_API_KEY")
     anthropic_api_key: str = Field(default="", validation_alias="ANTHROPIC_API_KEY")
-    api_token: str = ""
+    api_token: str = ""  # single-tenant token; maps to `tenant_id`
+    tenant_tokens: dict[str, str] = {}  # JSON map tenant_id -> bearer token (READINESS_TENANT_TOKENS or a secret)
     auth_disabled: bool = False
 
     # --- guardrails ---

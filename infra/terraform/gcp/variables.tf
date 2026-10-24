@@ -129,3 +129,9 @@ variable "ingress" {
   type        = string
   default     = "INGRESS_TRAFFIC_ALL"
 }
+
+variable "tenant_tokens_secret" {
+  description = "Mount the READINESS_TENANT_TOKENS secret (JSON map tenant -> token) into Cloud Run. Add a version to the secret first."
+  type        = bool
+  default     = false
+}
