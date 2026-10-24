@@ -19,13 +19,33 @@ def assess(
     ),
     profile: str = typer.Option("default", help="Scoring profile id from config/profiles"),
     out: Path | None = typer.Option(None, help="Workspace directory (default READINESS_WORKSPACE_DIR)"),
-    snippets: bool = typer.Option(False, help="Include evidence snippets in the report (redacted text)"),
-    llm_judge: bool = typer.Option(False, help="Refine rule verdicts with the configured LLM (needs egress allowed)"),
+    snippets: bool | None = typer.Option(
+        None,
+        "--snippets/--no-snippets",
+        help="Include evidence snippets (default: READINESS_INCLUDE_EVIDENCE_SNIPPETS)",
+    ),
+    llm_judge: bool | None = typer.Option(
+        None,
+        "--llm-judge/--no-llm-judge",
+        help="Refine rule verdicts with the model (default: READINESS_USE_LLM_JUDGE)",
+    ),
+    llm_classifier: bool | None = typer.Option(
+        None,
+        "--llm-classifier/--no-llm-classifier",
+        help="Re-classify unsure documents with the model (default: READINESS_USE_LLM_CLASSIFIER)",
+    ),
     print_md: bool = typer.Option(True, "--print/--no-print", help="Print the markdown report"),
 ):
+    """Assess a document source. Flags override the environment only when given explicitly."""
     from readiness.pipeline import run_assessment
 
-    overrides: dict[str, object] = {"include_evidence_snippets": snippets, "use_llm_judge": llm_judge}
+    overrides: dict[str, object] = {}
+    if snippets is not None:
+        overrides["include_evidence_snippets"] = snippets
+    if llm_judge is not None:
+        overrides["use_llm_judge"] = llm_judge
+    if llm_classifier is not None:
+        overrides["use_llm_classifier"] = llm_classifier
     if out:
         overrides["workspace_dir"] = out
     settings = get_settings(**overrides)
@@ -34,7 +54,7 @@ def assess(
         typer.echo(md)
     typer.echo(
         f"[done] run={report.id} score={report.overall_score} coverage={report.overall_coverage} "
-        f"-> {Path(settings.workspace_dir) / settings.tenant_id / report.id}",
+        f"llm={report.llm_provider} -> {Path(settings.workspace_dir) / settings.tenant_id / report.id}",
         err=True,
     )
 
