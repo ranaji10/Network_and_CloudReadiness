@@ -40,13 +40,13 @@ stories:
     notes: ""
   - id: LLM-05
     title: Token and cost accounting per run in the audit log
-    status: in_progress
+    status: done
     phase: 2
     owner: claude-code
     branch: claude/trusting-keller-qe5w65
     depends_on: [LLM-01]
     acceptance: "llm.ok events carry input/output token counts; report shows model cost"
-    notes: ""
+    notes: "LLMUsage per adapter, GuardedLLM totals, llm.ok/run.end carry token counts, report.extra.llm_usage + markdown line; config/llm_pricing.yaml (Gemini prices flagged as estimates)"
   - id: LLM-06
     title: Prompt caching and batching for large document sets
     status: todo

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 
 class GCSBlobStore:
     name = "gcs"
@@ -19,3 +21,9 @@ class GCSBlobStore:
 
     def exists(self, key: str) -> bool:
         return self._bucket.blob(key).exists()
+
+    def list(self, prefix: str = "") -> Iterable[str]:
+        return [b.name for b in self._bucket.client.list_blobs(self.bucket, prefix=prefix or None)]
+
+    def delete(self, key: str) -> None:
+        self._bucket.blob(key).delete()

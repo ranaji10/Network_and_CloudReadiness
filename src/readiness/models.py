@@ -136,6 +136,27 @@ class Recommendation(BaseModel):
     ccm_controls: list[str] = []
 
 
+class LLMUsage(BaseModel):
+    """Token usage of one or more model calls. Numbers only, never content (it ends up in audit logs)."""
+
+    provider: str
+    model: str = ""
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    calls: int = 1
+
+    def add(self, other: LLMUsage) -> LLMUsage:
+        return LLMUsage(
+            provider=self.provider or other.provider,
+            model=self.model or other.model,
+            input_tokens=self.input_tokens + other.input_tokens,
+            output_tokens=self.output_tokens + other.output_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+            calls=self.calls + other.calls,
+        )
+
+
 class RedactionSummary(BaseModel):
     mode: str
     counts: dict[str, int] = {}

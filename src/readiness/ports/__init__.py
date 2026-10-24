@@ -47,6 +47,10 @@ class BlobStore(Protocol):
 
     def exists(self, key: str) -> bool: ...
 
+    def list(self, prefix: str = "") -> Iterable[str]: ...
+
+    def delete(self, key: str) -> None: ...
+
 
 @runtime_checkable
 class SecretStore(Protocol):

@@ -15,11 +15,11 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | GRD | Guardrails | 5 | 0 | 0 | 4 | 9 |
 | INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
 | ING | Ingestion | 4 | 0 | 0 | 5 | 9 |
-| LLM | Model providers | 3 | 1 | 0 | 2 | 6 |
-| MIG | Portability and migration | 3 | 1 | 0 | 1 | 5 |
+| LLM | Model providers | 3 | 0 | 0 | 3 | 6 |
+| MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 4 | 0 | 0 | 2 | 6 |
 | SCR | Scoring | 4 | 0 | 0 | 5 | 9 |
-| **All** | | 34 | 2 | 0 | 44 | 80 |
+| **All** | | 34 | 0 | 0 | 46 | 80 |
 
 ## By phase
 
@@ -71,7 +71,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **SCR-04** Tune signals against three anonymised real document packs
 - `done` **SCR-08** Per-check signal weights and regex signals documented in config README (claude-code)
 
-### Phase 2: Cloud ingestion and multi-tenant (5/14 done)
+### Phase 2: Cloud ingestion and multi-tenant (7/14 done)
 
 - `done` **AGT-02** Deploy the ADK agent to Vertex AI Agent Engine (claude-code)
 - `done` **API-02** Per-tenant tokens and report keys (claude-code)
@@ -84,9 +84,9 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **INF-08** Monitoring, alerting and uptime check for the API
 - `todo` **ING-04** Google Drive source verified against a live Drive
 - `done` **ING-05** GCS source verified against a live bucket (claude-code)
-- `in_progress` **LLM-05** Token and cost accounting per run in the audit log (claude-code)
+- `done` **LLM-05** Token and cost accounting per run in the audit log (claude-code)
 - `todo` **MIG-01** Migrate the GCP project from the personal account to an organisation
-- `in_progress` **MIG-05** Data export and deletion procedure per tenant (claude-code)
+- `done` **MIG-05** Data export and deletion procedure per tenant (claude-code)
 
 ### Phase 3: Recommendations depth and AWS (0/12 done)
 
@@ -236,7 +236,7 @@ Owner hint: src/readiness/adapters/llm and guardrails/policy.py
 | LLM-02 | Anthropic adapter verified end to end | todo | 1 |  |  | GRD-04 | messages.parse structured output validated against JudgeBatch; refusal handled |
 | LLM-03 | Amazon Bedrock adapter | todo | 3 |  |  | LLM-02 | READINESS_LLM_PROVIDER=bedrock works from an AWS runtime role |
 | LLM-04 | Mock provider with canned responses for tests | done | 0 |  |  |  | MockLLM returns conservative defaults or canned schema instances |
-| LLM-05 | Token and cost accounting per run in the audit log | in_progress | 2 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | llm.ok events carry input/output token counts; report shows model cost |
+| LLM-05 | Token and cost accounting per run in the audit log | done | 2 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | llm.ok events carry input/output token counts; report shows model cost |
 | LLM-06 | Prompt caching and batching for large document sets | todo | 3 |  |  | LLM-01 | judge cost per run halves on a 100-document pack |
 
 ### MIG: Portability and migration
@@ -249,7 +249,7 @@ Owner hint: infra/, docs/architecture/MIGRATION_PLAYBOOK.md, scripts/check_porta
 | MIG-02 | Terraform state move drill | todo | 3 |  |  | INF-05 | terraform init -migrate-state to a fresh bucket with no diff |
 | MIG-03 | Portability check script in CI (no project ids, buckets, emails in code or IaC) | done | 0 |  |  |  | scripts/check_portability.py runs in cloudbuild and GitHub Actions |
 | MIG-04 | Provider switch drill (local to gcp to aws) with the same report output | todo | 3 |  |  | INF-06, LLM-03 | same fixture pack scores identically on all three providers |
-| MIG-05 | Data export and deletion procedure per tenant | in_progress | 2 | claude-code | claude/trusting-keller-qe5w65 | API-02 | one command exports and one deletes every object for a tenant; documented |
+| MIG-05 | Data export and deletion procedure per tenant | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-02 | one command exports and one deletes every object for a tenant; documented |
 
 ### REC: Recommendations
 
