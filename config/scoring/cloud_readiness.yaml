@@ -77,7 +77,7 @@ pillars:
         points: 4
         ccm: [I&S-08]
         # No raw IP literals as signals: addresses are pseudonymised to <ip-NN> before scoring, so they can never match.
-        signals: [cidr, "ip plan", "address space", "rfc 1918", "rfc1918", "private address", "non-overlapping", "overlap", "vpc design", "subnet", "<ip-"]
+        signals: [cidr, "ip plan", "address space", "rfc 1918", "rfc1918", "private address", "non-overlapping", "overlap", "vpc design", "subnet", "<ip-\\d+>"]
         question: Is the IP plan documented with non-overlapping ranges reserved for cloud?
       - id: CR-NET-03
         title: Identity federation to cloud (SSO / workload identity)
