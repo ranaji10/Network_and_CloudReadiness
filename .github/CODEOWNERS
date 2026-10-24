@@ -1,25 +1,25 @@
-# Replace the placeholder handles with real GitHub users or teams (e.g. @org/security).
+# Owner handles: replace with teams (e.g. @org/security) once more people join; a listed owner must have write access.
 # Order matters: the last matching pattern wins.
 
-*                                           @OWNER-MAINTAINER
+*                                           @ranaji10
 
 # Security-sensitive: redaction, egress policy, model adapters, security docs
-/src/readiness/guardrails/                  @OWNER-SECURITY
-/config/redaction.yaml                      @OWNER-SECURITY
-/src/readiness/adapters/llm/                @OWNER-SECURITY
-/docs/security/                             @OWNER-SECURITY
-/SECURITY.md                                @OWNER-SECURITY
-/.gitleaks.toml                             @OWNER-SECURITY
-/scripts/check_no_client_data.py            @OWNER-SECURITY
-/scripts/check_portability.py               @OWNER-SECURITY
+/src/readiness/guardrails/                  @ranaji10
+/config/redaction.yaml                      @ranaji10
+/src/readiness/adapters/llm/                @ranaji10
+/docs/security/                             @ranaji10
+/SECURITY.md                                @ranaji10
+/.gitleaks.toml                             @ranaji10
+/scripts/check_no_client_data.py            @ranaji10
+/scripts/check_portability.py               @ranaji10
 
 # Infrastructure and CI
-/infra/                                     @OWNER-INFRA
-/cloudbuild.yaml                            @OWNER-INFRA
-/Dockerfile                                 @OWNER-INFRA
-/.github/workflows/                         @OWNER-INFRA
+/infra/                                     @ranaji10
+/cloudbuild.yaml                            @ranaji10
+/Dockerfile                                 @ranaji10
+/.github/workflows/                         @ranaji10
 
 # Scoring is the product
-/config/scoring/                            @OWNER-PRODUCT
-/config/profiles/                           @OWNER-PRODUCT
-/config/recommendations/                    @OWNER-PRODUCT
+/config/scoring/                            @ranaji10
+/config/profiles/                           @ranaji10
+/config/recommendations/                    @ranaji10
