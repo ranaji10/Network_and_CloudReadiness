@@ -13,13 +13,13 @@ stories:
     notes: ""
   - id: AGT-02
     title: Deploy the ADK agent to Vertex AI Agent Engine
-    status: in_progress
+    status: done
     phase: 2
     owner: claude-code
     branch: claude/trusting-keller-qe5w65
     depends_on: [AGT-01, LLM-01]
     acceptance: "agent answers with the same scores as the CLI for the same folder"
-    notes: "deployed to Agent Engine from Cloud Build and pinned by id; remaining: Gemini Enterprise registration (console) and parity check of agent vs CLI scores"
+    notes: "deployed from Cloud Build, pinned by id; Playground returns the same scores as the CLI on the synthetic pack (58 / 63%, A-D-D)"
   - id: AGT-03
     title: Questionnaire round trip (answer discovery questions, re-score)
     status: todo

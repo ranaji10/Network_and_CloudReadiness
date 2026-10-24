@@ -49,19 +49,19 @@ stories:
     notes: ""
   - id: FND-06
     title: Pin dependency upper bounds and add a monthly dependency refresh story
-    status: todo
+    status: in_progress
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [FND-02]
     acceptance: "uv lock refresh documented; CI runs on the lock file"
     notes: ""
   - id: FND-07
     title: Type checking (mypy) added to make check
-    status: todo
+    status: in_progress
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [FND-05]
     acceptance: "mypy clean on src/readiness"
     notes: ""

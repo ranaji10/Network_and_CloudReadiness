@@ -31,10 +31,10 @@ stories:
     notes: ""
   - id: DOC-04
     title: Config reference for scoring, profiles, catalog and redaction
-    status: todo
+    status: in_progress
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [SCR-08]
     acceptance: "config/README.md with every field explained"
     notes: ""

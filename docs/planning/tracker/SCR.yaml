@@ -67,10 +67,10 @@ stories:
     notes: ""
   - id: SCR-08
     title: Per-check signal weights and regex signals documented in config README
-    status: todo
+    status: in_progress
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [SCR-03]
     acceptance: "config/README.md explains every field with an example"
     notes: ""

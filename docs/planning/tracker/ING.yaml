@@ -40,13 +40,13 @@ stories:
     notes: "adapter written in adapters/sources/gdrive.py, never run"
   - id: ING-05
     title: GCS source verified against a live bucket
-    status: todo
+    status: done
     phase: 2
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: main
     depends_on: [INF-03]
     acceptance: "gs://bucket/prefix assessed from Cloud Run with the runtime service account"
-    notes: ""
+    notes: "agent read gs://<uploads bucket>/synthetic/ from Agent Runtime with the agent SA"
   - id: ING-06
     title: S3 source verified against a live bucket
     status: todo
@@ -58,10 +58,10 @@ stories:
     notes: ""
   - id: ING-07
     title: Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER
-    status: todo
+    status: in_progress
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [LLM-01]
     acceptance: "classification confidence improves on the evaluation set; falls back to keywords"
     notes: ""
