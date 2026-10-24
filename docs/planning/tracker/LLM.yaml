@@ -4,10 +4,10 @@ owner_hint: src/readiness/adapters/llm and guardrails/policy.py
 stories:
   - id: LLM-01
     title: Gemini judge verified end to end on Vertex AI
-    status: todo
+    status: in_progress
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code (remote session on the analyst Mac)
+    branch: claude/trusting-keller-qe5w65
     depends_on: [GRD-04, INF-03]
     acceptance: "READINESS_LLM_PROVIDER=gemini with egress allowed produces llm-judged checks; audit shows llm.ok"
     notes: "adapter in adapters/llm/gemini.py; global location for gemini-3 family"

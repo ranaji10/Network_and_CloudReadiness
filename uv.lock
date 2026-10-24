@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -2700,7 +2700,7 @@ dev = [
 requires-dist = [
     { name = "anthropic", marker = "extra == 'anthropic'", specifier = ">=0.40" },
     { name = "boto3", marker = "extra == 'aws'", specifier = ">=1.34" },
-    { name = "fastapi", specifier = ">=0.115" },
+    { name = "fastapi", specifier = ">=0.115,<1" },
     { name = "google-adk", marker = "extra == 'adk'", specifier = ">=2.2" },
     { name = "google-api-python-client", marker = "extra == 'gcp'", specifier = ">=2.130" },
     { name = "google-auth", marker = "extra == 'gcp'", specifier = ">=2.30" },
@@ -2708,19 +2708,19 @@ requires-dist = [
     { name = "google-cloud-secret-manager", marker = "extra == 'gcp'", specifier = ">=2.20" },
     { name = "google-cloud-storage", marker = "extra == 'gcp'", specifier = ">=2.17" },
     { name = "google-genai", marker = "extra == 'gcp'", specifier = ">=1.0" },
-    { name = "httpx", specifier = ">=0.27" },
-    { name = "openpyxl", specifier = ">=3.1" },
+    { name = "httpx", specifier = ">=0.27,<1" },
+    { name = "openpyxl", specifier = ">=3.1,<4" },
     { name = "presidio-analyzer", marker = "extra == 'pii'", specifier = ">=2.2" },
-    { name = "pydantic", specifier = ">=2.7" },
-    { name = "pydantic-settings", specifier = ">=2.3" },
-    { name = "pypdf", specifier = ">=5" },
-    { name = "python-docx", specifier = ">=1.1" },
-    { name = "python-multipart", specifier = ">=0.0.9" },
-    { name = "pyyaml", specifier = ">=6" },
+    { name = "pydantic", specifier = ">=2.7,<3" },
+    { name = "pydantic-settings", specifier = ">=2.3,<3" },
+    { name = "pypdf", specifier = ">=5,<7" },
+    { name = "python-docx", specifier = ">=1.1,<2" },
+    { name = "python-multipart", specifier = ">=0.0.9,<1" },
+    { name = "pyyaml", specifier = ">=6,<7" },
     { name = "readiness", extras = ["gcp", "adk", "aws", "anthropic"], marker = "extra == 'all'" },
-    { name = "structlog", specifier = ">=24" },
-    { name = "typer", specifier = ">=0.12" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
+    { name = "structlog", specifier = ">=24,<27" },
+    { name = "typer", specifier = ">=0.12,<1" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30,<1" },
 ]
 provides-extras = ["gcp", "adk", "aws", "anthropic", "pii", "all"]
 

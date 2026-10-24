@@ -78,3 +78,51 @@ def classify(name: str, text: str, threshold: float = 4.0) -> tuple[DocClass, fl
         return DocClass.IRRELEVANT, min(1.0, noise / 20) if noise else 0.2
     total = sum(scores.values()) or 1.0
     return best, round(min(1.0, best_score / total + 0.3), 2)
+
+
+# ---------------------------------------------------------------------------
+# Optional LLM refinement (READINESS_USE_LLM_CLASSIFIER=true). Only documents the keyword classifier is
+# unsure about are sent, in one batch, through the guarded LLM (redacted, delimited as untrusted data).
+# ---------------------------------------------------------------------------
+from pydantic import BaseModel, Field  # noqa: E402
+
+from readiness.models import ExtractedDocument  # noqa: E402
+from readiness.ports import LLMProvider  # noqa: E402
+
+CLASSIFIER_SYSTEM = (
+    "You classify business documents for an infrastructure assessment. For each document pick exactly one class "
+    "from: architecture, network, security_policy, compliance_audit, inventory, data_storage, identity, backup_dr, "
+    "contract_license, ai_ml, operations, irrelevant. Use irrelevant for meeting notes, marketing, invoices and "
+    "anything without technical or governance content. Return one item per document id."
+)
+
+
+class ClassifiedDoc(BaseModel):
+    doc_id: str
+    classification: DocClass
+    confidence: float = Field(ge=0, le=1)
+
+
+class ClassificationBatch(BaseModel):
+    items: list[ClassifiedDoc]
+
+
+def llm_refine_classification(
+    docs: list[ExtractedDocument], llm: LLMProvider, min_keyword_confidence: float = 0.6, sample_chars: int = 1500
+) -> list[ExtractedDocument]:
+    """Re-classify low-confidence documents with the LLM; keep keyword results when the LLM is less sure."""
+    unsure = [d for d in docs if d.text.strip() and d.classification_confidence < min_keyword_confidence]
+    if not unsure:
+        return docs
+    prompt = "\n\n".join(
+        f'<document id="{d.ref.id}" name="{d.ref.name.replace(chr(34), "")}">\n{d.text[:sample_chars]}\n</document>'
+        for d in unsure
+    )
+    batch = llm.generate_structured(CLASSIFIER_SYSTEM, prompt, ClassificationBatch)
+    verdicts = {v.doc_id: v for v in batch.items}
+    for d in unsure:
+        v = verdicts.get(d.ref.id)
+        if v and v.confidence > d.classification_confidence:
+            d.classification = v.classification
+            d.classification_confidence = v.confidence
+    return docs

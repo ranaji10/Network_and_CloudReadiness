@@ -58,10 +58,10 @@ stories:
     notes: ""
   - id: API-07
     title: OpenAPI docs published and versioned
-    status: todo
+    status: done
     phase: 2
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [API-01]
     acceptance: "/docs reachable behind auth; schema checked in CI"
-    notes: ""
+    notes: "docs/api/openapi.json exported by scripts/export_openapi.py and checked in CI; docs/api/README.md"

@@ -19,7 +19,7 @@ from readiness.config import Settings
 from readiness.guardrails.audit import AuditLog
 from readiness.guardrails.policy import GuardedLLM
 from readiness.guardrails.redaction import Redactor
-from readiness.ingestion.classify import classify
+from readiness.ingestion.classify import classify, llm_refine_classification
 from readiness.ingestion.extract import extract_text
 from readiness.models import AssessmentReport, DocClass, ExtractedDocument, RedactionSummary
 from readiness.ports import DocumentSource, LLMProvider
@@ -83,9 +83,13 @@ def run_assessment(
     for d in docs:
         d.text = redactor.redact(d.text)
 
-    judge: GuardedLLM | None = None
-    if settings.use_llm_judge:
-        judge = GuardedLLM(llm or make_llm(settings), settings, redactor, audit)
+    guarded: GuardedLLM | None = None
+    if settings.use_llm_judge or settings.use_llm_classifier:
+        guarded = GuardedLLM(llm or make_llm(settings), settings, redactor, audit)
+    if settings.use_llm_classifier and guarded is not None:
+        docs = llm_refine_classification(docs, guarded)
+        audit.event("docs.llm_classified", provider=guarded.name)
+    judge = guarded if settings.use_llm_judge else None
 
     scores = [score_domain(dom, docs, profile, judge, settings.include_evidence_snippets) for dom in domains]
     overall, coverage = composite(scores, profile)
@@ -103,7 +107,7 @@ def run_assessment(
         overall_coverage=coverage,
         recommendations=recs,
         redaction=RedactionSummary(mode=settings.redaction_mode, counts=redactor.summary()),
-        llm_provider=(judge.name if judge else "none"),
+        llm_provider=(guarded.name if guarded else "none"),
         warnings=warnings + [f"{d.ref.name}: {d.extraction_error}" for d in docs if d.extraction_error],
     )
     md = render(report)
