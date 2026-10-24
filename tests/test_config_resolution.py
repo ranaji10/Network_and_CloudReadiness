@@ -52,3 +52,17 @@ def test_gemini_location_is_independent_of_runtime_region(monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "asia-south1")
     s = Settings(_env_file=None)
     assert s.gcp_location == "asia-south1" and s.gemini_location == "global"
+
+
+def test_redaction_rules_follow_config_dir(monkeypatch, tmp_path: Path):
+    """Agent Runtime layout: package at /app/readiness, config at /app/config, no repo root."""
+    from readiness.guardrails import redaction
+
+    (tmp_path / "config" / "profiles").mkdir(parents=True)
+    (tmp_path / "config" / "redaction.yaml").write_text(
+        'version: 1\nrules:\n  - {name: x, kind: secret, placeholder: x, pattern: "zzz"}\n'
+    )
+    monkeypatch.setattr(cfg, "REPO_ROOT", tmp_path / "nowhere")
+    monkeypatch.setattr(cfg, "PACKAGE_DIR", tmp_path / "readiness")
+    assert redaction.default_rules_path() == tmp_path / "config" / "redaction.yaml"
+    assert redaction.Redactor.from_config("mask").redact("a zzz b") == "a [REDACTED:x] b"
