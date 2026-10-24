@@ -71,7 +71,7 @@ def run_assessment(
     audit = AuditLog(out_dir / "audit.jsonl" if write_outputs else None, run_id, settings.tenant_id)
     audit.event("run.start", profile=profile.id, source_scheme=source_uri.split("://")[0], llm=settings.llm_provider)
 
-    redactor = Redactor.from_config(settings.redaction_mode)
+    redactor = Redactor.from_config(settings.redaction_mode, Path(settings.config_dir) / "redaction.yaml")
     source = make_source(source_uri, settings)
     docs = ingest(source, settings, audit)
     warnings: list[str] = []

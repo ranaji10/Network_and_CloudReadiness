@@ -10,7 +10,12 @@ from pathlib import Path
 
 import yaml
 
-DEFAULT_RULES_PATH = Path(__file__).resolve().parents[3] / "config" / "redaction.yaml"
+from readiness.config import resolve_default_config_dir
+
+
+def default_rules_path() -> Path:
+    """config/redaction.yaml from wherever the configuration lives (checkout, staged bundle or wheel)."""
+    return resolve_default_config_dir() / "redaction.yaml"
 
 
 @dataclass
@@ -31,7 +36,7 @@ class Redactor:
 
     @classmethod
     def from_config(cls, mode: str, path: Path | None = None) -> Redactor:
-        data = yaml.safe_load((path or DEFAULT_RULES_PATH).read_text())
+        data = yaml.safe_load((path or default_rules_path()).read_text())
         rules = [
             RedactionRule(r["name"], re.compile(r["pattern"], re.I | re.M), r["kind"], r.get("placeholder", r["name"]))
             for r in data["rules"]

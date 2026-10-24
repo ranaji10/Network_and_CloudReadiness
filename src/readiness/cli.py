@@ -74,7 +74,7 @@ def redact(path: Path, mode: str = "pseudonymize"):
     """Show what the redactor would do to a text file (useful to tune config/redaction.yaml)."""
     from readiness.guardrails.redaction import Redactor
 
-    r = Redactor.from_config(mode)
+    r = Redactor.from_config(mode, get_settings().config_dir / "redaction.yaml")
     typer.echo(r.redact(path.read_text(errors="replace")))
     typer.echo(json.dumps(r.summary()), err=True)
 
