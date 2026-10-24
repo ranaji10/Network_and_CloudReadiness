@@ -26,4 +26,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Leave major updates for a human
         if: steps.meta.outputs.update-type == 'version-update:semver-major'
-        run: echo "major update ${{ steps.meta.outputs.dependency-names }}: review and merge manually"
+        env:
+          DEPS: ${{ steps.meta.outputs.dependency-names }}
+        run: 'echo "major update of $DEPS - review the changelog and merge manually"'
