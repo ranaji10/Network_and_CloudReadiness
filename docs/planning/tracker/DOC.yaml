@@ -31,13 +31,13 @@ stories:
     notes: ""
   - id: DOC-04
     title: Config reference for scoring, profiles, catalog and redaction
-    status: in_progress
+    status: done
     phase: 1
     owner: claude-code
     branch: claude/trusting-keller-qe5w65
     depends_on: [SCR-08]
     acceptance: "config/README.md with every field explained"
-    notes: ""
+    notes: "config/README.md (orientation, worked example) + docs/architecture/CONFIG_REFERENCE.md (field reference, scoring and priority math)"
   - id: DOC-05
     title: Support and incident process for customers
     status: todo

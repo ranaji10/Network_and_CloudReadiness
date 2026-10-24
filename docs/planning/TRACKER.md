@@ -10,7 +10,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 3 | 0 | 0 | 2 | 5 |
 | API | API and UI | 4 | 0 | 0 | 3 | 7 |
-| DOC | Docs and governance | 2 | 1 | 0 | 3 | 6 |
+| DOC | Docs and governance | 2 | 0 | 0 | 4 | 6 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 5 | 0 | 0 | 4 | 9 |
 | INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
@@ -18,8 +18,8 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | LLM | Model providers | 4 | 1 | 0 | 1 | 6 |
 | MIG | Portability and migration | 4 | 0 | 0 | 1 | 5 |
 | REC | Recommendations | 4 | 0 | 0 | 2 | 6 |
-| SCR | Scoring | 4 | 1 | 0 | 4 | 9 |
-| **All** | | 38 | 3 | 0 | 39 | 80 |
+| SCR | Scoring | 4 | 0 | 0 | 5 | 9 |
+| **All** | | 38 | 1 | 0 | 41 | 80 |
 
 ## By phase
 
@@ -53,9 +53,9 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-03** Rule engine with posture score and evidence coverage kept separate
 - `done` **SCR-07** LLM judge hook with confidence-gated override
 
-### Phase 1: MVP for one analyst (8/15 done)
+### Phase 1: MVP for one analyst (10/15 done)
 
-- `in_progress` **DOC-04** Config reference for scoring, profiles, catalog and redaction (claude-code)
+- `done` **DOC-04** Config reference for scoring, profiles, catalog and redaction (claude-code)
 - `todo` **DOC-06** Tracker sync to GitHub Issues (optional script)
 - `done` **FND-06** Pin dependency upper bounds and add a monthly dependency refresh story (claude-code)
 - `done` **FND-07** Type checking (mypy) added to make check (claude-code)
@@ -69,7 +69,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `in_progress` **LLM-01** Gemini judge verified end to end on Vertex AI (claude-code (remote session on the analyst Mac))
 - `todo` **LLM-02** Anthropic adapter verified end to end
 - `todo` **SCR-04** Tune signals against three anonymised real document packs
-- `in_progress` **SCR-08** Per-check signal weights and regex signals documented in config README (claude-code)
+- `done` **SCR-08** Per-check signal weights and regex signals documented in config README (claude-code)
 
 ### Phase 2: Cloud ingestion and multi-tenant (3/14 done)
 
@@ -158,7 +158,7 @@ Owner hint: docs/, README, CLAUDE.md, AGENTS.md
 | DOC-01 | Vision, PRD, roadmap, tracker, release plan and ADRs | done | 0 |  |  |  | docs/product, docs/planning, docs/decisions present; make tracker renders |
 | DOC-02 | Security docs (threat model, data handling policy, guardrails) | done | 0 |  |  |  | docs/security complete; SECURITY.md at root |
 | DOC-03 | Collaboration, portability, runbooks and legacy summary | done | 0 |  |  |  | CLAUDE.md, AGENTS.md, CONTRIBUTING.md, docs/collaboration, docs/architecture, docs/runbooks |
-| DOC-04 | Config reference for scoring, profiles, catalog and redaction | in_progress | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-08 | config/README.md with every field explained |
+| DOC-04 | Config reference for scoring, profiles, catalog and redaction | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-08 | config/README.md with every field explained |
 | DOC-05 | Support and incident process for customers | todo | 5 |  |  |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
 | DOC-06 | Tracker sync to GitHub Issues (optional script) | todo | 1 |  |  | DOC-01 | scripts/tracker_to_issues.py creates or updates issues by story id |
 
@@ -277,5 +277,5 @@ Owner hint: config/scoring, config/profiles, src/readiness/scoring
 | SCR-05 | Evaluation set of 20 synthetic document packs with expected scores | todo | 4 |  |  | SCR-03 | tests/evals runs rules and judge; score drift fails CI beyond a tolerance |
 | SCR-06 | Agentic-AI domain reviewed with two external practitioners | todo | 4 |  |  | SCR-01 | review notes recorded in an ADR; checks updated |
 | SCR-07 | LLM judge hook with confidence-gated override | done | 0 |  |  | SCR-03 | llm_refine overrides only above llm_override_min_confidence; tested with mock |
-| SCR-08 | Per-check signal weights and regex signals documented in config README | in_progress | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-03 | config/README.md explains every field with an example |
+| SCR-08 | Per-check signal weights and regex signals documented in config README | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-03 | config/README.md explains every field with an example |
 | SCR-09 | Industry profiles (healthcare, finance, public sector) | todo | 3 |  |  | SCR-02 | three new profiles with domain weights and compliance emphasis |
