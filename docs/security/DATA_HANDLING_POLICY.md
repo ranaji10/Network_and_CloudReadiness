@@ -42,12 +42,42 @@ Both must be protected. This page says what data exists, where it may live, for 
   makes this a `project_id` change in a tfvars file.
 - Multi-tenant hardening (per-tenant keys, per-tenant service accounts) is tracked as a story in the `GRD` epic.
 
+## Export procedure (before deletion, when the client wants their data back)
+
+Everything stored for a client sits under a `<tenant_id>/` prefix, so one command collects it:
+
+```bash
+uv run readiness tenant export <tenant_id> --out ./<tenant_id>-export.zip            # workspace + reports store
+uv run readiness tenant export <tenant_id> --store uploads --out ./<tenant_id>-uploads.zip
+```
+
+The zip holds one top-level folder per store (`workspace/`, `reports/`, `uploads/`) and a `manifest.json`
+(keys, sizes, sha256); the same manifest is written next to the zip. Hand the zip to the client over the
+agreed channel, keep the manifest as the record of what was returned, and never commit either.
+`READINESS_PROVIDER` and the bucket variables decide which stores are reached; run it with the same `.env`
+the assessments used. Hosted agent sessions (Agent Runtime) are not stored by this tool.
+
 ## Deletion procedure
 
-1. Local: delete `workspace/<tenant>/` and `data/<client>/`; empty the trash.
-2. Cloud: delete objects under `<tenant_id>/` in both buckets (versioned, so delete all versions) or let the lifecycle rule expire them.
-3. Record the deletion date against the engagement in the operator's engagement log (outside this repo).
-4. If an external model was used, the provider's retention applies; the checklist records which provider and terms.
+1. Export first if the engagement requires it (above).
+2. Dry run, then delete, the tenant's objects in the local workspace and the reports store:
+   ```bash
+   uv run readiness tenant purge <tenant_id>              # lists what would be deleted
+   uv run readiness tenant purge <tenant_id> --yes
+   uv run readiness tenant purge <tenant_id> --store uploads --yes
+   ```
+   Uploads must therefore be placed under `<tenant_id>/` in the uploads bucket (for example
+   `gs://<uploads-bucket>/<tenant_id>/<pack>/`) so the same purge covers them.
+3. Buckets are versioned: the purge deletes the live objects; non-current versions expire through the
+   lifecycle rule (`report_retention_days`). For an immediate hard delete run
+   `gcloud storage rm -r --all-versions gs://<bucket>/<tenant_id>/` (or the S3 equivalent) as well.
+4. Local: also delete `data/<client>/` and empty the trash. `pseudonym_mapping.local.json` lives inside the
+   run folder and goes with the purge.
+5. Audit lines (`audit.jsonl`) are deleted with their run folder; they contain hashes and counts only, so a
+   copy kept for compliance leaks nothing.
+6. Record the export and deletion dates against the engagement in the operator's engagement log (outside
+   this repo) and confirm with `uv run readiness tenant purge <tenant_id>` showing 0 objects.
+7. If an external model was used, the provider's retention applies; the checklist records which provider and terms.
 
 ## What analysts must do on site
 

@@ -9,17 +9,17 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | Epic | Name | todo | in_progress | blocked | done | total |
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 3 | 0 | 0 | 2 | 5 |
-| API | API and UI | 4 | 0 | 0 | 3 | 7 |
+| API | API and UI | 2 | 0 | 0 | 5 | 7 |
 | DOC | Docs and governance | 2 | 0 | 0 | 4 | 6 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 5 | 0 | 0 | 4 | 9 |
 | INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
 | ING | Ingestion | 4 | 0 | 0 | 5 | 9 |
-| LLM | Model providers | 4 | 1 | 0 | 1 | 6 |
-| MIG | Portability and migration | 4 | 0 | 0 | 1 | 5 |
+| LLM | Model providers | 3 | 0 | 0 | 3 | 6 |
+| MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 4 | 0 | 0 | 2 | 6 |
 | SCR | Scoring | 4 | 0 | 0 | 5 | 9 |
-| **All** | | 38 | 1 | 0 | 41 | 80 |
+| **All** | | 34 | 0 | 0 | 46 | 80 |
 
 ## By phase
 
@@ -53,7 +53,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-03** Rule engine with posture score and evidence coverage kept separate
 - `done` **SCR-07** LLM judge hook with confidence-gated override
 
-### Phase 1: MVP for one analyst (10/15 done)
+### Phase 1: MVP for one analyst (11/15 done)
 
 - `done` **DOC-04** Config reference for scoring, profiles, catalog and redaction (claude-code)
 - `todo` **DOC-06** Tracker sync to GitHub Issues (optional script)
@@ -66,16 +66,16 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **INF-05** Terraform applied for dev (buckets, SAs, secrets, registry) (claude-code)
 - `done` **INF-10** Publish the container image to GHCR on release tags (claude-code)
 - `done` **ING-07** Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER (claude-code)
-- `in_progress` **LLM-01** Gemini judge verified end to end on Vertex AI (claude-code (remote session on the analyst Mac))
+- `done` **LLM-01** Gemini judge verified end to end on Vertex AI (claude-code (remote session on the analyst Mac))
 - `todo` **LLM-02** Anthropic adapter verified end to end
 - `todo` **SCR-04** Tune signals against three anonymised real document packs
 - `done` **SCR-08** Per-check signal weights and regex signals documented in config README (claude-code)
 
-### Phase 2: Cloud ingestion and multi-tenant (3/14 done)
+### Phase 2: Cloud ingestion and multi-tenant (7/14 done)
 
 - `done` **AGT-02** Deploy the ADK agent to Vertex AI Agent Engine (claude-code)
-- `todo` **API-02** Per-tenant tokens and report keys
-- `todo` **API-06** Async assessments with job status endpoint
+- `done` **API-02** Per-tenant tokens and report keys (claude-code)
+- `done` **API-06** Async assessments with job status endpoint (claude-code)
 - `done` **API-07** OpenAPI docs published and versioned (claude-code)
 - `todo` **GRD-05** Optional Presidio-based PII detection
 - `todo` **GRD-06** Egress perimeter (VPC Service Controls or equivalent) around the runtime
@@ -84,9 +84,9 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **INF-08** Monitoring, alerting and uptime check for the API
 - `todo` **ING-04** Google Drive source verified against a live Drive
 - `done` **ING-05** GCS source verified against a live bucket (claude-code)
-- `todo` **LLM-05** Token and cost accounting per run in the audit log
+- `done` **LLM-05** Token and cost accounting per run in the audit log (claude-code)
 - `todo` **MIG-01** Migrate the GCP project from the personal account to an organisation
-- `todo` **MIG-05** Data export and deletion procedure per tenant
+- `done` **MIG-05** Data export and deletion procedure per tenant (claude-code)
 
 ### Phase 3: Recommendations depth and AWS (0/12 done)
 
@@ -142,11 +142,11 @@ Owner hint: src/readiness/api and src/readiness/cli.py
 | Id | Title | Status | Phase | Owner | Branch | Depends on | Acceptance |
 |---|---|---|---:|---|---|---|---|
 | API-01 | FastAPI service and typer CLI over the same pipeline | done | 0 |  |  |  | test_api.py round trip; readiness assess works offline |
-| API-02 | Per-tenant tokens and report keys | todo | 2 |  |  | INF-04 | tenant resolved from token; keys prefixed; cross-tenant read returns 404 |
+| API-02 | Per-tenant tokens and report keys | done | 2 | claude-code | claude/trusting-keller-qe5w65 | INF-04 | tenant resolved from token; keys prefixed; cross-tenant read returns 404 |
 | API-03 | Web UI (upload, progress, report view) | done | 4 | claude-code | claude/trusting-keller-qe5w65 | API-01 | an analyst completes an assessment without the CLI |
 | API-04 | PDF export of the report | todo | 4 |  |  | API-01 | GET /assessments/{id}/report.pdf |
 | API-05 | SSO for the UI and API | todo | 5 |  |  | API-03 | OIDC login; tokens issued per user; audit carries user id |
-| API-06 | Async assessments with job status endpoint | todo | 2 |  |  | API-01 | POST returns 202 and a job id; GET /jobs/{id} reports progress |
+| API-06 | Async assessments with job status endpoint | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-01 | POST returns 202 and a job id; GET /jobs/{id} reports progress |
 | API-07 | OpenAPI docs published and versioned | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-01 | /docs reachable behind auth; schema checked in CI |
 
 ### DOC: Docs and governance
@@ -232,11 +232,11 @@ Owner hint: src/readiness/adapters/llm and guardrails/policy.py
 
 | Id | Title | Status | Phase | Owner | Branch | Depends on | Acceptance |
 |---|---|---|---:|---|---|---|---|
-| LLM-01 | Gemini judge verified end to end on Vertex AI | in_progress | 1 | claude-code (remote session on the analyst Mac) | claude/trusting-keller-qe5w65 | GRD-04, INF-03 | READINESS_LLM_PROVIDER=gemini with egress allowed produces llm-judged checks; audit shows llm.ok |
+| LLM-01 | Gemini judge verified end to end on Vertex AI | done | 1 | claude-code (remote session on the analyst Mac) | claude/trusting-keller-qe5w65 | GRD-04, INF-03 | READINESS_LLM_PROVIDER=gemini with egress allowed produces llm-judged checks; audit shows llm.ok |
 | LLM-02 | Anthropic adapter verified end to end | todo | 1 |  |  | GRD-04 | messages.parse structured output validated against JudgeBatch; refusal handled |
 | LLM-03 | Amazon Bedrock adapter | todo | 3 |  |  | LLM-02 | READINESS_LLM_PROVIDER=bedrock works from an AWS runtime role |
 | LLM-04 | Mock provider with canned responses for tests | done | 0 |  |  |  | MockLLM returns conservative defaults or canned schema instances |
-| LLM-05 | Token and cost accounting per run in the audit log | todo | 2 |  |  | LLM-01 | llm.ok events carry input/output token counts; report shows model cost |
+| LLM-05 | Token and cost accounting per run in the audit log | done | 2 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | llm.ok events carry input/output token counts; report shows model cost |
 | LLM-06 | Prompt caching and batching for large document sets | todo | 3 |  |  | LLM-01 | judge cost per run halves on a 100-document pack |
 
 ### MIG: Portability and migration
@@ -249,7 +249,7 @@ Owner hint: infra/, docs/architecture/MIGRATION_PLAYBOOK.md, scripts/check_porta
 | MIG-02 | Terraform state move drill | todo | 3 |  |  | INF-05 | terraform init -migrate-state to a fresh bucket with no diff |
 | MIG-03 | Portability check script in CI (no project ids, buckets, emails in code or IaC) | done | 0 |  |  |  | scripts/check_portability.py runs in cloudbuild and GitHub Actions |
 | MIG-04 | Provider switch drill (local to gcp to aws) with the same report output | todo | 3 |  |  | INF-06, LLM-03 | same fixture pack scores identically on all three providers |
-| MIG-05 | Data export and deletion procedure per tenant | todo | 2 |  |  | API-02 | one command exports and one deletes every object for a tenant; documented |
+| MIG-05 | Data export and deletion procedure per tenant | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-02 | one command exports and one deletes every object for a tenant; documented |
 
 ### REC: Recommendations
 

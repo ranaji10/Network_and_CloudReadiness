@@ -28,6 +28,8 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 
 - **Optional LLM classifier is opt-in and guarded.** With `READINESS_USE_LLM_CLASSIFIER=true` only documents the keyword classifier is unsure about (confidence below 0.6) are sent, as one batch of redacted 1,500-character samples wrapped as untrusted data through `GuardedLLM`; a model verdict replaces the keyword class only when it is more confident. Off by default, like the judge (`src/readiness/ingestion/classify.py`).
 
+- **Token and cost accounting, numbers only.** `GuardedLLM` records model, input and output tokens on every `llm.ok` audit event and totals them into `report.extra["llm_usage"]` and the `run.end` event, with a list-price estimate from `config/llm_pricing.yaml` (null for unknown models). Prompts and responses are never logged.
+
 ## In CI and the repo
 
 | Guardrail | Implemented in | How to test |

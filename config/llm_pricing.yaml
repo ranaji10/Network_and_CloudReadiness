@@ -1,0 +1,14 @@
+# List prices used ONLY to estimate the cost shown in reports and audit events (numbers, never content).
+# Unknown model id -> estimated_cost_usd is null. Cached-input, batch and long-context tiers are ignored,
+# so the estimate is an upper bound at list price. Keep `as_of` current when you re-check a price.
+version: 1
+models:
+  # Anthropic first-party API list prices (per million tokens), verified against the Claude API reference.
+  claude-opus-5-5:   { input_per_million_usd: 4.00, output_per_million_usd: 20.00, currency: USD, as_of: 2026-10-24 }
+  claude-sonnet-5-5: { input_per_million_usd: 2.00, output_per_million_usd: 10.00, currency: USD, as_of: 2026-10-24 }
+  claude-haiku-5-5:  { input_per_million_usd: 0.10, output_per_million_usd: 0.50,  currency: USD, as_of: 2026-10-24 }
+  # Gemini on Vertex AI: ESTIMATE, VERIFY against https://cloud.google.com/vertex-ai/generative-ai/pricing.
+  # Values below come from third-party price aggregators on 2026-10-24, not from Google's page (which
+  # could not be fetched). gemini-3.8-flash is an introductory global-endpoint rate said to end 2026-12-31.
+  gemini-3.5-flash:  { input_per_million_usd: 1.50, output_per_million_usd: 9.00,  currency: USD, as_of: 2026-10-24 }
+  gemini-3.8-flash:  { input_per_million_usd: 0.75, output_per_million_usd: 3.75,  currency: USD, as_of: 2026-10-24 }

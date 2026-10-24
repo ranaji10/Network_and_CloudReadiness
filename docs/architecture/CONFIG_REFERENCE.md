@@ -205,6 +205,22 @@ see redacted text. In `pseudonymize` mode with `READINESS_PROVIDER=local`, the t
 is written to `pseudonym_mapping.local.json` in the run folder and nowhere else. Counts per rule appear in
 the report's data-handling section.
 
+## LLM pricing (`config/llm_pricing.yaml`)
+
+Used only to estimate the cost shown in reports and audit events; it never affects scoring or egress.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `models.<model id>.input_per_million_usd` | number | List price per million input tokens |
+| `models.<model id>.output_per_million_usd` | number | List price per million output tokens |
+| `models.<model id>.currency` | string | Always `USD` for now |
+| `models.<model id>.as_of` | date | When the price was last checked |
+
+Estimate = `input_tokens * input_price / 1e6 + output_tokens * output_price / 1e6`, rounded to six decimals.
+A model with no entry yields `estimated_cost_usd: null` rather than an error, so add entries as you adopt
+models. Cached-input, batch and long-context tiers are not modelled; treat the figure as an upper bound at
+list price.
+
 ## What is not configurable (requires a code change)
 
 - the confidence values attached to rule verdicts (0.6, 0.7, 0.5, 0.3) and the evidence cap of eight hits

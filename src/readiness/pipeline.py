@@ -94,6 +94,7 @@ def run_assessment(
     scores = [score_domain(dom, docs, profile, judge, settings.include_evidence_snippets) for dom in domains]
     overall, coverage = composite(scores, profile)
     recs = recommend(scores, profile, settings.config_dir)
+    usage = guarded.usage_summary() if guarded is not None else None
     report = AssessmentReport(
         id=run_id,
         tenant_id=settings.tenant_id,
@@ -108,6 +109,7 @@ def run_assessment(
         recommendations=recs,
         redaction=RedactionSummary(mode=settings.redaction_mode, counts=redactor.summary()),
         llm_provider=(guarded.name if guarded else "none"),
+        extra={"llm_usage": usage} if usage else {},
         warnings=warnings + [f"{d.ref.name}: {d.extraction_error}" for d in docs if d.extraction_error],
     )
     md = render(report)
@@ -118,7 +120,17 @@ def run_assessment(
         if settings.redaction_mode == "pseudonymize" and settings.provider == "local" and redactor.mapping:
             # Reverse mapping stays local-only, never uploaded. Lets an analyst de-pseudonymise on site.
             (out_dir / "pseudonym_mapping.local.json").write_text(json.dumps(redactor.mapping, indent=1))
-    audit.event("run.end", score=overall, coverage=coverage, docs=len(docs), recs=len(recs))
+    audit.event(
+        "run.end",
+        score=overall,
+        coverage=coverage,
+        docs=len(docs),
+        recs=len(recs),
+        llm_calls=usage["calls"] if usage else 0,
+        input_tokens=usage["input_tokens"] if usage else 0,
+        output_tokens=usage["output_tokens"] if usage else 0,
+        estimated_cost_usd=usage["estimated_cost_usd"] if usage else None,
+    )
     log.info(
         "assessment.done",
         run=run_id,

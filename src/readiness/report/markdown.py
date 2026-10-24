@@ -103,6 +103,16 @@ def render(report: AssessmentReport) -> str:
         + (", ".join(f"{k}={v}" for k, v in report.redaction.counts.items()) or "none")
         + ". No document content is stored in logs; see docs/security/DATA_HANDLING_POLICY.md."
     )
+    usage = report.extra.get("llm_usage")
+    if usage:
+        cost = usage.get("estimated_cost_usd")
+        cost_txt = (
+            f"about USD {cost:.4f} at list price" if cost is not None else "cost not estimated (no pricing entry)"
+        )
+        lines.append(
+            f"\nModel usage: {usage.get('calls', 0)} call(s) to `{usage.get('model') or usage.get('provider')}`, "
+            f"{usage.get('input_tokens', 0):,} input and {usage.get('output_tokens', 0):,} output tokens, {cost_txt}."
+        )
     if report.warnings:
         lines.append("\n## Warnings\n")
         lines.extend(f"- {w}" for w in report.warnings)

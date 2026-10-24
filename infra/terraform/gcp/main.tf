@@ -195,7 +195,7 @@ resource "google_storage_bucket" "reports" {
 
 # ---------------- Secrets (shells only; values are added out-of-band, never via Terraform) ----------------
 resource "google_secret_manager_secret" "secrets" {
-  for_each  = toset(["READINESS_API_TOKEN", "GEMINI_API_KEY", "ANTHROPIC_API_KEY"])
+  for_each  = toset(["READINESS_API_TOKEN", "READINESS_TENANT_TOKENS", "GEMINI_API_KEY", "ANTHROPIC_API_KEY"])
   secret_id = each.value
   labels    = local.labels
   replication {
@@ -229,7 +229,8 @@ resource "google_cloud_run_v2_service" "api" {
       image = var.image != "" ? var.image : "us-docker.pkg.dev/cloudrun/container/hello"
       ports { container_port = 8080 }
       resources {
-        limits = { cpu = "2", memory = "2Gi" }
+        limits   = { cpu = "2", memory = "2Gi" }
+        cpu_idle = false # keep CPU after the response so background jobs (/jobs) finish
       }
       dynamic "env" {
         for_each = local.runtime_env
@@ -244,6 +245,18 @@ resource "google_cloud_run_v2_service" "api" {
           secret_key_ref {
             secret  = google_secret_manager_secret.secrets["READINESS_API_TOKEN"].secret_id
             version = "latest"
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = var.tenant_tokens_secret ? [1] : []
+        content {
+          name = "READINESS_TENANT_TOKENS"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.secrets["READINESS_TENANT_TOKENS"].secret_id
+              version = "latest"
+            }
           }
         }
       }

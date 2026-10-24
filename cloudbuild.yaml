@@ -77,6 +77,7 @@ steps:
           --platform managed \
           --no-allow-unauthenticated \
           --ingress "${_INGRESS}" \
+          --no-cpu-throttling \
           ${_RUNTIME_SA:+--service-account "${_RUNTIME_SA}"} \
           --set-env-vars "READINESS_PROVIDER=gcp,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},READINESS_LLM_PROVIDER=mock" \
           --quiet

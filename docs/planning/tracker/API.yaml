@@ -13,13 +13,13 @@ stories:
     notes: ""
   - id: API-02
     title: Per-tenant tokens and report keys
-    status: todo
+    status: done
     phase: 2
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [INF-04]
     acceptance: "tenant resolved from token; keys prefixed; cross-tenant read returns 404"
-    notes: ""
+    notes: "READINESS_TENANT_TOKENS map -> Principal(tenant); all report/job keys tenant-prefixed; cross-tenant read is 404; secret shell + tfvars flag"
   - id: API-03
     title: Web UI (upload, progress, report view)
     status: done
@@ -49,13 +49,13 @@ stories:
     notes: ""
   - id: API-06
     title: Async assessments with job status endpoint
-    status: todo
+    status: done
     phase: 2
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/trusting-keller-qe5w65
     depends_on: [API-01]
     acceptance: "POST returns 202 and a job id; GET /jobs/{id} reports progress"
-    notes: ""
+    notes: "POST /jobs and /jobs/upload (202) + GET /jobs/{id}; in-process background task, Cloud Run deployed with CPU always allocated; queue-backed worker is a follow-up"
   - id: API-07
     title: OpenAPI docs published and versioned
     status: done

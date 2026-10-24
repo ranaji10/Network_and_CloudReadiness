@@ -9,6 +9,8 @@ from typing import TypeVar
 
 from pydantic import BaseModel
 
+from readiness.models import LLMUsage
+
 T = TypeVar("T", bound=BaseModel)
 
 # Vertex AI retired the Gemini 2.5 family on 2026-10-20; pick a current id and override via READINESS_LLM_MODEL.
@@ -32,6 +34,7 @@ class GeminiLLM:
         else:
             self._client = genai.Client(vertexai=True, project=project, location=location)
         self.model = model or DEFAULT_MODEL
+        self.last_usage: LLMUsage | None = None
 
     def generate_structured(self, system: str, prompt: str, schema: type[T]) -> T:
         resp = self._client.models.generate_content(
@@ -44,6 +47,14 @@ class GeminiLLM:
                 "temperature": 0,
             },
         )
+        meta = getattr(resp, "usage_metadata", None)
+        if meta is not None:
+            in_tok = int(getattr(meta, "prompt_token_count", 0) or 0)
+            out_tok = int(getattr(meta, "candidates_token_count", 0) or 0)
+            total = int(getattr(meta, "total_token_count", 0) or (in_tok + out_tok))
+            self.last_usage = LLMUsage(
+                provider=self.name, model=self.model, input_tokens=in_tok, output_tokens=out_tok, total_tokens=total
+            )
         parsed = getattr(resp, "parsed", None)
         if isinstance(parsed, schema):
             return parsed
