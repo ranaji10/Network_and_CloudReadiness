@@ -9,17 +9,17 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | Epic | Name | todo | in_progress | blocked | done | total |
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 3 | 0 | 0 | 2 | 5 |
-| API | API and UI | 4 | 1 | 0 | 2 | 7 |
+| API | API and UI | 4 | 0 | 0 | 3 | 7 |
 | DOC | Docs and governance | 2 | 1 | 0 | 3 | 6 |
-| FND | Foundation | 0 | 2 | 0 | 6 | 8 |
+| FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 5 | 0 | 0 | 4 | 9 |
 | INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
-| ING | Ingestion | 4 | 1 | 0 | 4 | 9 |
+| ING | Ingestion | 4 | 0 | 0 | 5 | 9 |
 | LLM | Model providers | 4 | 1 | 0 | 1 | 6 |
 | MIG | Portability and migration | 4 | 0 | 0 | 1 | 5 |
 | REC | Recommendations | 4 | 0 | 0 | 2 | 6 |
 | SCR | Scoring | 4 | 1 | 0 | 4 | 9 |
-| **All** | | 38 | 7 | 0 | 35 | 80 |
+| **All** | | 38 | 3 | 0 | 39 | 80 |
 
 ## By phase
 
@@ -53,30 +53,30 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-03** Rule engine with posture score and evidence coverage kept separate
 - `done` **SCR-07** LLM judge hook with confidence-gated override
 
-### Phase 1: MVP for one analyst (5/15 done)
+### Phase 1: MVP for one analyst (8/15 done)
 
 - `in_progress` **DOC-04** Config reference for scoring, profiles, catalog and redaction (claude-code)
 - `todo` **DOC-06** Tracker sync to GitHub Issues (optional script)
-- `in_progress` **FND-06** Pin dependency upper bounds and add a monthly dependency refresh story (claude-code)
-- `in_progress` **FND-07** Type checking (mypy) added to make check (claude-code)
+- `done` **FND-06** Pin dependency upper bounds and add a monthly dependency refresh story (claude-code)
+- `done` **FND-07** Type checking (mypy) added to make check (claude-code)
 - `done` **FND-08** Default config resolvable from a wheel, a checkout or an Agent Engine bundle (claude-code)
 - `todo` **GRD-04** Review redaction output on a real document pack before enabling egress
 - `done` **INF-02** First green Cloud Build run on the existing trigger (claude-code)
 - `done` **INF-03** Cloud Run deploy with _DEPLOY=true (claude-code)
 - `done` **INF-05** Terraform applied for dev (buckets, SAs, secrets, registry) (claude-code)
 - `done` **INF-10** Publish the container image to GHCR on release tags (claude-code)
-- `in_progress` **ING-07** Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER (claude-code)
+- `done` **ING-07** Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER (claude-code)
 - `in_progress` **LLM-01** Gemini judge verified end to end on Vertex AI (claude-code (remote session on the analyst Mac))
 - `todo` **LLM-02** Anthropic adapter verified end to end
 - `todo` **SCR-04** Tune signals against three anonymised real document packs
 - `in_progress` **SCR-08** Per-check signal weights and regex signals documented in config README (claude-code)
 
-### Phase 2: Cloud ingestion and multi-tenant (2/14 done)
+### Phase 2: Cloud ingestion and multi-tenant (3/14 done)
 
 - `done` **AGT-02** Deploy the ADK agent to Vertex AI Agent Engine (claude-code)
 - `todo` **API-02** Per-tenant tokens and report keys
 - `todo` **API-06** Async assessments with job status endpoint
-- `in_progress` **API-07** OpenAPI docs published and versioned (claude-code)
+- `done` **API-07** OpenAPI docs published and versioned (claude-code)
 - `todo` **GRD-05** Optional Presidio-based PII detection
 - `todo` **GRD-06** Egress perimeter (VPC Service Controls or equivalent) around the runtime
 - `todo` **GRD-09** Report redaction review step before sharing outside the tenant
@@ -147,7 +147,7 @@ Owner hint: src/readiness/api and src/readiness/cli.py
 | API-04 | PDF export of the report | todo | 4 |  |  | API-01 | GET /assessments/{id}/report.pdf |
 | API-05 | SSO for the UI and API | todo | 5 |  |  | API-03 | OIDC login; tokens issued per user; audit carries user id |
 | API-06 | Async assessments with job status endpoint | todo | 2 |  |  | API-01 | POST returns 202 and a job id; GET /jobs/{id} reports progress |
-| API-07 | OpenAPI docs published and versioned | in_progress | 2 | claude-code | claude/trusting-keller-qe5w65 | API-01 | /docs reachable behind auth; schema checked in CI |
+| API-07 | OpenAPI docs published and versioned | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-01 | /docs reachable behind auth; schema checked in CI |
 
 ### DOC: Docs and governance
 
@@ -173,8 +173,8 @@ Owner hint: whoever touches repo layout, packaging or shared models
 | FND-03 | Domain models and ports (DocumentSource, LLMProvider, BlobStore, SecretStore) | done | 0 |  |  | FND-02 | src/readiness/models.py and ports/__init__.py; adapters import cloud SDKs lazily |
 | FND-04 | CSA CCM v4.1 / CAIQ catalog generated into the package | done | 0 |  |  |  | scripts/build_control_catalog.py regenerates src/readiness/data/ccm_v4.1.json |
 | FND-05 | Mock LLM and offline test suite | done | 0 |  |  | FND-03 | pytest passes with no network; synthetic fixtures only |
-| FND-06 | Pin dependency upper bounds and add a monthly dependency refresh story | in_progress | 1 | claude-code | claude/trusting-keller-qe5w65 | FND-02 | uv lock refresh documented; CI runs on the lock file |
-| FND-07 | Type checking (mypy) added to make check | in_progress | 1 | claude-code | claude/trusting-keller-qe5w65 | FND-05 | mypy clean on src/readiness |
+| FND-06 | Pin dependency upper bounds and add a monthly dependency refresh story | done | 1 | claude-code | claude/trusting-keller-qe5w65 | FND-02 | uv lock refresh documented; CI runs on the lock file |
+| FND-07 | Type checking (mypy) added to make check | done | 1 | claude-code | claude/trusting-keller-qe5w65 | FND-05 | mypy clean on src/readiness |
 | FND-08 | Default config resolvable from a wheel, a checkout or an Agent Engine bundle | done | 1 | claude-code | claude/trusting-keller-qe5w65 | FND-02 | pip install from GitHub works without the repo; adk deploy bundles config; tests cover resolution order |
 
 ### GRD: Guardrails
@@ -222,7 +222,7 @@ Owner hint: sources and extraction; touches src/readiness/adapters/sources and s
 | ING-04 | Google Drive source verified against a live Drive | todo | 2 |  |  | ING-01 | gdrive://<folder> lists nested folders, exports Docs/Sheets/Slides, read-only scope |
 | ING-05 | GCS source verified against a live bucket | done | 2 | claude-code | main | INF-03 | gs://bucket/prefix assessed from Cloud Run with the runtime service account |
 | ING-06 | S3 source verified against a live bucket | todo | 3 |  |  | INF-06 | s3://bucket/prefix assessed from an AWS runtime role |
-| ING-07 | Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER | in_progress | 1 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | classification confidence improves on the evaluation set; falls back to keywords |
+| ING-07 | Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER | done | 1 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | classification confidence improves on the evaluation set; falls back to keywords |
 | ING-08 | OCR for scanned PDFs and images | todo | 4 |  |  | ING-02 | scanned PDF in fixtures yields text; optional dependency |
 | ING-09 | PPTX and legacy DOC/XLS extraction | todo | 3 |  |  | ING-02 | slides and legacy Office files produce text |
 

@@ -49,22 +49,22 @@ stories:
     notes: ""
   - id: FND-06
     title: Pin dependency upper bounds and add a monthly dependency refresh story
-    status: in_progress
+    status: done
     phase: 1
     owner: claude-code
     branch: claude/trusting-keller-qe5w65
     depends_on: [FND-02]
     acceptance: "uv lock refresh documented; CI runs on the lock file"
-    notes: ""
+    notes: "upper bounds on major versions for core deps; Dependabot monthly for uv, actions, docker"
   - id: FND-07
     title: Type checking (mypy) added to make check
-    status: in_progress
+    status: done
     phase: 1
     owner: claude-code
     branch: claude/trusting-keller-qe5w65
     depends_on: [FND-05]
     acceptance: "mypy clean on src/readiness"
-    notes: ""
+    notes: "mypy in make lint, GitHub Actions and the Cloud Build quality gate"
   - id: FND-08
     title: Default config resolvable from a wheel, a checkout or an Agent Engine bundle
     status: done

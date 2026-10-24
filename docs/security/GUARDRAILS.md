@@ -26,6 +26,8 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 
 - **Web UI (`/`) adds no data path.** `src/readiness/api/static/index.html` calls the same authenticated endpoints as any client; uploads go to a temporary directory that is deleted after the run, and the only thing kept in the browser is the API token in `sessionStorage` (cleared when the tab closes).
 
+- **Optional LLM classifier is opt-in and guarded.** With `READINESS_USE_LLM_CLASSIFIER=true` only documents the keyword classifier is unsure about (confidence below 0.6) are sent, as one batch of redacted 1,500-character samples wrapped as untrusted data through `GuardedLLM`; a model verdict replaces the keyword class only when it is more confident. Off by default, like the judge (`src/readiness/ingestion/classify.py`).
+
 ## In CI and the repo
 
 | Guardrail | Implemented in | How to test |

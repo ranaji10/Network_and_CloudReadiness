@@ -58,13 +58,13 @@ stories:
     notes: ""
   - id: ING-07
     title: Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER
-    status: in_progress
+    status: done
     phase: 1
     owner: claude-code
     branch: claude/trusting-keller-qe5w65
     depends_on: [LLM-01]
     acceptance: "classification confidence improves on the evaluation set; falls back to keywords"
-    notes: ""
+    notes: "llm_refine_classification: batch, unsure docs only, guarded; tests with the mock"
   - id: ING-08
     title: OCR for scanned PDFs and images
     status: todo

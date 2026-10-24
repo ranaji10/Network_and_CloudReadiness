@@ -10,9 +10,10 @@ help: ## Show targets
 setup: ## Install Python deps (dev group) into .venv
 	$(UV) sync --group dev
 
-lint: ## Ruff lint + format check
+lint: ## Ruff lint + format check + mypy
 	$(UV) run ruff check src tests scripts
 	$(UV) run ruff format --check src tests scripts
+	$(UV) run mypy
 
 fmt: ## Auto-format and fix lint
 	$(UV) run ruff format src tests scripts
@@ -21,10 +22,14 @@ fmt: ## Auto-format and fix lint
 test: ## Run the test suite
 	$(UV) run pytest -q
 
-policy: ## Repo guardrails: portability, no client data, tracker in sync
+policy: ## Repo guardrails: portability, no client data, tracker and OpenAPI export in sync
 	$(UV) run python scripts/check_portability.py
 	$(UV) run python scripts/check_no_client_data.py
 	$(UV) run python scripts/render_tracker.py --check
+	$(UV) run python scripts/export_openapi.py --check
+
+openapi: ## Re-export docs/api/openapi.json from the FastAPI app
+	$(UV) run python scripts/export_openapi.py
 
 secrets-scan: ## gitleaks over the working tree (requires gitleaks on PATH or docker)
 	@command -v gitleaks >/dev/null && gitleaks dir . --config .gitleaks.toml --no-banner --redact \
