@@ -60,7 +60,7 @@ uv run adk deploy agent_engine --project <project> --region <region> \
 `--temp_folder` must point outside `src/readiness`: by default adk stages into a timestamped folder next to
 the agent app, inside the tree that `--extra_packages src/readiness` copies, and the copy recurses into itself.
 
-The model used by the agent is `READINESS_LLM_MODEL` (default `gemini-2.5-flash`), pinned to the
+The model used by the agent is `READINESS_LLM_MODEL` (default `gemini-3.5-flash`), pinned to the
 `global` Vertex location by `GlobalGemini` (the V1.1 workaround). The assessment tool itself stays
 deterministic unless `READINESS_USE_LLM_JUDGE=true`.
 

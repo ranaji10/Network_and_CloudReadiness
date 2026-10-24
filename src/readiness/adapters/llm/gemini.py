@@ -11,7 +11,8 @@ from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+# Vertex AI retired the Gemini 2.5 family on 2026-10-20; pick a current id and override via READINESS_LLM_MODEL.
+DEFAULT_MODEL = "gemini-3.5-flash"
 
 
 class GeminiLLM:
