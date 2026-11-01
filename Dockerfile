@@ -11,7 +11,7 @@ COPY src ./src
 COPY config ./config
 RUN uv sync --frozen --no-dev --extra gcp --extra anthropic
 
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.15-slim-bookworm AS runtime
 RUN groupadd -r app && useradd -r -g app -d /app app \
     && apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
