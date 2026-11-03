@@ -312,6 +312,26 @@ Changing scoring configuration therefore has one extra step: run `make evals`; i
 intended, run `make evals-refresh` and review the diff of the `expected.yaml` files like a snapshot. The
 packs and the refresh workflow are documented in `tests/evals/packs/README.md`.
 
+## OCR for scanned documents (environment settings)
+
+Scanned PDFs and raster images (`.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`) are read with the `ocr` extra
+(pypdfium2, pytesseract, Pillow) and the `tesseract-ocr` binary, both installed in the container image. OCR
+runs inside the process with the local binary; no page image or text leaves the machine. These are
+`READINESS_*` environment settings (`src/readiness/config.py`), not YAML:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `READINESS_OCR_ENABLED` | `true` | `false` leaves scanned PDF pages empty and reports image files as unreadable (an extraction warning, never a failure) |
+| `READINESS_OCR_MIN_CHARS_PER_PAGE` | `20` | A PDF page on which `pypdf` finds fewer characters is treated as scanned and OCR'd; text PDFs never touch OCR |
+| `READINESS_OCR_MAX_PAGES` | `50` | OCR budget per document; pages or image frames beyond it are skipped and the document is marked `truncated` |
+| `READINESS_OCR_DPI` | `200` | Render resolution for PDF pages before OCR |
+| `READINESS_OCR_LANGUAGES` | `eng` | Tesseract language codes joined with `+` (`eng+deu`); each needs its `tesseract-ocr-<lang>` package |
+
+When the extra or the binary is missing, a scanned document gets an extraction error that names the install
+step (`install the ocr extra ... and the tesseract-ocr binary`), the text `pypdf` did find is kept, the run
+continues and the report lists the document under warnings. The audit log records `ocr_pages` per document
+(a count, never content).
+
 ## What is not configurable (requires a code change)
 
 - the confidence values attached to rule verdicts (0.6, 0.7, 0.5, 0.3) and the evidence cap of eight hits
@@ -322,4 +342,4 @@ packs and the refresh workflow are documented in `tests/evals/packs/README.md`.
 - the LLM judge prompt, the evidence budget per pillar and the one-call-per-pillar batching
 - the composite being a weighted mean, the grade letters, and the report layout
 - supported file types and extraction behaviour (`src/readiness/ingestion/extract.py`)
-- runtime limits such as `READINESS_MAX_DOC_BYTES` and `READINESS_MAX_TEXT_CHARS`, which are environment settings, not YAML
+- runtime limits such as `READINESS_MAX_DOC_BYTES`, `READINESS_MAX_TEXT_CHARS` and the `READINESS_OCR_*` switches above, which are environment settings, not YAML

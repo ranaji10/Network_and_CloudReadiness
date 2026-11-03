@@ -21,7 +21,8 @@ Both must be protected. This page says what data exists, where it may live, for 
 | Uploads / reports buckets (`infra/terraform/gcp`) | n/a | n/a | yes, tenant-prefixed, 90-day lifecycle, no public access | never |
 | Platform secret store (Secret Manager, Secrets Manager) | n/a | n/a | n/a | yes, the only place |
 | External LLM provider | n/a | n/a | only redacted, delimited text, only with `READINESS_ALLOW_LLM_EGRESS=true` after the provider checklist is signed | never (secret rules mask before send) |
-| Application logs, audit log | yes | yes | **metadata only** (document ids, hashes, counts, classes) | never |
+| Application logs, audit log | yes | yes | **metadata only** (document ids, hashes, counts, classes, OCR page counts) | never |
+| OCR engine (Tesseract, `ocr` extra) | n/a | n/a | yes, in-process only: page bitmaps are rendered in memory and read by the local `tesseract` binary; no external OCR service, nothing leaves the process (`READINESS_OCR_ENABLED=false` turns it off) | never |
 | Tracker, ADRs, PRs, issues | yes | yes | never (describe clients as "a client", never by name or domain) | never |
 
 ## Retention defaults
@@ -107,3 +108,5 @@ folder the client shares (`docs/security/DEPLOYMENT_POSTURE.md`). The rules belo
 - Use `--share-safe` for any report that leaves the tenant (section above); never share a report that names documents.
 - Keep `pseudonym_mapping.local.json` on the analyst machine. Do not attach it to e-mail, tickets or shared drives.
 - Hand the client the report; do not keep extracted text longer than the engagement needs.
+- Scanned pages are OCR'd by the local Tesseract binary inside the process. Never route a client pack through a
+  hosted OCR or document-AI service to work around a missing `ocr` extra; install the extra and the binary instead.

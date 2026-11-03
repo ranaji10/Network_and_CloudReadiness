@@ -37,6 +37,9 @@ steps:
       - |
         set -euo pipefail
         uv sync --frozen --group dev
+        # Local OCR engine for tests/test_extract_ocr.py (ING-08); the image runs as root, so plain apt-get works.
+        # Those tests skip with a reason if the install is ever unavailable, so the gate stays green either way.
+        apt-get update -qq && apt-get install -y -qq --no-install-recommends tesseract-ocr tesseract-ocr-eng
         uv run ruff check src tests scripts
         uv run ruff format --check src tests scripts
         uv run mypy

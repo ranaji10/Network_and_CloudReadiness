@@ -48,7 +48,9 @@ emphasis), `finance` (PCI DSS / SOX emphasis) and `public_sector` (FedRAMP / sov
 table in [config/README.md](config/README.md).
 
 Supported inputs: PDF, DOCX, XLSX, Markdown, text, CSV, JSON and YAML out of the box; PPTX and legacy
-DOC/XLS need `uv sync --extra office` (the container image installs it). Other types are skipped, never guessed.
+DOC/XLS need `uv sync --extra office`; scanned PDFs and images (PNG, JPEG, TIFF) need `uv sync --extra ocr`
+plus the `tesseract-ocr` binary (`apt-get install tesseract-ocr`), and are read locally, never by an OCR
+service. The container image installs both extras. Other types are skipped, never guessed.
 
 Reports land in `./workspace/<tenant>/<run-id>/` (git-ignored): `report.md`, `report.json`, `audit.jsonl`, and
 `report.pdf` with `--pdf` (or later: `uv run readiness export-pdf workspace/<tenant>/<run-id>/report.json`).

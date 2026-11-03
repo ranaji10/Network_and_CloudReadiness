@@ -9,6 +9,8 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from readiness.ingestion.extract import OcrOptions
+
 PACKAGE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = PACKAGE_DIR.parents[1]
 
@@ -76,6 +78,25 @@ class Settings(BaseSettings):
     max_doc_bytes: int = 25 * 1024 * 1024
     max_text_chars: int = 400_000
     allowed_source_schemes: list[str] = ["file", "gs", "s3", "gdrive"]
+    # --- OCR for scanned PDFs and images (ING-08; `ocr` extra + the tesseract-ocr binary) ---
+    # Runs in-process with the local Tesseract binary; nothing is sent to an OCR service. When the extra or the
+    # binary is missing the scanned pages are reported as an extraction error (a report warning) and the run
+    # continues, so `true` is a safe default. A PDF page is OCR'd only when pypdf finds fewer than
+    # `ocr_min_chars_per_page` characters on it; at most `ocr_max_pages` pages per document are OCR'd.
+    ocr_enabled: bool = True
+    ocr_min_chars_per_page: int = 20
+    ocr_max_pages: int = 50
+    ocr_dpi: int = 200
+    ocr_languages: str = "eng"  # Tesseract language codes joined with `+`; each needs its traineddata installed
+
+    def ocr_options(self) -> OcrOptions:
+        return OcrOptions(
+            enabled=self.ocr_enabled,
+            min_chars_per_page=self.ocr_min_chars_per_page,
+            max_pages=self.ocr_max_pages,
+            dpi=self.ocr_dpi,
+            languages=self.ocr_languages,
+        )
 
     # --- paths ---
     workspace_dir: Path = Path("./workspace")

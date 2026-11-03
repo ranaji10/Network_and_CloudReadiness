@@ -56,6 +56,7 @@ class ExtractedDocument(BaseModel):
     truncated: bool = False
     extraction_error: str | None = None
     answers: int = 0  # questionnaire answers carried by this document (AGT-03); 0 for client documents
+    ocr_pages: int = 0  # pages or image frames whose text came from local OCR (ING-08); 0 for text documents
 
     @property
     def is_relevant(self) -> bool:

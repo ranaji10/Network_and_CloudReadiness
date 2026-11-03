@@ -6,14 +6,17 @@ ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never UV_NO_CACHE=1
 WORKDIR /app
 # Dependencies first (cached layer), then the project itself.
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev --no-install-project --extra gcp --extra anthropic --extra office --extra pdf
+RUN uv sync --frozen --no-dev --no-install-project --extra gcp --extra anthropic --extra office --extra pdf --extra ocr
 COPY src ./src
 COPY config ./config
-RUN uv sync --frozen --no-dev --extra gcp --extra anthropic --extra office --extra pdf
+RUN uv sync --frozen --no-dev --extra gcp --extra anthropic --extra office --extra pdf --extra ocr
 
 FROM python:3.12-slim-bookworm AS runtime
+# tesseract-ocr (+ English data) is the local OCR engine behind the `ocr` extra (ING-08): scanned pages are
+# read in-process, never sent to a service. It is an OCR binary only; scripts/check_no_system_access.py keeps
+# network tooling out of this image.
 RUN groupadd -r app && useradd -r -g app -d /app app \
-    && apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && apt-get update && apt-get install -y --no-install-recommends ca-certificates tesseract-ocr tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder --chown=app:app /app /app

@@ -44,7 +44,11 @@ office = ["python-pptx>=1.0,<2", "xlrd>=2.0,<3", "olefile>=0.47,<1"]
 # PDF export of the report (API-04). fpdf2 is pure Python: no cairo/pango/system fonts, so it works in the
 # slim runtime image. Kept optional so the core stays small; the Dockerfile installs it.
 pdf = ["fpdf2>=2.8,<3"]
-all = ["readiness[gcp,adk,aws,anthropic,mcp,office,pdf]"]
+# OCR for scanned PDFs and images (ING-08). pypdfium2 renders PDF pages to bitmaps without poppler; pytesseract
+# drives the `tesseract-ocr` binary (apt package, installed in the container). Without the extra or the binary a
+# scanned page yields an error string naming the extra, never an exception; text PDFs never touch OCR.
+ocr = ["pytesseract>=0.3,<1", "pypdfium2>=4,<6", "pillow>=10,<14"]
+all = ["readiness[gcp,adk,aws,anthropic,mcp,office,pdf,ocr]"]
 
 [dependency-groups]
 dev = [
@@ -59,6 +63,10 @@ dev = [
   "xlrd>=2.0,<3",
   "olefile>=0.47,<1",
   "fpdf2>=2.8,<3",  # so tests/test_pdf.py exercises the real renderer (same pin as the `pdf` extra)
+  # Same pins as the `ocr` extra so tests/test_extract_ocr.py runs the real OCR path (needs `tesseract-ocr` on PATH).
+  "pytesseract>=0.3,<1",
+  "pypdfium2>=4,<6",
+  "pillow>=10,<14",
 ]
 
 [project.scripts]

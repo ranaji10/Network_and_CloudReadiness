@@ -18,6 +18,8 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --frozen --group dev
+      # Local OCR engine for tests/test_extract_ocr.py (ING-08); those tests skip with a reason when it is missing.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends tesseract-ocr tesseract-ocr-eng
       - run: uv run ruff check src tests scripts
       - run: uv run ruff format --check src tests scripts
       - run: uv run mypy

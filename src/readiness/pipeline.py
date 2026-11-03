@@ -21,7 +21,7 @@ from readiness.guardrails.audit import AuditLog
 from readiness.guardrails.policy import GuardedLLM
 from readiness.guardrails.redaction import Redactor, share_safe_label, share_safe_ref
 from readiness.ingestion.classify import classify, llm_refine_classification
-from readiness.ingestion.extract import extract_text
+from readiness.ingestion.extract import extract_document
 from readiness.models import AssessmentReport, DocClass, ExtractedDocument, RedactionSummary
 from readiness.ports import DocumentSource, LLMProvider
 from readiness.questionnaire import answers_dir, evidence_text, is_answers_document
@@ -36,6 +36,7 @@ log = structlog.get_logger()
 
 def ingest(source: DocumentSource, settings: Settings, audit: AuditLog) -> list[ExtractedDocument]:
     docs: list[ExtractedDocument] = []
+    ocr = settings.ocr_options()
     for ref in source.list():
         try:
             raw = source.read(ref)
@@ -43,7 +44,8 @@ def ingest(source: DocumentSource, settings: Settings, audit: AuditLog) -> list[
             audit.event("doc.read_error", doc=ref.id, error=type(exc).__name__)
             docs.append(ExtractedDocument(ref=ref, text="", extraction_error=f"read: {type(exc).__name__}"))
             continue
-        text, truncated, err = extract_text(ref.name, raw, settings.max_text_chars)
+        extracted = extract_document(ref.name, raw, settings.max_text_chars, ocr)
+        text, truncated, err = extracted.text, extracted.truncated, extracted.error
         answers = 0
         if text and is_answers_document(text):
             # A stored questionnaire (AGT-03): score the answer bodies only, never the quoted questions.
@@ -60,6 +62,7 @@ def ingest(source: DocumentSource, settings: Settings, audit: AuditLog) -> list[
                 truncated=truncated,
                 extraction_error=err,
                 answers=answers,
+                ocr_pages=extracted.ocr_pages,
             )
         )
         audit.event(
@@ -70,6 +73,7 @@ def ingest(source: DocumentSource, settings: Settings, audit: AuditLog) -> list[
             truncated=truncated,
             error=err or "",
             answers=answers,
+            ocr_pages=extracted.ocr_pages,
         )
     return docs
 
