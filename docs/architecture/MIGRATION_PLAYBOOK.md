@@ -4,10 +4,19 @@
 
 Estimated effort: an afternoon. Nothing in the repository changes except git-ignored files.
 
+This is also the procedure for standing up any environment: every environment is its own project
+(`docs/decisions/ADR-20261103-one-project-per-environment.md`), so "move to a new project" and "create
+staging" or "create prod" are the same steps with a different `ENV`. The per-environment specifics
+(trigger events, approval, posture table) are in `docs/runbooks/DEPLOY_GCP.md` section 0 and 4, and the
+promotion flow between the projects in `docs/planning/RELEASE_PLAN.md`.
+
 1. **New project**: create it under the organisation; link billing; note `PROJECT_ID`.
 2. **Bootstrap**: `PROJECT_ID=<new> REGION=<region> ENV=prod ./infra/scripts/bootstrap_gcp.sh`
-   (enables APIs, creates the state bucket, writes `infra/terraform/backend.prod.hcl` and `envs/prod.tfvars`).
-3. **Review `envs/prod.tfvars`**: `use_cmek`, `report_retention_days`, `billing_account`, `create_build_trigger`.
+   (enables APIs, creates the state bucket, writes `infra/terraform/backend.prod.hcl` and `envs/prod.tfvars`
+   from `envs/prod.tfvars.example`; use `ENV=staging` or `ENV=dev` for the other environments).
+3. **Review `envs/prod.tfvars`**: `use_cmek`, `report_retention_days`, `deletion_protection`, `ingress`,
+   `min_instances`, `billing_account` (required in prod), `create_build_trigger`, `build_tag_regex`,
+   `build_approval_required`.
 4. **Apply**: `make tf-init ENV=prod && make tf-plan ENV=prod && make tf-apply ENV=prod`.
    To move existing state instead of creating fresh resources, run
    `terraform init -migrate-state -backend-config=../backend.prod.hcl` in `infra/terraform/gcp` and then
@@ -48,3 +57,4 @@ Bedrock `LLMProvider` (LLM-03) if you want models billed through AWS.
 | Google Drive source | `adapters/sources/gdrive.py` | still works from any provider with Google credentials; or export the Drive folder to the target bucket |
 | Terraform GCS backend | `versions.tf` | AWS uses the S3 backend in `aws/main.tf`; state is per provider |
 | Bucket names embedding the project id | Terraform | expected to change; the app reads them from env |
+| One project per environment, promotion by Cloud Build trigger per project | `envs/<env>.tfvars.example`, `trigger.tf`, `cloudbuild.yaml` `_ENV` | same shape on AWS: one account (or one `env`-suffixed resource set) per environment, one pipeline per account; `READINESS_ENV` stays the runtime's only notion of environment |

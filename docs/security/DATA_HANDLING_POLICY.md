@@ -29,7 +29,7 @@ Both must be protected. This page says what data exists, where it may live, for 
 
 | Store | Default | Set in |
 |---|---|---|
-| Uploads and reports buckets | 90 days, then deleted | `report_retention_days` in Terraform |
+| Uploads and reports buckets | per environment, then deleted: dev 90 days, staging 30 days (pilot data only), prod 180 days (a client may ask for its report up to six months after the engagement) | `report_retention_days` in `infra/terraform/gcp/envs/<env>.tfvars.example` |
 | Artifact Registry images | last 10 versions, 30 days | Terraform cleanup policy |
 | Local `workspace/` | until the analyst deletes it; delete at engagement end | analyst |
 | Pseudonym mapping (`pseudonym_mapping.local.json`) | written only when provider is `local`; stays on the analyst machine; never uploaded | `pipeline.py` |

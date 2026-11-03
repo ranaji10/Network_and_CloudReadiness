@@ -1,4 +1,8 @@
-# Google Cloud Build pipeline. Runs on every push via the existing trigger.
+# Google Cloud Build pipeline. One trigger per environment, each in its own GCP project, all running this
+# same file (docs/decisions/ADR-20261103-one-project-per-environment.md, docs/planning/RELEASE_PLAN.md):
+#   dev      push to main            _ENV=dev      _DEPLOY as the developer likes
+#   staging  push to main            _ENV=staging  _DEPLOY=true, automatic
+#   prod     tag vX.Y.Z + approval   _ENV=prod     _DEPLOY=true, after a release owner approves the build
 #
 # Stage 1 (always): lint, tests, policy checks, container build  -> fixes the "red build" with no cloud resources.
 # Stage 2 (gated):  push to Artifact Registry + deploy to Cloud Run when _DEPLOY=true.
@@ -6,8 +10,11 @@
 #                   instance named by _AGENT_ENGINE_ID so the agent registered in Gemini Enterprise follows the repo.
 #
 # Nothing here is account-specific: PROJECT_ID comes from the build, everything else is a substitution
-# set on the trigger (see infra/terraform/gcp/trigger.tf and docs/runbooks/DEPLOY_GCP.md).
+# set on the trigger (see infra/terraform/gcp/trigger.tf and docs/runbooks/DEPLOY_GCP.md). Per-environment
+# differences (buckets, retention, model egress, ingress) are Terraform's business, not this file's: the deploy
+# step only *updates* the env vars it owns and leaves the rest of the service as Terraform applied it.
 substitutions:
+  _ENV: dev                    # dev | staging | prod: the environment this trigger's project serves
   _REGION: asia-south1
   _AR_REPO: readiness
   _SERVICE: readiness-api
@@ -67,6 +74,11 @@ steps:
       - |
         if [ "${_DEPLOY}" != "true" ]; then echo "push skipped (_DEPLOY=${_DEPLOY})"; exit 0; fi
         docker push "${_IMAGE}:${SHORT_SHA}" && docker push "${_IMAGE}:latest"
+        # A tag build (prod trigger on vX.Y.Z) also publishes the release tag, so a rollback is
+        # `gcloud run deploy --image ${_IMAGE}:vX.Y.Z` (see docs/planning/RELEASE_PLAN.md, Promotion).
+        if [ -n "${TAG_NAME}" ]; then
+          docker tag "${_IMAGE}:${SHORT_SHA}" "${_IMAGE}:${TAG_NAME}" && docker push "${_IMAGE}:${TAG_NAME}"
+        fi
 
   - id: deploy-cloud-run
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
@@ -83,8 +95,11 @@ steps:
           --ingress "${_INGRESS}" \
           --no-cpu-throttling \
           ${_RUNTIME_SA:+--service-account "${_RUNTIME_SA}"} \
-          --set-env-vars "READINESS_PROVIDER=gcp,GOOGLE_CLOUD_PROJECT=${PROJECT_ID},READINESS_LLM_PROVIDER=mock" \
+          --update-env-vars "READINESS_PROVIDER=gcp,READINESS_ENV=${_ENV},GOOGLE_CLOUD_PROJECT=${PROJECT_ID}" \
           --quiet
+        # --update-env-vars, not --set-env-vars: the latter wipes every variable Terraform put on the service
+        # (bucket names, READINESS_LLM_PROVIDER, READINESS_ALLOW_LLM_EGRESS, redaction mode). Those are the
+        # per-environment contract and stay owned by infra/terraform/gcp/envs/<env>.tfvars.
 
   - id: deploy-agent-engine
     name: ghcr.io/astral-sh/uv:python3.12-bookworm-slim

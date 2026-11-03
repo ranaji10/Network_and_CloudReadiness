@@ -1,17 +1,29 @@
 # Copy to dev.tfvars (git-ignored). Only this file knows which account/project you are on.
-project_id            = "REPLACE-with-your-project-id"
-region                = "asia-south1"
-env                   = "dev"
-deploy_cloud_run      = true
-allow_unauthenticated = false
-llm_provider          = "mock"       # switch to gemini once READINESS_ALLOW_LLM_EGRESS policy is signed off
-allow_llm_egress      = false
-use_cmek              = false
-report_retention_days = 90
-deploy_agent_engine   = false        # true once the agent SA exists; first run creates the Agent Engine instance
-agent_engine_id       = ""           # paste the resource id printed by the first agent deploy
-create_build_trigger  = false        # the repo already has a hand-made trigger; see trigger.tf to import
-github_connection     = ""
-github_repo_uri       = ""
-billing_account       = ""           # "XXXXXX-XXXXXX-XXXXXX" to enable the budget alert
-monthly_budget_usd    = 50
+# dev is the developer's own project: cheapest posture, tear-down allowed, synthetic data only.
+# staging.tfvars.example and prod.tfvars.example hold the other two environments (one project each,
+# docs/decisions/ADR-20261103-one-project-per-environment.md).
+project_id              = "REPLACE-with-your-project-id"
+region                  = "asia-south1"
+env                     = "dev"
+deploy_cloud_run        = true
+allow_unauthenticated   = false
+ingress                 = "INGRESS_TRAFFIC_ALL" # IAM still required; lets `gcloud run services proxy` reach the service
+min_instances           = 0
+max_instances           = 5
+deletion_protection     = false  # dev may be destroyed and recreated at will
+llm_provider            = "mock" # switch to gemini once READINESS_ALLOW_LLM_EGRESS policy is signed off
+allow_llm_egress        = false
+use_cmek                = false
+report_retention_days   = 90
+tenant_tokens_secret    = false
+deploy_agent_engine     = false # true once the agent SA exists; first run creates the Agent Engine instance
+agent_engine_id         = ""    # paste the resource id printed by the first agent deploy
+create_build_trigger    = false # the repo already has a hand-made trigger; see trigger.tf to import
+github_connection       = ""
+github_repo_uri         = ""
+build_branch_regex      = "^main$"
+build_tag_regex         = ""
+build_approval_required = false
+billing_account         = "" # "XXXXXX-XXXXXX-XXXXXX" to enable the budget alert
+monthly_budget_usd      = 50
+labels                  = {}

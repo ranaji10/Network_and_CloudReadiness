@@ -1,0 +1,33 @@
+# Copy to prod.tfvars (git-ignored) and fill in the REPLACE-... values. Applies to the *prod* project
+# only: one GCP project per environment (docs/decisions/ADR-20261103-one-project-per-environment.md).
+#
+# Prod is the only environment that may hold real client documents. It is deployed by the prod Cloud Build
+# trigger on a release tag vX.Y.Z, after a release owner approves the build in the console, and never from
+# a branch (docs/planning/RELEASE_PLAN.md, "Promotion"). Every value below that loosens the posture
+# (allow_unauthenticated, ingress, llm_provider, allow_llm_egress) needs a signed checklist and a PR review
+# from the security owner before it changes.
+project_id              = "REPLACE-with-your-prod-project-id"
+region                  = "asia-south1"
+env                     = "prod"
+deploy_cloud_run        = true
+allow_unauthenticated   = false
+ingress                 = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER" # reachable only through the IAP-fronted load balancer (INF-04); no direct run.app access
+min_instances           = 1                                        # one warm instance: no cold start for client-facing calls
+max_instances           = 10
+deletion_protection     = true
+llm_provider            = "mock" # "gemini" only after docs/security/LLM_PROVIDER_CHECKLIST.md is signed for prod
+allow_llm_egress        = false  # the guardrail: no document text leaves the project until this is true on purpose
+use_cmek                = true   # customer-managed key on both buckets, rotated every 90 days
+report_retention_days   = 180    # contractual: a client may ask for its report up to six months after the engagement; see docs/security/DATA_HANDLING_POLICY.md
+tenant_tokens_secret    = false  # true for multi-client use, after `gcloud secrets versions add READINESS_TENANT_TOKENS`
+deploy_agent_engine     = false  # true once the agent is part of the release (DEPLOY_AGENT_ENGINE.md)
+agent_engine_id         = ""
+create_build_trigger    = false # true after GitHub is connected in the prod project (DEPLOY_GCP.md step 4)
+github_connection       = ""
+github_repo_uri         = ""
+build_branch_regex      = "^main$"                     # unused while build_tag_regex is set
+build_tag_regex         = "^v[0-9]+\\.[0-9]+\\.[0-9]+$" # release tags only; rc tags never reach prod
+build_approval_required = true                         # a Cloud Build approver (release owner) releases each build by hand
+billing_account         = "REPLACE-with-billing-account-id" # required in prod: the budget alert is part of the definition of done
+monthly_budget_usd      = 200
+labels                  = {}

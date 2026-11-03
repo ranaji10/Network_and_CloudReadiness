@@ -1,0 +1,4 @@
+# Copy to backend.staging.hcl (git-ignored). The state bucket lives in the *staging* project and is created by
+# `PROJECT_ID=<staging-project> ENV=staging ./infra/scripts/bootstrap_gcp.sh`. State never crosses projects.
+bucket = "REPLACE-staging-tfstate-bucket"
+prefix = "readiness/staging"
