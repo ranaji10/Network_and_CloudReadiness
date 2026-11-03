@@ -46,3 +46,6 @@ Thumbs.db
 *.swp
 # Local Claude Code settings (shared settings.json is committed on purpose)
 .claude/settings.local.json
+
+# Agent worktrees created by Claude Code sessions (never commit)
+.claude/worktrees/
