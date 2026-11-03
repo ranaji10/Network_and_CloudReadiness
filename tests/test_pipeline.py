@@ -102,6 +102,7 @@ def test_share_safe_report_hides_names_and_pseudonyms(settings, fixtures_dir):
     report, md = run_assessment(f"file://{fixtures_dir / 'synthetic_acme'}", s, "default")
     out = settings.workspace_dir / "test" / report.id
     rendered = md + (out / "report.json").read_text() + (out / "report.md").read_text()
+    assert f"tenant `{s.tenant_id}`" not in md and "tenant `withheld`" in md
     fixture_names = {p.name for p in (fixtures_dir / "synthetic_acme").iterdir()}
     assert len(fixture_names) == 6
     assert not any(name in rendered for name in fixture_names)

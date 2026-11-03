@@ -16,8 +16,10 @@ _ICON = {
 def render(report: AssessmentReport) -> str:
     lines: list[str] = []
     lines.append("# Network, Cloud & Agentic-AI Readiness Assessment\n")
+    # A share-safe report leaves the tenant; its id is an operator label that can name the client.
+    tenant = "withheld" if report.redaction.share_safe else report.tenant_id
     lines.append(
-        f"*Report {report.id} · tenant `{report.tenant_id}` · {report.created_at:%Y-%m-%d %H:%M UTC} · "
+        f"*Report {report.id} · tenant `{tenant}` · {report.created_at:%Y-%m-%d %H:%M UTC} · "
         f"profile `{report.profile}` v{report.profile_version} · tool v{report.tool_version}*\n"
     )
     lines.append("## 1. Scores at a glance\n")
