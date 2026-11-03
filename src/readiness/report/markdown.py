@@ -91,6 +91,9 @@ def render(report: AssessmentReport) -> str:
         lines.append(f"**{i}. {r.title}** · effort {r.effort} · impact {r.impact} · check {r.check_id}")
         if r.rationale:
             lines.append(f"  \n{r.rationale}")
+        closes = r.closes_check_ids or [r.check_id]
+        titles = r.closes_titles if len(r.closes_titles) == len(closes) else [""] * len(closes)
+        lines.append("  \nCloses: " + ", ".join(f"{cid} {t}".strip() for cid, t in zip(closes, titles, strict=True)))
         for o in r.options:
             lines.append(f"- **{o.provider.upper()}**: {o.product}" + (f" — {o.note}" if o.note else ""))
         lines.append("")

@@ -65,6 +65,7 @@ class ProfileRules(BaseModel):
     partial_points_ratio: float = 0.5
     negative_overrides: bool = True
     llm_override_min_confidence: float = 0.6
+    dedupe_by_product: bool = True  # merge actions whose preferred option shares a product family (REC-06)
 
 
 class Profile(BaseModel):

@@ -66,7 +66,8 @@ ask discovery questions, re-run" loop from V1.
 4. **redact every document** (secrets always; identifiers per mode)
 5. score each domain with rules; if `use_llm_judge`, pass each pillar through `GuardedLLM`
 6. composite score and coverage per profile weights
-7. recommendations from the catalog, sorted by lost points x weights x impact / effort
+7. recommendations from the catalog, actions sharing a product family merged into one (`rules.dedupe_by_product`),
+   sorted by lost points x weights x impact / effort
 8. render Markdown; write outputs; audit `run.end`
 
 ## Where configuration lives

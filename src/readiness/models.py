@@ -118,11 +118,12 @@ class RecommendationOption(BaseModel):
     product: str
     note: str = ""
     url: str | None = None
+    family: str = ""  # product family tag; options sharing provider+family close several checks with one rollout
 
 
 class Recommendation(BaseModel):
     id: str
-    check_id: str
+    check_id: str  # primary check (the highest-priority member when several were merged)
     domain_id: str
     pillar_id: str
     title: str
@@ -134,6 +135,9 @@ class Recommendation(BaseModel):
     options: list[RecommendationOption] = []
     caiq_questions: list[str] = []
     ccm_controls: list[str] = []
+    family: str = ""  # `<provider>:<family>` of the preferred option; empty for discovery items
+    closes_check_ids: list[str] = []  # every check this action closes (actions only; includes check_id)
+    closes_titles: list[str] = []  # check titles in the same order, for rendering
 
 
 class LLMUsage(BaseModel):

@@ -7,7 +7,7 @@ Full field reference: `docs/architecture/CONFIG_REFERENCE.md`.
 |---|---|---|
 | `profiles/*.yaml` | Which domains count, their weights, grade thresholds, signal rules, provider preference | `readiness.scoring.profiles.load_profile` |
 | `scoring/*.yaml` | One domain per file: pillars with weights, checks with points, signals and CCM control ids | `readiness.scoring.profiles.load_domain` |
-| `recommendations/catalog.yaml` | One entry per check id: the action, effort, impact and GCP / AWS / open-source / process options | `readiness.recommend.engine.load_catalog` |
+| `recommendations/catalog.yaml` | One entry per check id: the action, effort, impact and GCP / AWS / open-source / process options; an option's `family` tag marks products whose single rollout closes several checks | `readiness.recommend.engine.load_catalog` |
 | `redaction.yaml` | Regex rules for secrets, PII and identifiers, applied before anything leaves the process | `readiness.guardrails.redaction.Redactor.from_config` |
 
 The directory is found in this order: `READINESS_CONFIG_DIR`, then `<repo>/config`, then a `config/`
@@ -97,6 +97,12 @@ Goal: score whether DNS filtering is in place, in the network security domain.
 Copy `profiles/default.yaml`, change `id`, domain weights, `thresholds`, `rules` and `target_providers`.
 New profiles are discovered automatically and selected with `--profile <id>` or the `profile` query
 parameter of the API. Domain weights are relative; they do not need to sum to 100.
+
+`rules.dedupe_by_product` (default `true`) merges actions whose preferred option (first after the
+`target_providers` ordering) shares a product family: one action per family, priority summed, with a
+`Closes:` line naming every check it closes. Tag the options in `recommendations/catalog.yaml` with
+`family: <tag>` to declare a family; untagged options only merge when their product text is identical.
+Set the rule to `false` to get one action per check.
 
 A profile may also carry `pillar_weight_overrides: {domain_id: {pillar_id: weight}}` to stress some
 pillars of a domain without editing `scoring/<domain>.yaml`. Pillars not listed keep their configured

@@ -16,7 +16,10 @@ def test_end_to_end_offline(settings, fixtures_dir):
     ns = next(d for d in report.domains if d.domain_id == "network_security")
     assert ns.score >= 60, md  # synthetic policy is deliberately strong
     assert any(r.kind == "discovery" for r in report.recommendations)
-    assert any(r.kind == "action" for r in report.recommendations)
+    actions = [r for r in report.recommendations if r.kind == "action"]
+    assert actions and all(r.closes_check_ids and r.closes_check_ids[0] == r.check_id for r in actions)
+    assert all(r.closes_check_ids == [] for r in report.recommendations if r.kind == "discovery")
+    assert f"Closes: {actions[0].check_id} {actions[0].closes_titles[0]}" in md
     # guardrails: secrets and identifiers from the fixtures never reach the report
     assert "Sup3rSecretValue1" not in md and "AIzaSy" not in md and "10.10.0.1" not in md
     assert "netops@acme-widgets.example" not in md

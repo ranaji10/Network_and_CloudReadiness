@@ -43,6 +43,7 @@ def run_readiness_assessment(source_uri: str, profile: str = "default") -> dict:
                 "title": r.title,
                 "effort": r.effort,
                 "impact": r.impact,
+                "closes": r.closes_check_ids or [r.check_id],
                 "options": [o.model_dump() for o in r.options[:3]],
             }
             for r in report.recommendations

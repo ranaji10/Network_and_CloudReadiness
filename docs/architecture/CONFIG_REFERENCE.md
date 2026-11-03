@@ -53,6 +53,7 @@ Grades use `>=`: A at or above `grade_a`, B at or above `grade_b`, C at or above
 | `partial_points_ratio` | number | `0.5` | Share of a check's points awarded for PARTIAL |
 | `negative_overrides` | boolean | `true` | A negative signal match forces NOT_MET |
 | `llm_override_min_confidence` | number | `0.6` | Minimum confidence for an LLM verdict to replace the rule verdict |
+| `dedupe_by_product` | boolean | `true` | Merge actions whose preferred option shares a product family into one action listing every check it closes (see *Product-family merge*) |
 
 ## Domain (`config/scoring/<id>.yaml`)
 
@@ -165,7 +166,8 @@ Top level: `version` (string, informational) and `recommendations` (list). One e
 | `options` | list of option | `[]` | Product choices, ordered by the profile's `target_providers` |
 
 Option fields: `provider` (`gcp`, `aws`, `oss` or `process`), `product` (string), `note` (string,
-default empty), `url` (string or null).
+default empty), `url` (string or null), `family` (string, default empty: a short tag such as
+`cloud-identity` shared by options that are the same product rollout; see *Product-family merge*).
 
 ### What the engine produces
 
@@ -188,6 +190,33 @@ Example (default profile, `network_security` weight 40, `perimeter` weight 25): 
 5 points, so base = 5 × 25 × 40 / 100 = 50 and the discovery item has priority 25. NS-PER-03 PARTIAL
 loses 2 points, base = 20; its catalog entry is effort `M`, impact `medium`, so the action has priority 20.
 The list is sorted by priority descending, then id, and cut at `max_recommendations`.
+
+### Product-family merge
+
+With `rules.dedupe_by_product: true` (the default), actions are grouped before sorting by the *family
+key* of their preferred option, the first option left after provider-preference ordering and filtering:
+
+`family key` = `<provider>:<family>`, where `family` is the option's `family` tag lower-cased, or, when
+the tag is empty, the `product` text lower-cased with whitespace collapsed.
+
+Each group becomes one action. The member with the highest priority is the *lead* and provides the
+`id` (`A-<lead check id>`), `check_id`, title, rationale and options; the merged record has:
+
+- `priority` = sum of the members' priorities (one rollout closes all of them)
+- `effort` = the largest member effort (`L` > `M` > `S`), `impact` = the largest member impact
+- `ccm_controls` = union in first-seen order
+- `closes_check_ids` / `closes_titles` = every member's check id and title, lead first
+
+Every action, merged or not, carries `closes_check_ids` (a single-member action lists its own check) and
+`family`; the Markdown report prints them as a `Closes:` line under the action. Discovery items are never
+merged, actions without options (catalog-less checks or `process`-only entries whose provider was
+filtered out) are never merged, and `max_recommendations` is applied after merging.
+
+Example (default profile, `gcp` first, a pillar of weight 25 in `network_security`): NS-IAM-01 NOT_MET
+losing 5 points has priority 5 × 25 × 40 / 100 × 1.5 × 1.0 = 75; NS-IAM-02 PARTIAL losing 2 points has
+priority 20 × 1.5 × 1.2 = 36. Both prefer a `gcp` option tagged `cloud-identity`, so the report shows one
+action "Consolidate on a central identity provider with SSO" with priority 111 and
+`Closes: NS-IAM-01 ..., NS-IAM-02 ...`. With the rule off they are two separate actions.
 
 ## Redaction rules (`config/redaction.yaml`)
 
@@ -238,7 +267,8 @@ list price.
 - the confidence values attached to rule verdicts (0.6, 0.7, 0.5, 0.3) and the evidence cap of eight hits
 - the snippet window (80 characters) and the rule that decides whether a signal is a regex
 - the document classifier's keywords, weights and threshold (`src/readiness/ingestion/classify.py`)
-- the impact and effort weight tables, the 0.5 discovery factor and the six-question cap
+- the impact and effort weight tables, the 0.5 discovery factor, the six-question cap and the way merged
+  actions combine priority (sum), effort and impact (maximum)
 - the LLM judge prompt, the evidence budget per pillar and the one-call-per-pillar batching
 - the composite being a weighted mean, the grade letters, and the report layout
 - supported file types and extraction behaviour (`src/readiness/ingestion/extract.py`)
