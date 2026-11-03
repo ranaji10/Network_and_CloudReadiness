@@ -45,6 +45,9 @@ Profiles: `default`, `gcp_migration`, `security_only`, plus industry profiles `h
 emphasis), `finance` (PCI DSS / SOX emphasis) and `public_sector` (FedRAMP / sovereignty emphasis). See the
 table in [config/README.md](config/README.md).
 
+Supported inputs: PDF, DOCX, XLSX, Markdown, text, CSV, JSON and YAML out of the box; PPTX and legacy
+DOC/XLS need `uv sync --extra office` (the container image installs it). Other types are skipped, never guessed.
+
 Reports land in `./workspace/<tenant>/<run-id>/` (git-ignored): `report.md`, `report.json`, `audit.jsonl`.
 
 ## Repository map

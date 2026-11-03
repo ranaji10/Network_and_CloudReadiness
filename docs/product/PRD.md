@@ -22,7 +22,7 @@ nothing has yet been run against a live cloud account or a real model.
 | F-ING-2 | Read a Google Cloud Storage prefix | written, untested live (`gcs.py`) |
 | F-ING-3 | Read an S3 prefix | written, untested live (`s3.py`) |
 | F-ING-4 | Read a Google Drive folder by id or URL, including Google-native docs | written, untested live (`gdrive.py`) |
-| F-ING-5 | Extract text from PDF, DOCX, XLSX, Markdown, text, CSV, JSON, YAML | done (`extract.py`) |
+| F-ING-5 | Extract text from PDF, DOCX, XLSX, PPTX, legacy DOC/XLS, Markdown, text, CSV, JSON, YAML | done (`extract.py`; PPTX/DOC/XLS need the `office` extra, installed in the container) |
 | F-ING-6 | Classify each document into a coarse class and skip noise | done, keyword based (`classify.py`); LLM refinement optional |
 | F-ING-7 | Enforce per-document size and text limits | done (`Settings.max_doc_bytes`, `max_text_chars`) |
 

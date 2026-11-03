@@ -37,7 +37,7 @@
 |---|---|---|
 | Surfaces | Accept a source and a profile, return a report | `cli.py`, `api/app.py`, `agents/adk_app.py`, `agents/mcp_server.py` (MCP server on stdio for Claude Code and other MCP clients; wraps the ADK tool) |
 | Pipeline | The only orchestration; identical for all surfaces | `pipeline.py` |
-| Ingestion | bytes to text (pdf, docx, xlsx, text/structured), heuristic classification | `ingestion/extract.py`, `ingestion/classify.py` |
+| Ingestion | bytes to text (pdf, docx, xlsx, pptx, legacy doc/xls via the `office` extra, text/structured), heuristic classification | `ingestion/extract.py`, `ingestion/classify.py` |
 | Guardrails | redaction, egress policy, prompt wrapping, audit | `guardrails/` |
 | Scoring | load profile and domains, evaluate checks by signals, optional LLM judge, grades, composite | `scoring/` |
 | Recommend | failed/partial checks to actions with provider options; unknown checks to CAIQ discovery questions | `recommend/engine.py` |

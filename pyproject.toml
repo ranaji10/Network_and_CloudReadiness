@@ -39,7 +39,9 @@ anthropic = ["anthropic>=0.40"]
 pii = ["presidio-analyzer>=2.2"]
 # MCP server (`readiness mcp`) for Claude Code / Claude Desktop and other MCP clients; see docs/runbooks/MCP_SERVER.md.
 mcp = ["mcp>=1.2,<2"]
-all = ["readiness[gcp,adk,aws,anthropic,mcp]"]
+# Office formats beyond the core PDF/DOCX/XLSX set: PPTX slides, legacy .xls and .doc (ING-09).
+office = ["python-pptx>=1.0,<2", "xlrd>=2.0,<3", "olefile>=0.47,<1"]
+all = ["readiness[gcp,adk,aws,anthropic,mcp,office]"]
 
 [dependency-groups]
 dev = [
@@ -49,6 +51,10 @@ dev = [
   "mypy>=1.10",
   "types-PyYAML",
   "mcp>=1.2,<2",  # so tests/test_mcp_server.py exercises the MCP surface without the extra
+  # Same pins as the `office` extra so `make check` exercises the PPTX / XLS / DOC extractors.
+  "python-pptx>=1.0,<2",
+  "xlrd>=2.0,<3",
+  "olefile>=0.47,<1",
 ]
 
 [project.scripts]
