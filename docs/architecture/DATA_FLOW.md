@@ -59,9 +59,13 @@ the original name is a `doc.share_safe_label` event in `audit.jsonl`.
 Only when `READINESS_LLM_PROVIDER` is not `mock` **and** `READINESS_ALLOW_LLM_EGRESS=true` **and**
 `READINESS_USE_LLM_JUDGE=true` (or a future classifier flag):
 
-- the system prompt (`JUDGE_SYSTEM` + untrusted-data preamble),
-- the list of check ids and questions for one pillar,
-- each relevant document's **redacted** text, truncated to a per-document budget, inside `<document>` tags.
+- the system prompt (`JUDGE_SYSTEM`, the list of check ids and questions for one pillar, the untrusted-data
+  preamble): static configuration text, the same for every run, and the only part a provider-side prompt
+  cache may hold (Anthropic `cache_control`, entries expire minutes after last use),
+- in the user turn, the **redacted** text of at most `READINESS_JUDGE_MAX_DOCS_PER_PILLAR` (default 8)
+  documents per pillar, the ones with the most signal hits for that pillar's checks, each truncated to its
+  share of `READINESS_JUDGE_BATCH_CHARS`, inside `<document>` tags. A document that matches none of the
+  pillar's signals is not sent for that pillar; with the setting at `0`, every relevant document is.
 
 Never: raw bytes, un-redacted text, the pseudonym map, secrets, file paths, tenant ids, previous reports.
 

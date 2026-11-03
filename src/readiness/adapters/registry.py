@@ -66,7 +66,11 @@ def make_llm(settings: Settings, secrets: SecretStore | None = None) -> LLMProvi
     if settings.llm_provider == "anthropic":
         from readiness.adapters.llm.anthropic_llm import AnthropicLLM
 
-        return AnthropicLLM(model=settings.llm_model or None, api_key=secrets.get("ANTHROPIC_API_KEY"))
+        return AnthropicLLM(
+            model=settings.llm_model or None,
+            api_key=secrets.get("ANTHROPIC_API_KEY"),
+            prompt_caching=settings.llm_prompt_caching,
+        )
     raise ValueError(f"Unknown llm provider {settings.llm_provider}")
 
 

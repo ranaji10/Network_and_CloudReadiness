@@ -3,15 +3,29 @@
 Two numbers per domain, deliberately kept apart:
 * score    (0-100): posture, from checks that are met/partially met.
 * coverage (0-100): how many checks had *any* evidence. This is the V1 "confidence score": low coverage
-  means "we need more documents or answers", not "the client is insecure"."""
+  means "we need more documents or answers", not "the client is insecure".
+
+LLM judge cost controls (LLM-06), all deterministic and configured from `Settings`:
+* pre-selection: a pillar is judged on the documents that matched at least one of its checks' signals,
+  ranked by the number of distinct signal hits (`rank_documents`), at most `judge_max_docs_per_pillar` of
+  them (`0` sends every relevant document, the pre-LLM-06 behaviour);
+* batching: the selected documents are cut to an even share of `judge_batch_chars` (never below
+  `MIN_DOC_CHARS`) and sent in one call when they fit, otherwise in as few calls as possible, each within
+  `judge_batch_chars`; verdicts from several batches are merged, the most confident non-unknown one wins;
+* cacheable prefix: the system prompt for a pillar is `JUDGE_SYSTEM` plus the pillar's check list (the
+  guardrail layer appends the untrusted-data preamble), so it is byte-identical for every batch of that
+  pillar and for every run, and providers that cache prompt prefixes (Anthropic `cache_control`) can reuse
+  it. Document text only ever appears in the user turn, after the cached prefix."""
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 
 from pydantic import BaseModel, Field
 
+from readiness.guardrails.policy import wrap_untrusted
 from readiness.models import (
     CheckResult,
     CheckStatus,
@@ -24,6 +38,10 @@ from readiness.models import (
 from readiness.ports import LLMProvider
 from readiness.scoring.profiles import CheckDef, DomainDef, PillarDef, Profile
 
+DEFAULT_JUDGE_MAX_DOCS = 8  # documents per pillar sent to the judge; 0 = every relevant document
+DEFAULT_JUDGE_BATCH_CHARS = 60_000  # evidence characters per judge call
+MIN_DOC_CHARS = 2000  # a selected document is never cut shorter than this
+
 
 @dataclass
 class _Hit:
@@ -32,6 +50,7 @@ class _Hit:
     snippet: str
 
 
+@lru_cache(maxsize=4096)
 def compile_signal(signal: str) -> re.Pattern[str]:
     """The one signal convention used everywhere (checks, wave planning): a signal containing any of
     `\\ [ ] ( ) . * + ? |` is a regular expression, anything else is a whole case-insensitive word or phrase."""
@@ -47,11 +66,10 @@ def _find(doc_text: str, signal: str, window: int = 80) -> str | None:
     return " ".join(doc_text[a:b].split())
 
 
-def evaluate_check(
-    check: CheckDef, docs: list[ExtractedDocument], profile: Profile, include_snippets: bool
-) -> tuple[CheckStatus, float, list[Evidence], str]:
-    # Questionnaire answers (AGT-03) are addressed to specific checks, so they are searched by every check
-    # regardless of its `doc_classes` filter.
+def candidate_pool(check: CheckDef, docs: list[ExtractedDocument]) -> list[ExtractedDocument]:
+    """The documents a check is evaluated against: relevant ones of its `doc_classes`, or every relevant one
+    when the filter leaves nothing (classification is heuristic). Questionnaire answers (AGT-03) are addressed
+    to specific checks, so they are searched by every check regardless of its `doc_classes` filter."""
     pool = [
         d
         for d in docs
@@ -61,8 +79,14 @@ def evaluate_check(
         )
     ]
     if not any(d.classification != DocClass.QUESTIONNAIRE for d in pool):
-        # fall back to all relevant docs: classification is heuristic
         pool = [d for d in docs if d.is_relevant]
+    return pool
+
+
+def evaluate_check(
+    check: CheckDef, docs: list[ExtractedDocument], profile: Profile, include_snippets: bool
+) -> tuple[CheckStatus, float, list[Evidence], str]:
+    pool = candidate_pool(check, docs)
     hits: list[_Hit] = []
     strong = False
     negative = False
@@ -124,33 +148,111 @@ JUDGE_SYSTEM = (
 )
 
 
+def rank_documents(pillar: PillarDef, docs: list[ExtractedDocument]) -> list[tuple[ExtractedDocument, int]]:
+    """Relevance of each document to a pillar: the number of distinct (check, signal) pairs it matches across
+    the pillar's checks (weak, strong and negative signals alike, each check searched on its own candidate
+    pool). Documents with no hit are left out. The order is deterministic (most hits first, then document name,
+    then id), so the same pack always sends the same documents to the model."""
+    hits: dict[str, int] = {}
+    by_id: dict[str, ExtractedDocument] = {}
+    for check in pillar.checks:
+        signals = check.negative_signals + check.strong_signals + check.signals
+        for d in candidate_pool(check, docs):
+            n = sum(1 for s in signals if compile_signal(s).search(d.text))
+            if n:
+                hits[d.ref.id] = hits.get(d.ref.id, 0) + n
+                by_id.setdefault(d.ref.id, d)
+    return sorted(((by_id[i], n) for i, n in hits.items()), key=lambda t: (-t[1], t[0].ref.name, t[0].ref.id))
+
+
+def select_documents(pillar: PillarDef, docs: list[ExtractedDocument], max_docs: int) -> list[ExtractedDocument]:
+    """The documents the judge sees for a pillar: the `max_docs` best-ranked ones, or every relevant document
+    in source order (the pre-LLM-06 behaviour) when `max_docs` is 0 or negative."""
+    if max_docs <= 0:
+        return [d for d in docs if d.is_relevant]
+    return [d for d, _ in rank_documents(pillar, docs)[:max_docs]]
+
+
+def judge_prompts(
+    pillar: PillarDef,
+    results: list[CheckResult],
+    docs: list[ExtractedDocument],
+    max_docs: int = DEFAULT_JUDGE_MAX_DOCS,
+    batch_chars: int = DEFAULT_JUDGE_BATCH_CHARS,
+) -> tuple[str, list[str]]:
+    """(system prompt, one evidence prompt per batch) for a pillar.
+
+    The system prompt carries everything static (`JUDGE_SYSTEM` and the check list), so it is byte-identical
+    across batches and runs; the evidence prompts carry only `<document>` blocks of redacted text. Each selected
+    document is cut to an even share of `batch_chars` (at least `MIN_DOC_CHARS`); the blocks are then packed in
+    rank order into batches of at most `batch_chars` characters (a block longer than that is a batch on its own).
+    A pillar with no matching document still gets one short prompt saying so, so that the model answers `unknown`
+    from no evidence rather than guessing."""
+    checks = {c.id: c for c in pillar.checks}
+    questions = "\n".join(f"- {r.check_id}: {checks[r.check_id].question or checks[r.check_id].title}" for r in results)
+    system = f"{JUDGE_SYSTEM}\n\nChecks:\n{questions}"
+    selected = select_documents(pillar, docs, max_docs)
+    if not selected:
+        return system, ["Evidence:\n(no document matched any signal of these checks)"]
+    budget = max(MIN_DOC_CHARS, batch_chars // len(selected))
+    batches: list[list[str]] = []
+    size = 0
+    for d in selected:
+        block = wrap_untrusted(d.ref.name, d.text[:budget])
+        if batches and size + len(block) + 2 <= batch_chars:
+            batches[-1].append(block)
+            size += len(block) + 2
+        else:
+            batches.append([block])
+            size = len(block)
+    return system, ["Evidence:\n" + "\n\n".join(b) for b in batches]
+
+
+def _better(new: JudgeVerdict, old: JudgeVerdict | None) -> bool:
+    """Merge rule for verdicts on the same check from different batches: a verdict beats `unknown`, then the
+    more confident one wins."""
+    if old is None:
+        return True
+    new_unknown, old_unknown = new.status == CheckStatus.UNKNOWN, old.status == CheckStatus.UNKNOWN
+    if new_unknown != old_unknown:
+        return old_unknown
+    return new.confidence > old.confidence
+
+
 def llm_refine(
     pillar: PillarDef,
     results: list[CheckResult],
     docs: list[ExtractedDocument],
     llm: LLMProvider,
     profile: Profile,
+    max_docs: int = DEFAULT_JUDGE_MAX_DOCS,
+    batch_chars: int = DEFAULT_JUDGE_BATCH_CHARS,
 ) -> list[CheckResult]:
-    """Ask the LLM about the whole pillar at once; override rule verdicts when it is confident."""
+    """Ask the LLM about the whole pillar (one call per evidence batch, normally a single one) and override
+    rule verdicts when it is confident. `judge_prompts` decides what is sent."""
     checks = {c.id: c for c in pillar.checks}
-    relevant = [d for d in docs if d.is_relevant]
-    budget = max(2000, 60000 // max(1, len(relevant)))
-    corpus = "\n\n".join(f'<document name="{d.ref.name}">\n{d.text[:budget]}\n</document>' for d in relevant)
-    questions = "\n".join(f"- {r.check_id}: {checks[r.check_id].question or checks[r.check_id].title}" for r in results)
-    prompt = f"Checks:\n{questions}\n\nEvidence:\n{corpus}"
-    batch = llm.generate_structured(JUDGE_SYSTEM, prompt, JudgeBatch)
-    by_id = {v.check_id: v for v in batch.verdicts}
+    system, prompts = judge_prompts(pillar, results, docs, max_docs, batch_chars)
+    by_id: dict[str, JudgeVerdict] = {}
+    for prompt in prompts:
+        batch = llm.generate_structured(system, prompt, JudgeBatch)
+        for v in batch.verdicts:
+            if _better(v, by_id.get(v.check_id)):
+                by_id[v.check_id] = v
     out = []
     for r in results:
-        v = by_id.get(r.check_id)
-        if v and v.confidence >= profile.rules.llm_override_min_confidence and v.status != CheckStatus.UNKNOWN:
+        verdict = by_id.get(r.check_id)
+        if (
+            verdict
+            and verdict.confidence >= profile.rules.llm_override_min_confidence
+            and verdict.status != CheckStatus.UNKNOWN
+        ):
             r = r.model_copy(
                 update={
-                    "status": v.status,
-                    "confidence": v.confidence,
-                    "rationale": f"LLM: {v.rationale}"[:500],
+                    "status": verdict.status,
+                    "confidence": verdict.confidence,
+                    "rationale": f"LLM: {verdict.rationale}"[:500],
                     "judged_by": "llm",
-                    "points": _points(checks[r.check_id], v.status, profile),
+                    "points": _points(checks[r.check_id], verdict.status, profile),
                 }
             )
         out.append(r)
@@ -181,6 +283,8 @@ def score_domain(
     profile: Profile,
     llm: LLMProvider | None = None,
     include_snippets: bool = False,
+    judge_max_docs: int = DEFAULT_JUDGE_MAX_DOCS,
+    judge_batch_chars: int = DEFAULT_JUDGE_BATCH_CHARS,
 ) -> DomainScore:
     pillars: list[PillarScore] = []
     for p in domain.pillars:
@@ -203,7 +307,7 @@ def score_domain(
                 )
             )
         if llm is not None:
-            results = llm_refine(p, results, docs, llm, profile)
+            results = llm_refine(p, results, docs, llm, profile, judge_max_docs, judge_batch_chars)
         covered = sum(1 for r in results if r.status != CheckStatus.UNKNOWN)
         pillars.append(
             PillarScore(

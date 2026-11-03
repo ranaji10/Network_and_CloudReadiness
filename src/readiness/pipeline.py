@@ -112,6 +112,8 @@ def run_assessment(
         redaction=redaction_mode,
         share_safe=share_safe,
         include_answers=include,
+        judge_max_docs=settings.judge_max_docs_per_pillar,
+        judge_batch_chars=settings.judge_batch_chars,
     )
 
     redactor = Redactor.from_config(redaction_mode, Path(settings.config_dir) / "redaction.yaml")
@@ -150,7 +152,18 @@ def run_assessment(
         audit.event("docs.llm_classified", provider=guarded.name)
     judge = guarded if settings.use_llm_judge else None
 
-    scores = [score_domain(dom, docs, profile, judge, include_snippets) for dom in domains]
+    scores = [
+        score_domain(
+            dom,
+            docs,
+            profile,
+            judge,
+            include_snippets,
+            judge_max_docs=settings.judge_max_docs_per_pillar,
+            judge_batch_chars=settings.judge_batch_chars,
+        )
+        for dom in domains
+    ]
     overall, coverage = composite(scores, profile)
     recs = recommend(scores, profile, settings.config_dir)
     waves = None

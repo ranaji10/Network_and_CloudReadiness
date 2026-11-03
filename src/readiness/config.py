@@ -42,6 +42,16 @@ class Settings(BaseSettings):
     allow_llm_egress: bool = False
     use_llm_judge: bool = False  # refine rule-based verdicts with the LLM (needs egress allowed)
     use_llm_classifier: bool = False
+    # --- LLM judge cost controls (LLM-06); see scoring/engine.py ---
+    # Documents sent to the judge per pillar: the best-ranked by signal hits for that pillar's checks,
+    # documents with no hit are never sent. 0 = every relevant document (no pre-selection).
+    judge_max_docs_per_pillar: int = 8
+    # Evidence characters per judge call; the selected documents share this budget (2,000 minimum each)
+    # and are split into several calls only when they still do not fit.
+    judge_batch_chars: int = 60_000
+    # Mark the static prompt prefix (system prompt, untrusted-data preamble, check list; never document
+    # text) as cacheable where the provider SDK supports it (Anthropic `cache_control`). No effect on the mock.
+    llm_prompt_caching: bool = True
 
     # --- GCP (read only when provider == gcp or llm_provider == gemini via Vertex) ---
     gcp_project: str = Field(default="", validation_alias="GOOGLE_CLOUD_PROJECT")

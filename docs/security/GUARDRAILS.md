@@ -32,7 +32,9 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 
 - **Optional LLM classifier is opt-in and guarded.** With `READINESS_USE_LLM_CLASSIFIER=true` only documents the keyword classifier is unsure about (confidence below 0.6) are sent, as one batch of redacted 1,500-character samples wrapped as untrusted data through `GuardedLLM`; a model verdict replaces the keyword class only when it is more confident. Off by default, like the judge (`src/readiness/ingestion/classify.py`).
 
-- **Token and cost accounting, numbers only.** `GuardedLLM` records model, input and output tokens on every `llm.ok` audit event and totals them into `report.extra["llm_usage"]` and the `run.end` event, with a list-price estimate from `config/llm_pricing.yaml` (null for unknown models). Prompts and responses are never logged.
+- **Token and cost accounting, numbers only.** `GuardedLLM` records model, input, output and prompt-cache tokens on every `llm.ok` audit event and totals them into `report.extra["llm_usage"]` and the `run.end` event, with a list-price estimate from `config/llm_pricing.yaml` (null for unknown models). Prompts and responses are never logged.
+
+- **Fewer documents reach the model, chosen deterministically.** The judge sees at most `READINESS_JUDGE_MAX_DOCS_PER_PILLAR` (default 8) documents per pillar, the best-ranked by signal hits for that pillar's checks; a document with no hit for the pillar is never sent, and the same pack always yields the same selection (`scoring/engine.rank_documents`, `tests/test_judge_preselection.py`). The cacheable prompt prefix (system prompt, preamble, check list) never contains document text; document text only appears in the user turn after the cache breakpoint.
 
 ## In CI and the repo
 

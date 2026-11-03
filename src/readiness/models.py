@@ -151,6 +151,10 @@ class LLMUsage(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     total_tokens: int = 0
+    # Prompt-cache accounting (LLM-06): tokens written to and served from the provider's prompt cache,
+    # reported separately from `input_tokens` the way the Anthropic API does; 0 when the provider has no cache.
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
     calls: int = 1
 
     def add(self, other: LLMUsage) -> LLMUsage:
@@ -160,6 +164,8 @@ class LLMUsage(BaseModel):
             input_tokens=self.input_tokens + other.input_tokens,
             output_tokens=self.output_tokens + other.output_tokens,
             total_tokens=self.total_tokens + other.total_tokens,
+            cache_creation_input_tokens=self.cache_creation_input_tokens + other.cache_creation_input_tokens,
+            cache_read_input_tokens=self.cache_read_input_tokens + other.cache_read_input_tokens,
             calls=self.calls + other.calls,
         )
 

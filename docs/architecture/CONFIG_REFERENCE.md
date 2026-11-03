@@ -118,10 +118,28 @@ each side of the match) are included only when `READINESS_INCLUDE_EVIDENCE_SNIPP
 | At least one distinct signal matched | PARTIAL | 0.5 |
 | Nothing matched | UNKNOWN | 0.3 |
 
-With the LLM judge enabled, each pillar is sent once to the model with all its check questions and the
-redacted documents (about 60,000 characters of evidence split evenly across documents, at least 2,000
-per document). A verdict replaces the rule result only when its confidence is at least
+With the LLM judge enabled, each pillar is sent to the model with all its check questions and a selection
+of the redacted documents. A verdict replaces the rule result only when its confidence is at least
 `llm_override_min_confidence` and its status is not `unknown`; points are recomputed from the new status.
+
+### What the judge sees (environment settings, LLM-06)
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `READINESS_JUDGE_MAX_DOCS_PER_PILLAR` | `8` | Documents sent per pillar: the best-ranked by the number of distinct signal hits for that pillar's checks (weak, strong and negative signals, each check on its own `doc_classes` pool; ties broken by document name, then id). Documents with no hit for the pillar are never sent. `0` sends every relevant document in source order (the behaviour before LLM-06). |
+| `READINESS_JUDGE_BATCH_CHARS` | `60000` | Evidence characters per call. The selected documents each get an even share, never less than 2,000 characters; when they still do not fit (only possible with pre-selection off or a very small budget) the pillar goes out in several calls and the verdicts are merged, a non-`unknown` verdict beating `unknown`, then the more confident one. |
+| `READINESS_LLM_PROMPT_CACHING` | `true` | Mark the static prompt prefix as cacheable where the provider SDK supports it (Anthropic `cache_control: ephemeral` on the system block; Gemini has no equivalent wired, see the adapter docstring). No effect on the mock. |
+
+Every judge call is laid out as a system prompt (`JUDGE_SYSTEM`, the pillar's check list, the untrusted-data
+preamble) that contains no document text and is byte-identical for every batch of a pillar and every run,
+followed by the user turn with the `<document>` blocks. The selection is deterministic: the same pack and
+configuration always send the same documents in the same order. On a 100-document synthetic pack the
+default settings cut the judge's input tokens by about 86% against pre-selection off (see
+`tests/test_judge_preselection.py`), with the mock returning no verdicts so no score moves.
+
+`report.extra["llm_usage"]` and the `run.end` audit event carry `cache_creation_input_tokens` and
+`cache_read_input_tokens` next to `input_tokens` (0 for providers without a cache); the cost estimate charges
+cached tokens at the full input price, so it remains an upper bound.
 
 ## Scoring math
 
@@ -339,7 +357,8 @@ continues and the report lists the document under warnings. The audit log record
 - the document classifier's keywords, weights and threshold (`src/readiness/ingestion/classify.py`)
 - the impact and effort weight tables, the 0.5 discovery factor, the six-question cap and the way merged
   actions combine priority (sum), effort and impact (maximum)
-- the LLM judge prompt, the evidence budget per pillar and the one-call-per-pillar batching
+- the LLM judge prompt, the 2,000-character floor per selected document and the ranking rule for pre-selection
+  (the document count and the character budget per call are environment settings, see *What the judge sees*)
 - the composite being a weighted mean, the grade letters, and the report layout
 - supported file types and extraction behaviour (`src/readiness/ingestion/extract.py`)
 - runtime limits such as `READINESS_MAX_DOC_BYTES`, `READINESS_MAX_TEXT_CHARS` and the `READINESS_OCR_*` switches above, which are environment settings, not YAML

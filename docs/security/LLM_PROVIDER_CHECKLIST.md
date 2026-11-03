@@ -11,6 +11,7 @@ Store the completed copy with the deployment record (outside this repository if 
 | Model id | |
 | Data-use terms confirmed: provider does not train on inputs | yes / no, link to terms |
 | Retention: zero-data-retention or stated retention window | window: |
+| Prompt caching (`READINESS_LLM_PROMPT_CACHING`, default on): the cached prefix holds only the tool's own instructions and check list, never document text, and the provider keeps it for minutes after last use (Anthropic ephemeral cache: about 5 minutes). Confirm this fits the retention answer above, or set the variable to `false` | on / off |
 | Region or location where inference runs; matches client residency requirement | |
 | Enterprise agreement / DPA in place with the provider | yes / no, reference |
 | `READINESS_REDACTION_MODE` to be used (`pseudonymize` required unless the client waives it in writing) | |
