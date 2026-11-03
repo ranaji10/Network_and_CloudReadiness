@@ -24,8 +24,14 @@ class _Hit:
     snippet: str
 
 
+def compile_signal(signal: str) -> re.Pattern[str]:
+    """The one signal convention used everywhere (checks, wave planning): a signal containing any of
+    `\\ [ ] ( ) . * + ? |` is a regular expression, anything else is a whole case-insensitive word or phrase."""
+    return re.compile(signal if any(ch in signal for ch in r"\[]().*+?|") else r"\b" + re.escape(signal) + r"\b", re.I)
+
+
 def _find(doc_text: str, signal: str, window: int = 80) -> str | None:
-    rx = re.compile(signal if any(ch in signal for ch in r"\[]().*+?|") else r"\b" + re.escape(signal) + r"\b", re.I)
+    rx = compile_signal(signal)
     m = rx.search(doc_text)
     if not m:
         return None

@@ -24,6 +24,7 @@ from readiness.ingestion.extract import extract_text
 from readiness.models import AssessmentReport, DocClass, ExtractedDocument, RedactionSummary
 from readiness.ports import DocumentSource, LLMProvider
 from readiness.recommend.engine import recommend
+from readiness.recommend.waves import load_wave_config, plan_waves
 from readiness.report.markdown import render
 from readiness.scoring.engine import composite, score_domain
 from readiness.scoring.profiles import load_domains, load_profile
@@ -115,6 +116,13 @@ def run_assessment(
     scores = [score_domain(dom, docs, profile, judge, include_snippets) for dom in domains]
     overall, coverage = composite(scores, profile)
     recs = recommend(scores, profile, settings.config_dir)
+    waves = None
+    if profile.migration_waves:
+        # Runs on the redacted, classified documents; the plan carries pseudonymised labels and config signals only.
+        waves = plan_waves(docs, load_wave_config(Path(settings.config_dir)))
+        if not waves.inventory_documents:
+            warnings.append("Migration waves: no document was classified as inventory, so no wave plan was produced.")
+        audit.event("waves.planned", inventory_docs=len(waves.inventory_documents), systems=waves.total_systems)
     usage = guarded.usage_summary() if guarded is not None else None
     report = AssessmentReport(
         id=run_id,
@@ -130,6 +138,7 @@ def run_assessment(
         recommendations=recs,
         redaction=RedactionSummary(mode=redaction_mode, counts=redactor.summary(), share_safe=share_safe),
         llm_provider=(guarded.name if guarded else "none"),
+        migration_waves=waves,
         extra={"llm_usage": usage} if usage else {},
         warnings=warnings + [f"{d.ref.name}: {d.extraction_error}" for d in docs if d.extraction_error],
     )

@@ -13,6 +13,49 @@ _ICON = {
 }
 
 
+def _cell(text: str) -> str:
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _render_waves(report: AssessmentReport, lines: list[str], section: int) -> int:
+    """Appends the migration-wave section. Returns the number of numbered sections it added (0 or 1): when the
+    profile asked for waves but no inventory document was found, only a one-line note is written."""
+    plan = report.migration_waves
+    assert plan is not None
+    if not plan.inventory_documents:
+        lines.append(
+            "\n_Migration waves: no document was classified as `inventory`, so no wave plan was produced. "
+            "Supply a server, VM or application inventory (CSV, XLSX or a table) to get one._"
+        )
+        return 0
+    lines.append(f"\n## {section}. Migration waves\n")
+    lines.append(
+        f"{plan.total_systems} system(s) read from {len(plan.inventory_documents)} inventory document(s): "
+        + ", ".join(f"`{n}`" for n in plan.inventory_documents)
+        + ". **How to read this:** each row of the inventory is placed in the first wave, from legacy down to "
+        "quick wins, whose configured signal matches it; the signal is the *reason*. Rows matching nothing go to "
+        f"the `{plan.default_wave}` wave. System labels are taken from the redacted documents, so hosts appear as "
+        f"pseudonyms. At most {plan.max_rows_per_wave} rows are listed per wave; the count is always complete. "
+        "Treat the plan as a starting point for dependency mapping, not as a schedule."
+    )
+    for w in plan.waves:
+        lines.append(f"\n### {w.name} ({w.count})\n")
+        if w.description:
+            lines.append(f"{w.description}\n")
+        if not w.systems:
+            lines.append("_No inventory row matched this wave._")
+            continue
+        lines.append("| System | Reason | Source document |")
+        lines.append("|---|---|---|")
+        for s in w.systems:
+            # code span: a pseudonym such as <host-01> must not be read as an HTML tag by Markdown renderers
+            lines.append(f"| `{_cell(s.system)}` | {_cell(s.reason)} | {_cell(s.source_doc)} |")
+        if w.count > len(w.systems):
+            hidden = w.count - len(w.systems)
+            lines.append(f"\n_… and {hidden} more row(s) not listed (cap of {plan.max_rows_per_wave})._")
+    return 1
+
+
 def render(report: AssessmentReport) -> str:
     lines: list[str] = []
     lines.append("# Network, Cloud & Agentic-AI Readiness Assessment\n")
@@ -102,7 +145,10 @@ def render(report: AssessmentReport) -> str:
         lines.append(f"- **{r.check_id}** {r.title.removeprefix('Provide evidence for: ')}")
         for q in r.caiq_questions[:3]:
             lines.append(f"  - {q}")
-    lines.append("\n## 5. Data handling\n")
+    section = 5
+    if report.migration_waves is not None:
+        section += _render_waves(report, lines, section)
+    lines.append(f"\n## {section}. Data handling\n")
     lines.append(
         f"Redaction mode `{report.redaction.mode}`; LLM provider `{report.llm_provider}`. Redaction counts: "
         + (", ".join(f"{k}={v}" for k, v in report.redaction.counts.items()) or "none")

@@ -7,7 +7,8 @@ Full field reference: `docs/architecture/CONFIG_REFERENCE.md`.
 |---|---|---|
 | `profiles/*.yaml` | Which domains count, their weights, grade thresholds, signal rules, provider preference | `readiness.scoring.profiles.load_profile` |
 | `scoring/*.yaml` | One domain per file: pillars with weights, checks with points, signals and CCM control ids | `readiness.scoring.profiles.load_domain` |
-| `recommendations/catalog.yaml` | One entry per check id: the action, effort, impact and GCP / AWS / open-source / process options; an option's `family` tag marks products whose single rollout closes several checks | `readiness.recommend.engine.load_catalog` |
+| `recommendations/catalog.yaml` | One entry per check id: the action, effort, impact and GCP / AWS / open-source / process options | `readiness.recommend.engine.load_catalog` |
+| `recommendations/waves.yaml` | Migration waves (quick wins, core, legacy): the signals that place an inventory row in a wave, the default wave and the per-wave row cap; used by profiles with `migration_waves: true` | `readiness.recommend.waves.load_wave_config` |
 | `redaction.yaml` | Regex rules for secrets, PII and identifiers, applied before anything leaves the process | `readiness.guardrails.redaction.Redactor.from_config` |
 
 The directory is found in this order: `READINESS_CONFIG_DIR`, then `<repo>/config`, then a `config/`
@@ -109,7 +110,19 @@ Goal: score whether DNS filtering is in place, in the network security domain.
 
 Copy `profiles/default.yaml`, change `id`, domain weights, `thresholds`, `rules` and `target_providers`.
 New profiles are discovered automatically and selected with `--profile <id>` or the `profile` query
-parameter of the API. Domain weights are relative; they do not need to sum to 100.
+parameter of the API. Domain weights are relative; they do not need to sum to 100. Set
+`migration_waves: true` (as `gcp_migration.yaml` does) to add the migration-wave section to the report.
+
+## Migration waves
+
+`recommendations/waves.yaml` sorts the rows of every document classified `inventory` into waves
+(`quick_wins`, `core`, `legacy`). Each wave has `signals` written like check signals; waves are tested from
+the highest `order` down and the first match wins, so a legacy signal beats a core one. Rows matching
+nothing go to `default_wave` (`core`: an unknown workload needs an assessment before it is called a quick
+win). `header_cells` lists first-cell values that mark a header row; `max_rows_per_wave` caps the rows
+printed per wave (the count stays complete). Planning runs on redacted text, so the system labels in the
+report are pseudonyms such as `<host-01>`; the reason column is the configured signal, never document text.
+Try it with `uv run readiness assess tests/fixtures/synthetic_acme --profile gcp_migration`.
 
 `rules.dedupe_by_product` (default `true`) merges actions whose preferred option (first after the
 `target_providers` ordering) shares a product family: one action per family, priority summed, with a

@@ -26,6 +26,13 @@ _RULES: dict[DocClass, list[tuple[str, float]]] = {
     DocClass.INVENTORY: [
         (r"\b(inventory|asset (list|register)|cmdb|server list|vm list|hardware)\b", 3),
         (r"\b(cpu|ram|vcpu|hostname|serial number)\b", 1),
+        # a table whose header row starts with a host/asset column and names sizing columns is an inventory
+        # export, whatever the rows say (an inventory naturally mentions databases, storage and backups)
+        (
+            r"^\W*(hostname|host ?name|server ?name|asset ?(tag|name|id)|ci ?name|device ?name)\b"
+            r"[^\n]*\b(v?cpu|ram|memory|os version|serial)\b",
+            6,
+        ),
     ],
     DocClass.DATA_STORAGE: [
         (r"\b(database|schema|postgres|mysql|oracle|sql server|mongodb|storage|nfs|smb|san|nas|iops)\b", 2),
@@ -57,12 +64,14 @@ _RULES: dict[DocClass, list[tuple[str, float]]] = {
 _NOISE = [
     (r"\b(meeting (minutes|notes)|agenda|invoice|receipt|marketing|newsletter|press release)\b", 4),
 ]
-_COMPILED = {k: [(re.compile(p, re.I), w) for p, w in v] for k, v in _RULES.items()}
-_NOISE_C = [(re.compile(p, re.I), w) for p, w in _NOISE]
+_COMPILED = {k: [(re.compile(p, re.I | re.M), w) for p, w in v] for k, v in _RULES.items()}
+_NOISE_C = [(re.compile(p, re.I | re.M), w) for p, w in _NOISE]
+_NAME_SEPARATORS = re.compile(r"[_\-.]+")
 
 
 def classify(name: str, text: str, threshold: float = 4.0) -> tuple[DocClass, float]:
-    sample = (name + "\n" + text[:20000]).lower()
+    # `server_inventory.csv` must count as the words "server inventory csv": `\b` never fires inside snake_case.
+    sample = (_NAME_SEPARATORS.sub(" ", name) + "\n" + text[:20000]).lower()
     scores: dict[DocClass, float] = {}
     for cls, rules in _COMPILED.items():
         s = 0.0

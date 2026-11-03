@@ -12,8 +12,9 @@ Storage, Amazon S3 or Google Drive), scores them against configurable control fr
 - a **Cloud Readiness** score (the five V1 pillars: compute, data, networking/identity, security/compliance, cost/licensing),
 - an **Agentic AI Readiness** score,
 - an **evidence coverage** figure per area (the V1 "confidence score": how much of the picture the documents actually cover),
-- prioritised **actions** with product options for **GCP, AWS and open source**, and
-- **discovery questions** (CSA CAIQ v4.1) for every control the documents do not cover.
+- prioritised **actions** with product options for **GCP, AWS and open source**,
+- **discovery questions** (CSA CAIQ v4.1) for every control the documents do not cover, and
+- **migration waves** (quick wins, core, legacy) derived from inventory documents, for profiles such as `gcp_migration`.
 
 **It runs outside the client's network.** Nothing is installed on client hosts, no VPN or inbound
 access is needed and the tool never scans or logs in to systems: documents are pushed to it, or pulled

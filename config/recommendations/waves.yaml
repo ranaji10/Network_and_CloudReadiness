@@ -1,0 +1,198 @@
+# Migration wave planning (REC-05): how rows of an *inventory* document are sorted into migration waves.
+# This recreates the V1 "GCP Roadmap Generator" behaviour (three waves) as configuration. It is only used by
+# profiles that set `migration_waves: true` (config/profiles/gcp_migration.yaml).
+#
+# How it works (src/readiness/recommend/waves.py):
+#   * only documents the classifier put in the `inventory` class are read, after redaction, so hostnames
+#     already appear as pseudonyms (<host-01>) and never as real names;
+#   * every non-empty line is one row (CSV/XLSX rows are one line each after extraction); cells are split on
+#     commas, pipes, tabs and semicolons; the first cell (or the first word of a free-text line) is the system
+#     label shown in the report;
+#   * a line is skipped as a header when its first cell is one of `header_cells`, or when it is the first row of
+#     the document and contains no digit;
+#   * waves are tested from the highest `order` down and the first wave with a matching signal wins, so a legacy
+#     signal beats a core signal, which beats a quick-win signal; the matching signal is the row's "reason";
+#   * rows that match nothing go to `default_wave`;
+#   * each wave lists at most `max_rows_per_wave` systems in the report; `count` is always the full number.
+#
+# Signals follow the scoring convention (config/README.md, "Writing signals"): an entry containing any of
+# `\ [ ] ( ) . * + ? |` is a regular expression, anything else is matched as a whole case-insensitive word or
+# phrase. Signals are matched against the redacted row text, so never write one that depends on an identifier.
+version: "1"
+default_wave: core          # an unclassified workload needs an assessment before it is called a quick win
+max_rows_per_wave: 25
+header_cells:               # lower-case; a row whose first cell is one of these is a header and is skipped
+  - hostname
+  - host
+  - host name
+  - server
+  - server name
+  - servername
+  - name
+  - system
+  - system name
+  - asset
+  - asset name
+  - asset tag
+  - application
+  - app
+  - workload
+  - service
+  - device
+  - ci
+  - ci name
+  - id
+  - item
+  - "no"
+  - "#"
+waves:
+  - id: quick_wins
+    name: "Wave 1 - Quick wins"
+    order: 1
+    description: >-
+      Stateless, containerised or non-production workloads and plain file shares. Lift-and-shift or
+      replatform with little coordination; use them to prove the landing zone and the migration tooling.
+    signals:
+      - stateless
+      - static site
+      - static website
+      - static content
+      - web
+      - web server
+      - web app
+      - frontend
+      - front-end
+      - container
+      - containers
+      - containerised
+      - containerized
+      - docker
+      - kubernetes
+      - k8s
+      - openshift
+      - dev
+      - development
+      - test
+      - testing
+      - uat
+      - qa
+      - staging
+      - sandbox
+      - non-prod
+      - nonprod
+      - non-production
+      - saas
+      - file share
+      - fileshare
+      - file server
+      - nfs
+      - smb
+      - cifs
+      - small vm
+      - wiki
+      - intranet
+      - wordpress
+      - jenkins
+      - ci/cd
+      - build server
+      - archive
+  - id: core
+    name: "Wave 2 - Core systems"
+    order: 2
+    description: >-
+      Systems of record and anything customer-facing or regulated: ERP, CRM, databases, payments, identity.
+      Need a dependency map, a data migration plan, a rehearsed cutover and a rollback path.
+    signals:
+      - erp
+      - crm
+      - sap
+      - database
+      - db
+      - oracle
+      - sql server
+      - mssql
+      - postgres
+      - postgresql
+      - mysql
+      - mariadb
+      - mongodb
+      - data warehouse
+      - tier 1
+      - tier1
+      - tier-1
+      - mission critical
+      - mission-critical
+      - business critical
+      - business-critical
+      - critical
+      - customer-facing
+      - customer facing
+      - payments
+      - payment
+      - billing
+      - core banking
+      - middleware
+      - message queue
+      - kafka
+      - active directory
+      - domain controller
+      - identity provider
+      - pci
+      - regulated
+  - id: legacy
+    name: "Wave 3 - Legacy and end-of-life"
+    order: 3
+    description: >-
+      Platforms with no supported cloud path as they stand: mainframe and midrange, out-of-support operating
+      systems, physical appliances, vendor-abandoned software. Decide per system: retire, replace with a managed
+      service or SaaS, re-host in an emulation or compatibility layer, or keep on premises behind a hybrid link.
+    signals:
+      - mainframe
+      - as/400
+      - as400
+      - iseries
+      - ibm i
+      - z/os
+      - zos
+      - cobol
+      - windows server 2003
+      - windows server 2008
+      - windows server 2012
+      - windows 2003
+      - windows 2008
+      - windows 2012
+      - windows xp
+      - windows 7
+      - centos 6
+      - centos 7
+      - rhel 5
+      - rhel 6
+      - solaris
+      - aix
+      - hp-ux
+      - netware
+      - novell
+      - lotus notes
+      - end of life
+      - end-of-life
+      - eol
+      - end of support
+      - out of support
+      - unsupported
+      - no vendor support
+      - vendor support ended
+      - no support
+      - physical appliance
+      - appliance
+      - bare metal
+      - bare-metal
+      - physical server
+      - scada
+      - plc
+      - legacy
+      - vb6
+      - visual basic
+      - classic asp
+      - delphi
+      - oracle forms
+      - fax

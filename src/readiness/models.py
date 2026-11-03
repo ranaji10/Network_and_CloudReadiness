@@ -167,6 +167,36 @@ class RedactionSummary(BaseModel):
     share_safe: bool = False  # mask mode, no snippets, opaque document labels (GRD-09)
 
 
+class WaveSystem(BaseModel):
+    """One inventory row placed in a migration wave. `system` is the first cell of the redacted row (a
+    pseudonym such as `<host-01>` when the row named a host); `reason` is the configured signal that matched,
+    never document text."""
+
+    system: str
+    reason: str
+    source_doc: str  # document name as it appears in AssessmentReport.documents
+
+
+class MigrationWave(BaseModel):
+    id: str
+    name: str
+    order: int
+    description: str = ""
+    count: int = 0  # all rows placed in this wave
+    systems: list[WaveSystem] = []  # at most `MigrationWavePlan.max_rows_per_wave` of them
+
+
+class MigrationWavePlan(BaseModel):
+    """Migration waves derived from inventory documents (REC-05). Present only when the profile enables
+    `migration_waves`; `inventory_documents` is empty when no document was classified as inventory."""
+
+    waves: list[MigrationWave]
+    inventory_documents: list[str] = []
+    total_systems: int = 0
+    default_wave: str
+    max_rows_per_wave: int
+
+
 class AssessmentReport(BaseModel):
     id: str
     tenant_id: str
@@ -182,5 +212,6 @@ class AssessmentReport(BaseModel):
     recommendations: list[Recommendation]
     redaction: RedactionSummary
     llm_provider: str
+    migration_waves: MigrationWavePlan | None = None
     warnings: list[str] = []
     extra: dict[str, Any] = {}

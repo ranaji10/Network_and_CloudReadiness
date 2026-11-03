@@ -46,6 +46,7 @@ nothing has yet been run against a live cloud account or a real model.
 | F-REC-2 | Every check without evidence yields a discovery item with CAIQ questions | done |
 | F-REC-3 | Options are ordered by the profile's provider preference | done |
 | F-REC-4 | Priority reflects points lost, pillar weight, impact and effort | done |
+| F-REC-5 | Inventory documents are sorted into migration waves (quick wins, core, legacy) from configurable signals when the profile asks for it; the V1 roadmap waves | done (`recommend/waves.py`, `config/recommendations/waves.yaml`, `gcp_migration` profile) |
 
 ### 2.4 Report and surfaces
 

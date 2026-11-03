@@ -40,7 +40,7 @@
 | Ingestion | bytes to text (pdf, docx, xlsx, pptx, legacy doc/xls via the `office` extra, text/structured), heuristic classification | `ingestion/extract.py`, `ingestion/classify.py` |
 | Guardrails | redaction, egress policy, prompt wrapping, audit | `guardrails/` |
 | Scoring | load profile and domains, evaluate checks by signals, optional LLM judge, grades, composite | `scoring/` |
-| Recommend | failed/partial checks to actions with provider options; unknown checks to CAIQ discovery questions | `recommend/engine.py` |
+| Recommend | failed/partial checks to actions with provider options; unknown checks to CAIQ discovery questions; inventory rows to migration waves when the profile sets `migration_waves` | `recommend/engine.py`, `recommend/waves.py` |
 | Report | Markdown deliverable and an optional PDF (fpdf2, `pdf` extra), both rendered from the pydantic model | `report/markdown.py`, `report/pdf.py`, `models.py` |
 | Ports/adapters | the cloud-neutral boundary | `ports/__init__.py`, `adapters/` |
 | Config | all tunables | `config/` |
@@ -72,7 +72,8 @@ and `list_checks` over stdio to Claude Code, Claude Desktop and other MCP client
 6. composite score and coverage per profile weights
 7. recommendations from the catalog, actions sharing a product family merged into one (`rules.dedupe_by_product`),
    sorted by lost points x weights x impact / effort
-8. render Markdown; write outputs; audit `run.end`
+8. if the profile sets `migration_waves`, sort the redacted inventory rows into waves (`recommend/waves.py`)
+9. render Markdown; write outputs; audit `run.end`
 
 ## Where configuration lives
 

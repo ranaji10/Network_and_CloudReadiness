@@ -1,8 +1,8 @@
 # Configuration reference
 
 Field-by-field reference for the YAML under `config/`. Values are validated by the pydantic models in
-`src/readiness/scoring/profiles.py` and `src/readiness/recommend/engine.py`; an unknown field or a wrong
-type fails at load time. `config/README.md` is the short orientation; this page is the contract.
+`src/readiness/scoring/profiles.py`, `src/readiness/recommend/engine.py` and `src/readiness/recommend/waves.py`;
+an unknown field or a wrong type fails at load time. `config/README.md` is the short orientation; this page is the contract.
 
 ## Where configuration is loaded from
 
@@ -32,6 +32,7 @@ Profiles, domains, the catalog and `redaction.yaml` are all read from that one d
 | `target_providers` | list of string | `[gcp, aws, oss]` | Preference order for recommendation options; providers not listed are dropped, `process` is always kept and listed last |
 | `max_recommendations` | integer | `40` | Truncates the prioritised list (actions and discovery items together) |
 | `pillar_weight_overrides` | map of `{domain_id: {pillar_id: number}}` | `{}` | Replaces the `weight` of the named pillars for this profile only; unlisted pillars keep the domain's weight |
+| `migration_waves` | boolean | `false` | Derive migration waves from inventory documents with `recommendations/waves.yaml` and add them to the report (`gcp_migration` sets it) |
 
 `pillar_weight_overrides` is validated at load time: every domain id must appear in `domains`, every
 pillar id must exist in that domain's `scoring/<id>.yaml`, and every weight must be greater than zero.
@@ -217,6 +218,41 @@ losing 5 points has priority 5 × 25 × 40 / 100 × 1.5 × 1.0 = 75; NS-IAM-02 P
 priority 20 × 1.5 × 1.2 = 36. Both prefer a `gcp` option tagged `cloud-identity`, so the report shows one
 action "Consolidate on a central identity provider with SSO" with priority 111 and
 `Closes: NS-IAM-01 ..., NS-IAM-02 ...`. With the rule off they are two separate actions.
+
+## Migration waves (`config/recommendations/waves.yaml`)
+
+Read only when the profile sets `migration_waves: true`. Validated by `readiness.recommend.waves.WaveConfig`.
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `version` | string | `"1"` | Informational |
+| `default_wave` | string | required | Wave id for rows that match no signal; must be one of the wave ids |
+| `max_rows_per_wave` | integer | `25` | Rows listed per wave in `report.json` and `report.md`; `count` is always the full number |
+| `header_cells` | list of string | `[]` | Lower-case first-cell values that mark a header row (`hostname`, `name`, ...) |
+| `waves` | list of wave | required | At least one; ids must be unique |
+
+Wave fields: `id` (string), `name` (string, report heading), `order` (integer, report order and precedence),
+`description` (string, printed under the heading), `signals` (list of string, at least one, same syntax as
+check signals; an invalid regular expression fails at load).
+
+### How rows are placed
+
+1. Only documents classified `inventory` (keyword or LLM classifier) with non-empty text are read, after redaction.
+2. Each line is a row. Blank lines, `## sheet:` markers from XLSX extraction, Markdown table rules and lines
+   without a letter are skipped. Cells are split on `,`, `|`, tab and `;`; the system label is the first cell,
+   or the first word when the line has a single cell, cut at 60 characters.
+3. A row is a header when its first cell is in `header_cells`, or when it is the first row of the document and
+   contains no digit.
+4. The same label twice in one document counts once.
+5. Waves are tested in descending `order`; the first wave with a matching signal takes the row and the first
+   matching signal in that wave's list is the `reason`. No match: `default_wave` with the reason
+   `no signal matched (default wave)`.
+
+Output: `AssessmentReport.migration_waves` (`MigrationWavePlan`: `waves[]` with `id`, `name`, `order`,
+`description`, `count`, `systems[]` of `{system, reason, source_doc}`, plus `inventory_documents`,
+`total_systems`, `default_wave`, `max_rows_per_wave`). It is `null` when the profile has the switch off. When
+the switch is on but no inventory document exists, `inventory_documents` is empty, the report carries a
+warning and the Markdown shows a one-line note instead of the section.
 
 ## Redaction rules (`config/redaction.yaml`)
 

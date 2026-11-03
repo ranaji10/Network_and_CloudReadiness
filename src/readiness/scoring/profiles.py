@@ -81,6 +81,7 @@ class Profile(BaseModel):
     rules: ProfileRules = ProfileRules()
     target_providers: list[str] = ["gcp", "aws", "oss"]
     max_recommendations: int = 40
+    migration_waves: bool = False  # derive migration waves from inventory documents (config/recommendations/waves.yaml)
     # Optional per-profile emphasis inside a domain: {domain_id: {pillar_id: weight}}. Pillars not listed
     # keep the weight from config/scoring/<domain>.yaml. Lets an industry profile stress, say, audit
     # logging or data protection without forking the domain definition.
