@@ -10,7 +10,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 3 | 0 | 0 | 2 | 5 |
 | API | API and UI | 2 | 0 | 0 | 5 | 7 |
-| DOC | Docs and governance | 2 | 1 | 0 | 4 | 7 |
+| DOC | Docs and governance | 2 | 0 | 0 | 5 | 7 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 5 | 0 | 0 | 4 | 9 |
 | INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
@@ -19,7 +19,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 4 | 0 | 0 | 2 | 6 |
 | SCR | Scoring | 4 | 0 | 0 | 5 | 9 |
-| **All** | | 34 | 1 | 0 | 46 | 81 |
+| **All** | | 34 | 0 | 0 | 47 | 81 |
 
 ## By phase
 
@@ -71,13 +71,13 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **SCR-04** Tune signals against three anonymised real document packs
 - `done` **SCR-08** Per-check signal weights and regex signals documented in config README (claude-code)
 
-### Phase 2: Cloud ingestion and multi-tenant (7/15 done)
+### Phase 2: Cloud ingestion and multi-tenant (8/15 done)
 
 - `done` **AGT-02** Deploy the ADK agent to Vertex AI Agent Engine (claude-code)
 - `done` **API-02** Per-tenant tokens and report keys (claude-code)
 - `done` **API-06** Async assessments with job status endpoint (claude-code)
 - `done` **API-07** OpenAPI docs published and versioned (claude-code)
-- `in_progress` **DOC-07** Outside-the-network posture documented, client-facing, and enforced in CI (claude-code)
+- `done` **DOC-07** Outside-the-network posture documented, client-facing, and enforced in CI (claude-code)
 - `todo` **GRD-05** Optional Presidio-based PII detection
 - `todo` **GRD-06** Egress perimeter (VPC Service Controls or equivalent) around the runtime
 - `todo` **GRD-09** Report redaction review step before sharing outside the tenant
@@ -162,7 +162,7 @@ Owner hint: docs/, README, CLAUDE.md, AGENTS.md
 | DOC-04 | Config reference for scoring, profiles, catalog and redaction | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-08 | config/README.md with every field explained |
 | DOC-05 | Support and incident process for customers | todo | 5 |  |  |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
 | DOC-06 | Tracker sync to GitHub Issues (optional script) | todo | 1 |  |  | DOC-01 | scripts/tracker_to_issues.py creates or updates issues by story id |
-| DOC-07 | Outside-the-network posture documented, client-facing, and enforced in CI | in_progress | 2 | claude-code | claude/nifty-mendel-lcqzeb | DOC-02 | ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs |
+| DOC-07 | Outside-the-network posture documented, client-facing, and enforced in CI | done | 2 | claude-code | claude/nifty-mendel-lcqzeb | DOC-02 | ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs |
 
 ### FND: Foundation
 

@@ -58,10 +58,10 @@ stories:
     notes: ""
   - id: DOC-07
     title: Outside-the-network posture documented, client-facing, and enforced in CI
-    status: in_progress
+    status: done
     phase: 2
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [DOC-02]
     acceptance: "ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs"
-    notes: ""
+    notes: "ADR-20261103-outside-the-client-network; posture doc for client security teams; T15 in threat model; CLAUDE.md hard rule; tests/test_repo_policy.py"

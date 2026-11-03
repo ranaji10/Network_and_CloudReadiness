@@ -20,6 +20,7 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 | Blob store keys cannot escape the store root | `adapters/storage/local.LocalBlobStore._path` | unit test to add under `GRD` epic |
 | Upload file names are reduced to a basename; oversize uploads rejected | `api/app.create_from_upload` | `tests/test_api.py` |
 | Source schemes are allow-listed | `Settings.allowed_source_schemes`, `registry.make_source` | manual: set the list to `["file"]` and request `gs://` |
+| Drive source requests the read-only scope only | `adapters/sources/gdrive.GoogleDriveSource.SCOPES` | code review; the scope string is a constant |
 | API needs a bearer token unless explicitly disabled; constant-time compare | `api/app.auth` | `tests/test_api.py::test_api_requires_token_when_enabled` |
 | Document size and text length caps | `Settings.max_doc_bytes`, `max_text_chars`; `ingestion/extract.extract_text` | `tests/test_pipeline.py` (truncated flag) |
 | Tenant prefix on every output path and key | `pipeline.run_assessment`, `api/app._run` | `tests/test_api.py` round trip |
@@ -37,6 +38,7 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 | Client data directories and secret file patterns are ignored by git | `.gitignore` | `git check-ignore data/x.pdf .env infra/terraform/gcp/envs/dev.tfvars` |
 | Tracked files are scanned for client-data-like content | `scripts/check_no_client_data.py` (in `make check`, Cloud Build, GitHub Actions) | `uv run python scripts/check_no_client_data.py` |
 | Tracked files are scanned for account-specific values | `scripts/check_portability.py` | `uv run python scripts/check_portability.py` |
+| The package cannot reach client systems: no scanning, remote-access or protocol-client library in `pyproject.toml` or `uv.lock`; no `socket`/`subprocess` under `src/readiness`; registry schemes limited to document stores; no network tooling in the image (ADR-20261103) | `scripts/check_no_system_access.py` (in `make check`, Cloud Build, GitHub Actions) | `tests/test_repo_policy.py`; `uv run python scripts/check_no_system_access.py` |
 | Secret scanning on every push and before every commit | `.gitleaks.toml`, `.pre-commit-config.yaml`, `cloudbuild.yaml` step `secret-scan`, `.github/workflows/ci.yml` job `secrets` | `make secrets-scan` |
 | Every check must have a recommendation and valid CCM ids | `tests/test_config_profiles.py` | `make test` |
 | Security-sensitive paths need the security owner's review | `.github/CODEOWNERS` | GitHub branch protection |
@@ -59,6 +61,7 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 |---|---|
 | Provider checklist must be completed before egress is enabled | `docs/security/LLM_PROVIDER_CHECKLIST.md` |
 | Data handling rules for analysts | `docs/security/DATA_HANDLING_POLICY.md` |
+| Client-facing statement of where the tool runs and what it can reach | `docs/security/DEPLOYMENT_POSTURE.md` |
 | Incident procedure | `docs/runbooks/INCIDENT_DATA_LEAK.md` |
 | Agent and contributor rules | `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md` |
 

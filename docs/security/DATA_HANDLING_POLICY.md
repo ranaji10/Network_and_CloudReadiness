@@ -79,7 +79,10 @@ the assessments used. Hosted agent sessions (Agent Runtime) are not stored by th
    this repo) and confirm with `uv run readiness tenant purge <tenant_id>` showing 0 objects.
 7. If an external model was used, the provider's retention applies; the checklist records which provider and terms.
 
-## What analysts must do on site
+## What analysts must do when handling a client pack
+
+Analysts are never on the client's network: the pack is pushed to the operator, or pulled read-only from a
+folder the client shares (`docs/security/DEPLOYMENT_POSTURE.md`). The rules below apply wherever the run happens.
 
 - Run with `READINESS_PROVIDER=local` and `READINESS_LLM_PROVIDER=mock` unless the client has approved model use in writing.
 - Keep `READINESS_REDACTION_MODE=pseudonymize` (default). Use `--snippets` only for a report that stays with the client.

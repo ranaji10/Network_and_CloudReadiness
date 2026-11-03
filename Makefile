@@ -22,9 +22,10 @@ fmt: ## Auto-format and fix lint
 test: ## Run the test suite
 	$(UV) run pytest -q
 
-policy: ## Repo guardrails: portability, no client data, tracker and OpenAPI export in sync
+policy: ## Repo guardrails: portability, no client data, no system access, tracker and OpenAPI export in sync
 	$(UV) run python scripts/check_portability.py
 	$(UV) run python scripts/check_no_client_data.py
+	$(UV) run python scripts/check_no_system_access.py
 	$(UV) run python scripts/render_tracker.py --check
 	$(UV) run python scripts/export_openapi.py --check
 

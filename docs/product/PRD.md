@@ -70,10 +70,12 @@ nothing has yet been run against a live cloud account or a real model.
 | N-6 | Provider portability: no project ids, bucket names or accounts in code or IaC | ports/adapters, Terraform variables, `scripts/check_portability.py` |
 | N-7 | Reproducible builds and a CI gate that runs locally | `uv.lock`, `make check`, `cloudbuild.yaml` |
 | N-8 | Assessment of ~50 documents completes in under two minutes offline | rule engine is linear in text size |
+| N-9 | Zero footprint on the client: runs outside their network, no scanning, probing or host sessions, documents pushed or pulled read-only | ADR-20261103, `scripts/check_no_system_access.py`, `Settings.allowed_source_schemes` |
 
 ## 4. Out of scope for v1.0
 
-- Live scanning of networks or cloud accounts.
+- Live scanning of networks or cloud accounts, or any component that runs inside the client's network
+  (a permanent boundary, not a phase: see `docs/decisions/ADR-20261103-outside-the-client-network.md`).
 - Multi-language documents beyond English.
 - Fine-grained per-user permissions inside the API (one token per tenant deployment is enough).
 - A full web UI (Phase 4).

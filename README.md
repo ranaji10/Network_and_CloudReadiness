@@ -15,6 +15,11 @@ Storage, Amazon S3 or Google Drive), scores them against configurable control fr
 - prioritised **actions** with product options for **GCP, AWS and open source**, and
 - **discovery questions** (CSA CAIQ v4.1) for every control the documents do not cover.
 
+**It runs outside the client's network.** Nothing is installed on client hosts, no VPN or inbound
+access is needed and the tool never scans or logs in to systems: documents are pushed to it, or pulled
+read-only from a Drive folder or storage prefix the client shares. CI fails if that ever changes
+(`scripts/check_no_system_access.py`). Client-facing summary: [docs/security/DEPLOYMENT_POSTURE.md](docs/security/DEPLOYMENT_POSTURE.md).
+
 Everything runs offline by default. A real model (Gemini or Claude) is only called when an operator
 sets `READINESS_ALLOW_LLM_EGRESS=true`, and only after redaction.
 
