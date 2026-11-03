@@ -16,26 +16,34 @@ from readiness.agents.prompts import COORDINATOR
 from readiness.config import get_settings
 
 
-def run_readiness_assessment(source_uri: str, profile: str = "default") -> dict:
+def _settings():
+    settings = get_settings()
+    if not os.environ.get("READINESS_WORKSPACE_DIR"):
+        # Hosted runtimes (Agent Engine) may not allow writes next to the code; use the temp dir.
+        settings = settings.model_copy(update={"workspace_dir": Path(tempfile.gettempdir()) / "readiness-workspace"})
+    return settings
+
+
+def run_readiness_assessment(source_uri: str, profile: str = "default", include_answers: bool = False) -> dict:
     """Assess all documents under `source_uri` and return scores, grades and prioritised recommendations.
 
     Args:
         source_uri: folder path, gs://bucket/prefix, s3://bucket/prefix or gdrive://<folder id or URL>.
         profile: scoring profile id (default, gcp_migration, security_only, healthcare, finance, public_sector).
+        include_answers: also score the questionnaire answers stored earlier with
+            `submit_questionnaire_answers` (the re-run after the client answered discovery questions).
     """
     from readiness.pipeline import run_assessment
 
-    settings = get_settings()
-    if not os.environ.get("READINESS_WORKSPACE_DIR"):
-        # Hosted runtimes (Agent Engine) may not allow writes next to the code; use the temp dir.
-        settings = settings.model_copy(update={"workspace_dir": Path(tempfile.gettempdir()) / "readiness-workspace"})
-    report, _ = run_assessment(source_uri, settings, profile)
+    settings = _settings()
+    report, _ = run_assessment(source_uri, settings, profile, include_answers=include_answers)
     summary = {
         "run_id": report.id,
         # Where report.json / report.md / audit.jsonl were written, so a client can fetch the full report.
         "report_dir": str(Path(settings.workspace_dir) / settings.tenant_id / report.id),
         "overall_score": report.overall_score,
         "evidence_coverage": report.overall_coverage,
+        "answers_included": report.extra.get("answers_included", 0),
         "domains": [
             {"id": d.domain_id, "name": d.name, "score": d.score, "grade": d.grade, "coverage": d.coverage}
             for d in report.domains
@@ -61,6 +69,23 @@ def run_readiness_assessment(source_uri: str, profile: str = "default") -> dict:
     return json.loads(json.dumps(summary))
 
 
+def submit_questionnaire_answers(run_id: str, answers: list[dict[str, str]]) -> dict:
+    """Store the client's answers to the discovery questions of an earlier run as a document in the tenant
+    workspace. Then call `run_readiness_assessment` again on the same source with include_answers=true.
+
+    Args:
+        run_id: the run_id returned by run_readiness_assessment whose discovery items are being answered.
+        answers: one entry per answered check: {"check_id": "<id from the discovery list>",
+            "answer": "<the client's answer>"} and optionally "question" (the question as shown).
+
+    Returns the stored document id and counts, never the answer text.
+    """
+    from readiness.questionnaire import parse_answer_file, store_answers
+
+    stored = store_answers(parse_answer_file(answers, run_id), _settings())
+    return json.loads(stored.model_dump_json(exclude={"path"}))
+
+
 def build_root_agent():
     from google.adk.agents import LlmAgent
     from google.adk.models import Gemini
@@ -80,7 +105,7 @@ def build_root_agent():
         model=GlobalGemini(model=settings.llm_model or "gemini-3.5-flash"),
         description="Assesses network security, cloud and agentic-AI readiness from a document source.",
         instruction=COORDINATOR,
-        tools=[run_readiness_assessment],
+        tools=[run_readiness_assessment, submit_questionnaire_answers],
     )
 
 

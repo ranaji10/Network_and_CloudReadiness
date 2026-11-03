@@ -97,7 +97,10 @@ The pillar maximum is the sum of its checks' `points`; it is never written in th
 
 Valid `doc_classes` values are the `DocClass` enum: `architecture`, `network`, `security_policy`,
 `compliance_audit`, `inventory`, `data_storage`, `identity`, `backup_dr`, `contract_license`, `ai_ml`,
-`operations`. Documents classified `irrelevant` or with empty text are never searched.
+`operations`, `questionnaire`. Documents classified `irrelevant` or with empty text are never searched.
+`questionnaire` is assigned by the pipeline to stored questionnaire answers (`readiness answer`,
+`POST /assessments/{id}/answers`); such documents are searched by every check regardless of its
+`doc_classes`, and only their answer text is scored.
 
 ### Signal matching
 

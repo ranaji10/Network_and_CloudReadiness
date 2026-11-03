@@ -60,6 +60,12 @@ _RULES: dict[DocClass, list[tuple[str, float]]] = {
     DocClass.OPERATIONS: [
         (r"\b(runbook|monitoring|logging|siem|observability|on-call|sre|change management|patching)\b", 3),
     ],
+    # Answers to discovery questions (AGT-03). The pipeline recognises the stored document by its first
+    # line and sets the class directly; this rule covers a copy that landed in an ordinary source folder.
+    DocClass.QUESTIONNAIRE: [
+        (r"\bquestionnaire answers\b", 10),
+        (r"\bdiscovery questions? of assessment run\b", 10),
+    ],
 }
 _NOISE = [
     (r"\b(meeting (minutes|notes)|agenda|invoice|receipt|marketing|newsletter|press release)\b", 4),
@@ -101,7 +107,8 @@ from readiness.ports import LLMProvider  # noqa: E402
 CLASSIFIER_SYSTEM = (
     "You classify business documents for an infrastructure assessment. For each document pick exactly one class "
     "from: architecture, network, security_policy, compliance_audit, inventory, data_storage, identity, backup_dr, "
-    "contract_license, ai_ml, operations, irrelevant. Use irrelevant for meeting notes, marketing, invoices and "
+    "contract_license, ai_ml, operations, questionnaire, irrelevant. Use questionnaire only for a filled-in "
+    "answer sheet to assessment questions. Use irrelevant for meeting notes, marketing, invoices and "
     "anything without technical or governance content. Return one item per document id."
 )
 

@@ -44,6 +44,11 @@ def assess(
         help="Render for sharing outside the tenant: mask redaction, no snippets, opaque document labels "
         "(default: READINESS_SHARE_SAFE)",
     ),
+    include_answers: bool | None = typer.Option(
+        None,
+        "--include-answers/--no-include-answers",
+        help="Also score the questionnaire answers stored with `readiness answer` (default: READINESS_INCLUDE_ANSWERS)",
+    ),
     print_md: bool = typer.Option(True, "--print/--no-print", help="Print the markdown report"),
     pdf: bool = typer.Option(False, "--pdf", help="Also write report.pdf to the run folder (needs the `pdf` extra)"),
 ):
@@ -59,6 +64,8 @@ def assess(
         overrides["use_llm_classifier"] = llm_classifier
     if share_safe is not None:
         overrides["share_safe"] = share_safe
+    if include_answers is not None:
+        overrides["include_answers"] = include_answers
     if out:
         overrides["workspace_dir"] = out
     settings = get_settings(**overrides)
@@ -68,9 +75,10 @@ def assess(
     run_dir = Path(settings.workspace_dir) / settings.tenant_id / report.id
     if pdf:
         _write_pdf(report, run_dir / "report.pdf")
+    answers = f" answers={report.extra['answers_included']}" if "answers_included" in report.extra else ""
     typer.echo(
         f"[done] run={report.id} score={report.overall_score} coverage={report.overall_coverage} "
-        f"llm={report.llm_provider} -> {run_dir}",
+        f"llm={report.llm_provider}{answers} -> {run_dir}",
         err=True,
     )
 
@@ -98,6 +106,47 @@ def export_pdf(
 
     report = AssessmentReport.model_validate_json(report_json.read_text())
     _write_pdf(report, out or report_json.with_name("report.pdf"))
+
+
+@app.command()
+def answer(
+    run_id: str = typer.Argument(..., help="Run id of the report whose discovery questions are being answered"),
+    from_file: Path | None = typer.Option(
+        None,
+        "--from",
+        help="YAML/JSON file: a list of {check_id, answer, question?} or a mapping with an 'answers' key",
+    ),
+    check: list[str] | None = typer.Option(None, "--check", help="Check id, e.g. NS-PER-02 (repeatable)"),
+    answer_text: list[str] | None = typer.Option(
+        None, "--answer", help="Answer for the --check given in the same position (repeatable)"
+    ),
+    out: Path | None = typer.Option(None, help="Workspace directory (default READINESS_WORKSPACE_DIR)"),
+):
+    """Store answers to a report's discovery questions as a document in the tenant workspace (AGT-03).
+
+    Re-run with `readiness assess <source> --include-answers` to score them; the answers are redacted and
+    scored like any other document and purged with `readiness tenant purge`."""
+    import yaml
+
+    from readiness.questionnaire import parse_answer_file, store_answers
+
+    entries: list[object] = []
+    if from_file:
+        loaded = yaml.safe_load(from_file.read_text())
+        entries += loaded if isinstance(loaded, list) else list((loaded or {}).get("answers", []))
+    checks, texts = check or [], answer_text or []
+    if len(checks) != len(texts):
+        raise typer.BadParameter("--check and --answer must be given the same number of times, in matching order")
+    entries += [{"check_id": c, "answer": a} for c, a in zip(checks, texts, strict=True)]
+    if not entries:
+        raise typer.BadParameter("give --from <file> and/or --check/--answer pairs")
+    settings = get_settings(**({"workspace_dir": out} if out else {}))
+    try:
+        stored = store_answers(parse_answer_file(entries, run_id), settings)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(f"stored {stored.answers} answer(s) for {len(stored.checks)} check(s) -> {stored.path}")
+    typer.echo(f"document id {stored.document_id}; score them with: readiness assess <source> --include-answers")
 
 
 @app.command()

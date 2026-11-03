@@ -97,6 +97,12 @@ def render(report: AssessmentReport) -> str:
     lines.append("|---|---|---|")
     for ref in report.documents:
         lines.append(f"| {ref.name} | {report.document_classes.get(ref.id, '-')} | {ref.source} |")
+    if "answers_included" in report.extra:
+        n_ans, n_docs = report.extra["answers_included"], report.extra.get("answer_documents", 0)
+        lines.append(
+            f"\n{n_ans} questionnaire answer(s) from {n_docs} answer document(s) stored in the tenant workspace "
+            "were included as evidence (source `answers`). Only the answer text is scored, not the questions."
+        )
     lines.append("\n## 3. Detailed findings\n")
     for d in report.domains:
         lines.append(f"### {d.name} — {d.score:.0f}/100 (grade {d.grade}, coverage {d.coverage:.0f}%)\n")
@@ -141,6 +147,13 @@ def render(report: AssessmentReport) -> str:
             lines.append(f"- **{o.provider.upper()}**: {o.product}" + (f" — {o.note}" if o.note else ""))
         lines.append("")
     lines.append(f"### 4b. Discovery — evidence to collect ({len(disc)})\n")
+    if disc:
+        lines.append(
+            f'Answer these with `readiness answer {report.id} --check <check id> --answer "..."` '
+            f"(or `POST /assessments/{report.id}/answers`), then re-run with answers included "
+            "(`readiness assess <source> --include-answers` or `POST /assessments/"
+            f"{report.id}/rerun`): the answers count as evidence on the next run.\n"
+        )
     for r in disc:
         lines.append(f"- **{r.check_id}** {r.title.removeprefix('Provide evidence for: ')}")
         for q in r.caiq_questions[:3]:

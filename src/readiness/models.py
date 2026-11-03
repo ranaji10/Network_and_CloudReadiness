@@ -28,6 +28,7 @@ class DocClass(StrEnum):
     CONTRACT_LICENSE = "contract_license"
     AI_ML = "ai_ml"
     OPERATIONS = "operations"
+    QUESTIONNAIRE = "questionnaire"  # answers to discovery questions (AGT-03); searched by every check
     IRRELEVANT = "irrelevant"
 
 
@@ -54,6 +55,7 @@ class ExtractedDocument(BaseModel):
     classification_confidence: float = 0.0
     truncated: bool = False
     extraction_error: str | None = None
+    answers: int = 0  # questionnaire answers carried by this document (AGT-03); 0 for client documents
 
     @property
     def is_relevant(self) -> bool:

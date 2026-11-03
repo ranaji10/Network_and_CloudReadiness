@@ -1,8 +1,31 @@
 {
   "components": {
     "schemas": {
+      "AnswersRequest": {
+        "properties": {
+          "answers": {
+            "items": {
+              "$ref": "#/components/schemas/QuestionnaireAnswer"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Answers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "answers"
+        ],
+        "title": "AnswersRequest",
+        "type": "object"
+      },
       "AssessRequest": {
         "properties": {
+          "include_answers": {
+            "default": false,
+            "title": "Include Answers",
+            "type": "boolean"
+          },
           "include_evidence_snippets": {
             "default": false,
             "title": "Include Evidence Snippets",
@@ -74,6 +97,55 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "QuestionnaireAnswer": {
+        "description": "One answered discovery item. `question` is optional: the question as shown in the report.",
+        "properties": {
+          "answer": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Answer",
+            "type": "string"
+          },
+          "check_id": {
+            "title": "Check Id",
+            "type": "string"
+          },
+          "question": {
+            "default": "",
+            "maxLength": 2000,
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check_id",
+          "answer"
+        ],
+        "title": "QuestionnaireAnswer",
+        "type": "object"
+      },
+      "RerunRequest": {
+        "properties": {
+          "include_evidence_snippets": {
+            "default": false,
+            "title": "Include Evidence Snippets",
+            "type": "boolean"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile"
+          }
+        },
+        "title": "RerunRequest",
         "type": "object"
       },
       "ValidationError": {
@@ -203,6 +275,16 @@
             }
           },
           {
+            "in": "query",
+            "name": "include_answers",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Answers",
+              "type": "boolean"
+            }
+          },
+          {
             "in": "header",
             "name": "authorization",
             "required": false,
@@ -303,6 +385,70 @@
           }
         },
         "summary": "Get Report"
+      }
+    },
+    "/assessments/{run_id}/answers": {
+      "post": {
+        "description": "Store the client's answers to the discovery questions of `run_id` as a document of the tenant.\n\nReturns the stored document id and counts, never the answer text. Score the answers with\n`POST /assessments/{run_id}/rerun`, or with any create endpoint and `include_answers=true`.",
+        "operationId": "submit_answers_assessments__run_id__answers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Submit Answers"
       }
     },
     "/assessments/{run_id}/report.md": {
@@ -418,6 +564,77 @@
         "summary": "Get Report Pdf"
       }
     },
+    "/assessments/{run_id}/rerun": {
+      "post": {
+        "description": "Re-assess the source of `run_id` with the tenant's stored answers included. 409 when the original\nsource is gone (uploads are deleted after the request): upload again with `include_answers=true`.",
+        "operationId": "rerun_assessments__run_id__rerun_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RerunRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Req"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rerun"
+      }
+    },
     "/healthz": {
       "get": {
         "operationId": "healthz_healthz_get",
@@ -509,6 +726,16 @@
             "schema": {
               "default": false,
               "title": "Share Safe",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_answers",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Answers",
               "type": "boolean"
             }
           },

@@ -103,6 +103,9 @@ Goal: score whether DNS filtering is in place, in the network security domain.
   `architecture`, `security_policy`, `compliance_audit`, `inventory`, `data_storage`, `identity`,
   `backup_dr`, `contract_license`, `ai_ml`, `operations`). If no relevant document has one of those
   classes, the check falls back to all relevant documents, so the filter never silently hides evidence.
+  Stored questionnaire answers (class `questionnaire`, written by `readiness answer` and scored with
+  `--include-answers`) are searched by every check whatever its `doc_classes`; only the answer text is
+  scored, never the quoted questions or check titles.
 - **`question`** is only used when the LLM judge is enabled (`READINESS_USE_LLM_JUDGE=true`); it is the
   question put to the model for that check. `tags` is free-form and unused by the engine.
 

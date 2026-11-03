@@ -26,6 +26,7 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 | API needs a bearer token unless explicitly disabled; constant-time compare | `api/app.auth` | `tests/test_api.py::test_api_requires_token_when_enabled` |
 | Document size and text length caps | `Settings.max_doc_bytes`, `max_text_chars`; `ingestion/extract.extract_text` | `tests/test_pipeline.py` (truncated flag) |
 | Tenant prefix on every output path and key | `pipeline.run_assessment`, `api/app._run` | `tests/test_api.py` round trip |
+| Questionnaire answers are stored under the tenant prefix, redacted and scored like any document, and only their answer text is scored (quoted questions and titles are not evidence); the audit log gets counts only | `questionnaire.store_answers`, `questionnaire.evidence_text`, `pipeline.ingest` | `tests/test_questionnaire.py` (audit has no answer text; a negative answer stays NO EVIDENCE; purge removes the file) |
 
 - **Web UI (`/`) adds no data path.** `src/readiness/api/static/index.html` calls the same authenticated endpoints as any client; uploads go to a temporary directory that is deleted after the run, and the only thing kept in the browser is the API token in `sessionStorage` (cleared when the tab closes).
 

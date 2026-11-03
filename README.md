@@ -54,6 +54,10 @@ Reports land in `./workspace/<tenant>/<run-id>/` (git-ignored): `report.md`, `re
 `report.pdf` with `--pdf` (or later: `uv run readiness export-pdf workspace/<tenant>/<run-id>/report.json`).
 The API serves the same PDF at `GET /assessments/{id}/report.pdf`.
 
+Close the evidence gaps the report lists under *Discovery*: `uv run readiness answer <run-id> --check NS-PER-02 --answer "..."`
+(or `--from answers.yaml`), then `uv run readiness assess /path/to/client-docs --include-answers` re-scores with the
+answers as one more document (API: `POST /assessments/{id}/answers` and `/rerun`).
+
 ## Repository map
 
 | Path | What it is |

@@ -136,4 +136,55 @@ def test_share_safe_flag_on_api(settings, fixtures_dir):
     r = client.post("/assessments", json={"source_uri": src, "profile": "security_only"})
     assert r.json()["redaction"]["mode"] == "pseudonymize" and r.json()["redaction"]["share_safe"] is False
     assert any(d["name"] == "security_policy.md" for d in r.json()["documents"])
+
+
+def test_answers_round_trip_and_rerun(settings, fixtures_dir):
+    """AGT-03: store answers for a run, re-run with them included, coverage rises; uploads need a re-upload."""
+    import shutil
+
+    api_module.app.dependency_overrides[api_module.settings_dep] = lambda: settings
+    client = TestClient(api_module.app)
+    src = f"file://{fixtures_dir / 'synthetic_acme'}"
+    base = client.post("/assessments", json={"source_uri": src, "profile": "security_only"}).json()
+    run_id = base["id"]
+    body = {"answers": [{"check_id": "NS-PER-02", "answer": "Public apps are behind a WAF with DDoS protection."}]}
+    assert client.post("/assessments/nope/answers", json=body).status_code == 404
+    assert client.post("/assessments/..%2Fx/answers", json=body).status_code in (400, 404)
+    bad = client.post(f"/assessments/{run_id}/answers", json={"answers": [{"check_id": "NS-NOPE-99", "answer": "x"}]})
+    assert bad.status_code == 400 and "unknown check" in bad.text
+    assert client.post(f"/assessments/{run_id}/answers", json={"answers": []}).status_code == 422
+    r = client.post(f"/assessments/{run_id}/answers", json=body)
+    assert r.status_code == 200, r.text
+    stored = r.json()
+    assert stored["answers"] == 1 and stored["checks"] == ["NS-PER-02"] and "path" not in stored
+    assert "WAF" not in r.text  # metadata only comes back
+    assert (settings.workspace_dir / "reports" / "test" / "answers" / stored["document_name"]).exists()
+    assert (settings.workspace_dir / "test" / "answers" / stored["document_name"]).exists()
+
+    assert client.post("/assessments/nope/rerun").status_code == 404
+    rr = client.post(f"/assessments/{run_id}/rerun")
+    assert rr.status_code == 200, rr.text
+    rep = rr.json()
+    assert rep["profile"] == "security_only" and rep["overall_coverage"] > base["overall_coverage"]
+    assert rep["extra"]["answers_included"] == 1 and any(d["source"] == "answers" for d in rep["documents"])
+    assert rep["id"] != run_id and client.get(f"/assessments/{rep['id']}").status_code == 200
+
+    files = [
+        ("files", ("policy.md", (fixtures_dir / "synthetic_acme" / "security_policy.md").read_bytes(), "text/markdown"))
+    ]
+    up = client.post("/assessments/upload?profile=security_only", files=files).json()
+    gone = client.post(f"/assessments/{up['id']}/rerun")
+    assert gone.status_code == 409 and "include_answers=true" in gone.text
+    up2 = client.post("/assessments/upload?profile=security_only&include_answers=true", files=files).json()
+    assert up2["extra"]["answers_included"] == 1 and up2["overall_coverage"] > up["overall_coverage"]
+
+    # the reports store holds the durable copy: a fresh workspace (another instance) still sees the answers
+    shutil.rmtree(settings.workspace_dir / "test" / "answers")
+    rr2 = client.post(f"/assessments/{run_id}/rerun", json={"profile": "default"})
+    assert rr2.status_code == 200 and rr2.json()["extra"]["answers_included"] == 1
+    assert rr2.json()["profile"] == "default"
+    job = client.post("/jobs", json={"source_uri": src, "profile": "security_only", "include_answers": True}).json()
+    done = client.get(f"/jobs/{job['id']}").json()
+    assert done["status"] == "done"
+    assert client.get(f"/assessments/{done['report_id']}").json()["extra"]["answers_included"] == 1
     api_module.app.dependency_overrides.clear()

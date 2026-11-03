@@ -9,7 +9,7 @@ Both must be protected. This page says what data exists, where it may live, for 
 |---|---|---|
 | Public | this repository's code and docs, CSA CCM/CAIQ material | anyone |
 | Internal | roadmap, tracker, unpublished scoring tuning, cost figures for the operator | operator |
-| Client-confidential | every document the tool reads, extracted text, classifications, evidence snippets, reports, pseudonym mappings, audit logs that name documents | client (operator is custodian) |
+| Client-confidential | every document the tool reads, extracted text, classifications, evidence snippets, reports, pseudonym mappings, audit logs that name documents, questionnaire answers the client submits | client (operator is custodian) |
 | Secrets | API keys, API tokens, service-account keys, Terraform state, anything in `.env` or `*.tfvars` | whoever issued them |
 
 ## Where each class may live
@@ -32,11 +32,16 @@ Both must be protected. This page says what data exists, where it may live, for 
 | Artifact Registry images | last 10 versions, 30 days | Terraform cleanup policy |
 | Local `workspace/` | until the analyst deletes it; delete at engagement end | analyst |
 | Pseudonym mapping (`pseudonym_mapping.local.json`) | written only when provider is `local`; stays on the analyst machine; never uploaded | `pipeline.py` |
+| Questionnaire answers (`<workspace>/<tenant>/answers/`, reports store `<tenant>/answers/`) | same as the run folders and the reports bucket; purged with the tenant | `questionnaire.py`, `api/app.py` |
 | Audit log | same as the run folder or bucket | n/a |
 
 ## Tenant isolation
 
 - Every run is written under `<workspace>/<tenant_id>/<run_id>/` and every bucket key under `<tenant_id>/<run_id>/`.
+- Questionnaire answers (`readiness answer`, `POST /assessments/{id}/answers`) are written under
+  `<workspace>/<tenant_id>/answers/` and, through the API, `<tenant_id>/answers/` in the reports store. They are
+  redacted and scored like any other document, only counts reach the audit log, and the tenant export and
+  purge below cover them because they sit under the same prefix.
 - `READINESS_TENANT_ID` is set per deployment or per request path; the API never lets a caller pick another tenant's id.
 - Recommended: one GCP project (or AWS account) per client for anything beyond a one-off assessment. Terraform
   makes this a `project_id` change in a tfvars file.

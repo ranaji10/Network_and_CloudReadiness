@@ -12,7 +12,15 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, Field
 
-from readiness.models import CheckResult, CheckStatus, DomainScore, Evidence, ExtractedDocument, PillarScore
+from readiness.models import (
+    CheckResult,
+    CheckStatus,
+    DocClass,
+    DomainScore,
+    Evidence,
+    ExtractedDocument,
+    PillarScore,
+)
 from readiness.ports import LLMProvider
 from readiness.scoring.profiles import CheckDef, DomainDef, PillarDef, Profile
 
@@ -42,8 +50,18 @@ def _find(doc_text: str, signal: str, window: int = 80) -> str | None:
 def evaluate_check(
     check: CheckDef, docs: list[ExtractedDocument], profile: Profile, include_snippets: bool
 ) -> tuple[CheckStatus, float, list[Evidence], str]:
-    pool = [d for d in docs if d.is_relevant and (not check.doc_classes or d.classification in check.doc_classes)]
-    if not pool:  # fall back to all relevant docs: classification is heuristic
+    # Questionnaire answers (AGT-03) are addressed to specific checks, so they are searched by every check
+    # regardless of its `doc_classes` filter.
+    pool = [
+        d
+        for d in docs
+        if d.is_relevant
+        and (
+            not check.doc_classes or d.classification in check.doc_classes or d.classification == DocClass.QUESTIONNAIRE
+        )
+    ]
+    if not any(d.classification != DocClass.QUESTIONNAIRE for d in pool):
+        # fall back to all relevant docs: classification is heuristic
         pool = [d for d in docs if d.is_relevant]
     hits: list[_Hit] = []
     strong = False

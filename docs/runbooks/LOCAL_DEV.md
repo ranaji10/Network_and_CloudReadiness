@@ -21,6 +21,7 @@ make check                      # what CI runs
 | Run tests | `make test` or `uv run pytest -q tests/test_scoring.py -k partial` |
 | Lint and format | `make lint`, `make fmt` |
 | Assess a folder | `uv run readiness assess ./data/<folder> --profile default --snippets` |
+| Answer discovery questions, re-score | `uv run readiness answer <run-id> --check NS-PER-02 --answer "..."` then `uv run readiness assess ./data/<folder> --include-answers` |
 | Try a redaction rule | `uv run readiness redact some.txt --mode pseudonymize` |
 | List checks / profiles / controls | `uv run readiness checks cloud_readiness`, `readiness profiles`, `readiness controls backup` |
 | Run the API | `make serve` then `curl -s localhost:8080/healthz` |

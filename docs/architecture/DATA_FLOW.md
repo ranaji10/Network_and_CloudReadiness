@@ -34,6 +34,19 @@ AssessmentReport (JSON) + Markdown
 | `audit.jsonl` | events with run id, tenant, doc ids, hashes, counts, classes; no content | same | same (and stdout logs) | same |
 | `pseudonym_mapping.local.json` | token to original identifier map | written only when provider is `local` and mode is `pseudonymize` | never written | analyst machine only |
 | Temporary upload folder (API) | raw uploaded files | OS temp dir, deleted after the request | same (container ephemeral disk) | request lifetime |
+| Questionnaire answers (`readiness answer`, `POST /assessments/{id}/answers`) | the client's answers to discovery questions, as Markdown with the check title and quoted CAIQ questions | `workspace/<tenant>/answers/<run>-<timestamp>.md` | same, plus a copy in the reports bucket `<tenant>/answers/` (mirrored into the workspace before a run) | until deleted / 90 days; purged with the tenant |
+
+## Questionnaire round trip (assisted discovery)
+
+A report's *discovery* items are the checks no document covered. The client answers them; the answers are
+stored as one more client-confidential document under the tenant prefix and the assessment is re-run with
+`include_answers=true` (`readiness assess --include-answers`, `POST /assessments/{id}/rerun`, or any create
+endpoint with the flag), which ingests the answers folder as a second source tagged `answers`. Answer
+documents follow exactly the path above: extract, classify (`questionnaire`), redact, score. Two details:
+
+- Only the text under each `Answer:` heading is scored. The stored file also quotes the check title and the
+  CAIQ questions for the reader, and those contain the very words the checks look for.
+- The audit log records `questionnaire.stored` and `answers.ingested` with document id and counts only.
 
 Share-safe runs (`--share-safe` / `share_safe=true`, GRD-09) change the flow right after ingestion: every
 `DocumentRef` name and uri is swapped for an opaque `doc-<hash>` label before redaction and scoring, so

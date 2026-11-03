@@ -70,6 +70,8 @@ class Settings(BaseSettings):
     # pseudonyms), drops evidence snippets and replaces every document name in the report with an opaque label
     # derived from the document hash. Per run, not a deployment default: `--share-safe` / `share_safe=true`.
     share_safe: bool = False
+    # Also ingest the tenant's stored questionnaire answers (<workspace>/<tenant>/answers/, AGT-03).
+    include_answers: bool = False
     tenant_id: str = "local"
     max_doc_bytes: int = 25 * 1024 * 1024
     max_text_chars: int = 400_000

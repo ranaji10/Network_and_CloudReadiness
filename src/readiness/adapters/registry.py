@@ -36,6 +36,17 @@ def make_source(uri: str, settings: Settings) -> DocumentSource:
     raise ValueError(f"Unsupported source uri: {uri}")
 
 
+def make_answers_source(folder: Path, settings: Settings) -> DocumentSource:
+    """The tenant's stored questionnaire answers (AGT-03) as a second source, tagged `answers` so the report's
+    document table tells them apart from client documents. Not subject to `allowed_source_schemes`: the
+    folder is the tool's own workspace, never a client-supplied location."""
+    from readiness.adapters.sources.local_fs import LocalFolderSource
+
+    source = LocalFolderSource(folder, max_bytes=settings.max_doc_bytes)
+    source.name = "answers"
+    return source
+
+
 def make_llm(settings: Settings, secrets: SecretStore | None = None) -> LLMProvider:
     if settings.llm_provider == "mock":
         from readiness.adapters.llm.mock import MockLLM
