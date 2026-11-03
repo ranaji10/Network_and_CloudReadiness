@@ -5,7 +5,8 @@
 Do not open a public issue. Use the private channel agreed inside the organisation (see
 `.github/ISSUE_TEMPLATE/security.md` for what to include) or GitHub private vulnerability reporting if it
 is enabled on this repository. If client data has been exposed, follow
-`docs/runbooks/INCIDENT_DATA_LEAK.md` immediately, then report.
+`docs/runbooks/INCIDENT_DATA_LEAK.md` immediately, then report. Severity levels, response targets and the
+escalation path for customers are in `docs/runbooks/SUPPORT.md`.
 
 ## Supported versions
 
