@@ -103,6 +103,12 @@ def render(report: AssessmentReport) -> str:
         + (", ".join(f"{k}={v}" for k, v in report.redaction.counts.items()) or "none")
         + ". No document content is stored in logs; see docs/security/DATA_HANDLING_POLICY.md."
     )
+    if report.redaction.share_safe:
+        lines.append(
+            "\n**Rendered share-safe.** Identifiers are masked (not pseudonymised), evidence snippets are omitted "
+            "and documents are referred to by opaque labels (`doc-xxxxxx`, derived from the file hash) instead of "
+            "their names. The label-to-name map exists only in the run's audit log inside the tenant workspace."
+        )
     usage = report.extra.get("llm_usage")
     if usage:
         cost = usage.get("estimated_cost_usd")

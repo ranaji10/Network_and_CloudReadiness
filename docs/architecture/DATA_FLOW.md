@@ -35,6 +35,12 @@ AssessmentReport (JSON) + Markdown
 | `pseudonym_mapping.local.json` | token to original identifier map | written only when provider is `local` and mode is `pseudonymize` | never written | analyst machine only |
 | Temporary upload folder (API) | raw uploaded files | OS temp dir, deleted after the request | same (container ephemeral disk) | request lifetime |
 
+Share-safe runs (`--share-safe` / `share_safe=true`, GRD-09) change the flow right after ingestion: every
+`DocumentRef` name and uri is swapped for an opaque `doc-<hash>` label before redaction and scoring, so
+evidence, warnings, model prompts, `report.json` and `report.md` never carry a document name; redaction is
+forced to `mask` (no `pseudonym_mapping.local.json`) and snippets are off. The only place the label meets
+the original name is a `doc.share_safe_label` event in `audit.jsonl`.
+
 ## What can reach an external model
 
 Only when `READINESS_LLM_PROVIDER` is not `mock` **and** `READINESS_ALLOW_LLM_EGRESS=true` **and**

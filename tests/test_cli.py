@@ -20,6 +20,16 @@ def test_assess_flags_do_not_clobber_env(monkeypatch, fixtures_dir, tmp_path):
     assert r.exit_code == 0 and "llm=none" in r.output
 
 
+def test_assess_share_safe_flag(monkeypatch, fixtures_dir, tmp_path):
+    monkeypatch.setenv("READINESS_WORKSPACE_DIR", str(tmp_path))
+    args = ["assess", str(fixtures_dir / "synthetic_acme"), "--profile", "security_only"]
+    r = runner.invoke(app, [*args, "--share-safe"])
+    assert r.exit_code == 0, r.output
+    assert "Rendered share-safe" in r.output and "security_policy.md" not in r.output
+    r = runner.invoke(app, args)
+    assert r.exit_code == 0 and "Rendered share-safe" not in r.output and "security_policy.md" in r.output
+
+
 def test_profiles_and_checks_commands():
     out = runner.invoke(app, ["profiles"]).output
     assert "gcp_migration" in out

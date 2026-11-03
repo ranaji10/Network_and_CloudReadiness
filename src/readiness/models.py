@@ -160,6 +160,7 @@ class LLMUsage(BaseModel):
 class RedactionSummary(BaseModel):
     mode: str
     counts: dict[str, int] = {}
+    share_safe: bool = False  # mask mode, no snippets, opaque document labels (GRD-09)
 
 
 class AssessmentReport(BaseModel):

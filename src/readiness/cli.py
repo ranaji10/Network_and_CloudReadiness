@@ -34,6 +34,12 @@ def assess(
         "--llm-classifier/--no-llm-classifier",
         help="Re-classify unsure documents with the model (default: READINESS_USE_LLM_CLASSIFIER)",
     ),
+    share_safe: bool | None = typer.Option(
+        None,
+        "--share-safe/--no-share-safe",
+        help="Render for sharing outside the tenant: mask redaction, no snippets, opaque document labels "
+        "(default: READINESS_SHARE_SAFE)",
+    ),
     print_md: bool = typer.Option(True, "--print/--no-print", help="Print the markdown report"),
 ):
     """Assess a document source. Flags override the environment only when given explicitly."""
@@ -46,6 +52,8 @@ def assess(
         overrides["use_llm_judge"] = llm_judge
     if llm_classifier is not None:
         overrides["use_llm_classifier"] = llm_classifier
+    if share_safe is not None:
+        overrides["share_safe"] = share_safe
     if out:
         overrides["workspace_dir"] = out
     settings = get_settings(**overrides)

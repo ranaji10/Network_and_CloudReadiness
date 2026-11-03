@@ -6,6 +6,8 @@ GET  /healthz
 GET  /profiles
 POST /assessments            assess a source_uri synchronously -> report
 POST /assessments/upload     assess uploaded files synchronously -> report
+    `share_safe=true` (body field or query parameter; also on /jobs and /jobs/upload) renders a report fit to
+    leave the tenant: mask redaction, no snippets, opaque document labels (GRD-09).
 POST /jobs                   assess a source_uri in the background -> job record
 POST /jobs/upload            upload files, assess in the background -> job record
 GET  /jobs/{job_id}          job record (queued | running | done | failed)
@@ -81,6 +83,8 @@ class AssessRequest(BaseModel):
     source_uri: str
     profile: str = "default"
     include_evidence_snippets: bool = False
+    # Share-safe report (GRD-09): mask redaction, no snippets, opaque document labels. For reports leaving the tenant.
+    share_safe: bool = False
 
 
 class JobRecord(BaseModel):
@@ -120,10 +124,12 @@ def _store_report(store: BlobStore, report: AssessmentReport, md: str) -> None:
     store.put(f"{key}/report.md", md.encode(), "text/markdown")
 
 
-def _run(source_uri: str, profile: str, snippets: bool, settings: Settings) -> AssessmentReport:
+def _run(
+    source_uri: str, profile: str, snippets: bool, settings: Settings, share_safe: bool = False
+) -> AssessmentReport:
     from readiness.pipeline import run_assessment
 
-    s = settings.model_copy(update={"include_evidence_snippets": snippets})
+    s = settings.model_copy(update={"include_evidence_snippets": snippets, "share_safe": share_safe})
     report, md = run_assessment(source_uri, s, profile)
     _store_report(make_blob_store(s, "reports"), report, md)
     return report
@@ -151,7 +157,13 @@ def create_from_uri(
     req: AssessRequest, principal: Principal = Depends(auth), settings: Settings = Depends(settings_dep)
 ):
     try:
-        report = _run(req.source_uri, req.profile, req.include_evidence_snippets, _tenant_settings(settings, principal))
+        report = _run(
+            req.source_uri,
+            req.profile,
+            req.include_evidence_snippets,
+            _tenant_settings(settings, principal),
+            req.share_safe,
+        )
     except Exception as exc:  # noqa: BLE001 - mapped to an HTTP status
         raise _http_error(exc) from exc
     return report.model_dump(mode="json")
@@ -161,6 +173,7 @@ def create_from_uri(
 def create_from_upload(
     files: list[UploadFile] = File(...),
     profile: str = "default",
+    share_safe: bool = False,
     principal: Principal = Depends(auth),
     settings: Settings = Depends(settings_dep),
 ):
@@ -168,7 +181,7 @@ def create_from_upload(
         root = Path(tmp)
         _save_uploads(files, root, settings)
         try:
-            report = _run(f"file://{root}", profile, False, _tenant_settings(settings, principal))
+            report = _run(f"file://{root}", profile, False, _tenant_settings(settings, principal), share_safe)
         except Exception as exc:  # noqa: BLE001
             raise _http_error(exc) from exc
     return report.model_dump(mode="json")
@@ -188,12 +201,19 @@ def _write_job(store: BlobStore, job: JobRecord) -> None:
     store.put(_job_key(job.tenant_id, job.id), job.model_dump_json(indent=1).encode(), "application/json")
 
 
-def _execute_job(job: JobRecord, source_uri: str, snippets: bool, settings: Settings, cleanup: Path | None) -> None:
+def _execute_job(
+    job: JobRecord,
+    source_uri: str,
+    snippets: bool,
+    settings: Settings,
+    cleanup: Path | None,
+    share_safe: bool = False,
+) -> None:
     store = make_blob_store(settings, "reports")
     job.status = "running"
     _write_job(store, job)
     try:
-        report = _run(source_uri, job.profile, snippets, settings)
+        report = _run(source_uri, job.profile, snippets, settings, share_safe)
         job.status, job.report_id = "done", report.id
     except Exception as exc:  # noqa: BLE001 - recorded on the job, never raised out of a background task
         job.status, job.error = "failed", f"{type(exc).__name__}: {exc}"[:300]
@@ -227,7 +247,7 @@ def create_job(
     s = _tenant_settings(settings, principal)
     job = _new_job(s, req.profile)
     _write_job(make_blob_store(s, "reports"), job)
-    background.add_task(_execute_job, job, req.source_uri, req.include_evidence_snippets, s, None)
+    background.add_task(_execute_job, job, req.source_uri, req.include_evidence_snippets, s, None, req.share_safe)
     return job.model_dump(mode="json")
 
 
@@ -236,6 +256,7 @@ def create_job_from_upload(
     background: BackgroundTasks,
     files: list[UploadFile] = File(...),
     profile: str = "default",
+    share_safe: bool = False,
     principal: Principal = Depends(auth),
     settings: Settings = Depends(settings_dep),
 ):
@@ -244,7 +265,7 @@ def create_job_from_upload(
     staging = Path(tempfile.mkdtemp(prefix=f"readiness-job-{job.id}-"))  # removed by the job when it finishes
     _save_uploads(files, staging, settings)
     _write_job(make_blob_store(s, "reports"), job)
-    background.add_task(_execute_job, job, f"file://{staging}", False, s, staging)
+    background.add_task(_execute_job, job, f"file://{staging}", False, s, staging, share_safe)
     return job.model_dump(mode="json")
 
 

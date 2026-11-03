@@ -13,6 +13,11 @@
             "title": "Profile",
             "type": "string"
           },
+          "share_safe": {
+            "default": false,
+            "title": "Share Safe",
+            "type": "boolean"
+          },
           "source_uri": {
             "title": "Source Uri",
             "type": "string"
@@ -185,6 +190,16 @@
               "default": "default",
               "title": "Profile",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "share_safe",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Share Safe",
+              "type": "boolean"
             }
           },
           {
@@ -427,6 +442,16 @@
               "default": "default",
               "title": "Profile",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "share_safe",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Share Safe",
+              "type": "boolean"
             }
           },
           {

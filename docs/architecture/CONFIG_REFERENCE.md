@@ -213,6 +213,10 @@ see redacted text. In `pseudonymize` mode with `READINESS_PROVIDER=local`, the t
 is written to `pseudonym_mapping.local.json` in the run folder and nowhere else. Counts per rule appear in
 the report's data-handling section.
 
+`READINESS_SHARE_SAFE=true` (per run: `readiness assess --share-safe`, API `share_safe=true`) overrides the
+mode with `mask`, switches snippets off and replaces document names in the report with `doc-<hash>` labels;
+see `docs/security/DATA_HANDLING_POLICY.md`, "Sharing a report outside the tenant".
+
 ## LLM pricing (`config/llm_pricing.yaml`)
 
 Used only to estimate the cost shown in reports and audit events; it never affects scoring or egress.

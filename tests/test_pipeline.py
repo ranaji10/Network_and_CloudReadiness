@@ -93,6 +93,35 @@ def test_llm_judge_uses_guarded_mock(settings, fixtures_dir):
     assert c.status == CheckStatus.NOT_MET and c.judged_by == "llm"
 
 
+def test_share_safe_report_hides_names_and_pseudonyms(settings, fixtures_dir):
+    """GRD-09: a share-safe run masks (never pseudonymises), drops snippets and replaces document names with
+    opaque labels everywhere in the report; the label-to-name map lives only in audit.jsonl."""
+    import re
+
+    s = settings.model_copy(update={"share_safe": True, "include_evidence_snippets": True})  # snippets forced off
+    report, md = run_assessment(f"file://{fixtures_dir / 'synthetic_acme'}", s, "default")
+    out = settings.workspace_dir / "test" / report.id
+    rendered = md + (out / "report.json").read_text() + (out / "report.md").read_text()
+    fixture_names = {p.name for p in (fixtures_dir / "synthetic_acme").iterdir()}
+    assert len(fixture_names) == 6
+    assert not any(name in rendered for name in fixture_names)
+    assert report.redaction.mode == "mask" and report.redaction.share_safe
+    label = re.compile(r"doc-[0-9a-f]{6}")
+    assert all(label.fullmatch(d.name) and d.uri == f"share-safe://{d.name}" for d in report.documents)
+    evidence = [e for d in report.domains for p in d.pillars for c in p.checks for e in c.evidence]
+    assert evidence and all(e.snippet == "" and label.fullmatch(e.doc_name) for e in evidence)
+    assert "10.10.0.1" not in rendered and "netops@acme-widgets.example" not in rendered
+    assert not re.search(r"<(ip|email|host|phone|aws-account)-\d\d>", rendered)  # no reversible tokens
+    assert not (out / "pseudonym_mapping.local.json").exists()
+    assert "Rendered share-safe" in md and 0 < report.overall_score <= 100
+    audit = [json.loads(line) for line in (out / "audit.jsonl").read_text().splitlines()]
+    assert audit[0]["event"] == "run.start" and audit[0]["share_safe"] is True and audit[0]["redaction"] == "mask"
+    labels = [e for e in audit if e["event"] == "doc.share_safe_label"]
+    assert {e["name"] for e in labels} == fixture_names
+    assert {e["label"] for e in labels} == {d.name for d in report.documents}
+    assert {e["doc"] for e in labels} == {d.id for d in report.documents}
+
+
 def test_egress_guardrail_blocks_real_provider(settings):
     import pytest
 

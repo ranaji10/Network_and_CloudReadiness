@@ -18,7 +18,7 @@ from readiness.adapters.registry import make_llm, make_source
 from readiness.config import Settings
 from readiness.guardrails.audit import AuditLog
 from readiness.guardrails.policy import GuardedLLM
-from readiness.guardrails.redaction import Redactor
+from readiness.guardrails.redaction import Redactor, share_safe_label, share_safe_ref
 from readiness.ingestion.classify import classify, llm_refine_classification
 from readiness.ingestion.extract import extract_text
 from readiness.models import AssessmentReport, DocClass, ExtractedDocument, RedactionSummary
@@ -63,17 +63,38 @@ def run_assessment(
     llm: LLMProvider | None = None,
     write_outputs: bool = True,
 ) -> tuple[AssessmentReport, str]:
-    """Returns (report, markdown). Writes report.json / report.md / audit.jsonl into the workspace."""
+    """Returns (report, markdown). Writes report.json / report.md / audit.jsonl into the workspace.
+
+    With `settings.share_safe` (GRD-09) the report is rendered for sharing outside the tenant: redaction is
+    forced to `mask` (no reversible pseudonyms), evidence snippets are off and every document name is replaced
+    by an opaque label before scoring, so nothing downstream (evidence, warnings, model prompts) sees a name.
+    The label-to-name map goes to audit.jsonl only, which stays in the tenant workspace."""
     run_id = uuid.uuid4().hex[:12]
+    share_safe = settings.share_safe
+    redaction_mode = "mask" if share_safe else settings.redaction_mode
+    include_snippets = False if share_safe else settings.include_evidence_snippets
     profile = load_profile(settings.config_dir, profile_id or settings.default_profile)
     domains = load_domains(settings.config_dir, profile)
     out_dir = Path(settings.workspace_dir) / settings.tenant_id / run_id
     audit = AuditLog(out_dir / "audit.jsonl" if write_outputs else None, run_id, settings.tenant_id)
-    audit.event("run.start", profile=profile.id, source_scheme=source_uri.split("://")[0], llm=settings.llm_provider)
+    audit.event(
+        "run.start",
+        profile=profile.id,
+        source_scheme=source_uri.split("://")[0],
+        llm=settings.llm_provider,
+        redaction=redaction_mode,
+        share_safe=share_safe,
+    )
 
-    redactor = Redactor.from_config(settings.redaction_mode, Path(settings.config_dir) / "redaction.yaml")
+    redactor = Redactor.from_config(redaction_mode, Path(settings.config_dir) / "redaction.yaml")
     source = make_source(source_uri, settings)
     docs = ingest(source, settings, audit)
+    if share_safe:
+        # Swap names for opaque labels before anything else runs. The original name is recorded here, in the
+        # audit log, and nowhere else in the run output.
+        for d in docs:
+            audit.event("doc.share_safe_label", doc=d.ref.id, label=share_safe_label(d.ref), name=d.ref.name[:200])
+            d.ref = share_safe_ref(d.ref)
     warnings: list[str] = []
     if not any(d.is_relevant for d in docs):
         warnings.append("No relevant documents were found; every check is 'no evidence'.")
@@ -91,7 +112,7 @@ def run_assessment(
         audit.event("docs.llm_classified", provider=guarded.name)
     judge = guarded if settings.use_llm_judge else None
 
-    scores = [score_domain(dom, docs, profile, judge, settings.include_evidence_snippets) for dom in domains]
+    scores = [score_domain(dom, docs, profile, judge, include_snippets) for dom in domains]
     overall, coverage = composite(scores, profile)
     recs = recommend(scores, profile, settings.config_dir)
     usage = guarded.usage_summary() if guarded is not None else None
@@ -107,7 +128,7 @@ def run_assessment(
         overall_score=overall,
         overall_coverage=coverage,
         recommendations=recs,
-        redaction=RedactionSummary(mode=settings.redaction_mode, counts=redactor.summary()),
+        redaction=RedactionSummary(mode=redaction_mode, counts=redactor.summary(), share_safe=share_safe),
         llm_provider=(guarded.name if guarded else "none"),
         extra={"llm_usage": usage} if usage else {},
         warnings=warnings + [f"{d.ref.name}: {d.extraction_error}" for d in docs if d.extraction_error],
@@ -117,7 +138,7 @@ def run_assessment(
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "report.json").write_text(report.model_dump_json(indent=1))
         (out_dir / "report.md").write_text(md)
-        if settings.redaction_mode == "pseudonymize" and settings.provider == "local" and redactor.mapping:
+        if redaction_mode == "pseudonymize" and settings.provider == "local" and redactor.mapping:
             # Reverse mapping stays local-only, never uploaded. Lets an analyst de-pseudonymise on site.
             (out_dir / "pseudonym_mapping.local.json").write_text(json.dumps(redactor.mapping, indent=1))
     audit.event(

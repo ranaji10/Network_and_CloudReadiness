@@ -79,6 +79,19 @@ the assessments used. Hosted agent sessions (Agent Runtime) are not stored by th
    this repo) and confirm with `uv run readiness tenant purge <tenant_id>` showing 0 objects.
 7. If an external model was used, the provider's retention applies; the checklist records which provider and terms.
 
+## Sharing a report outside the tenant
+
+A normal report is client-confidential: it lists the client's document names, and in `pseudonymize` mode
+its identifiers can be reversed with `pseudonym_mapping.local.json`. Any report that leaves the tenant
+(sent to a prospect's partner, a reviewer, another operator team, a vendor, or pasted into a ticket or
+chat outside the engagement) must be rendered **share-safe** instead: `readiness assess --share-safe`, or
+`share_safe=true` on `POST /assessments`, `/assessments/upload`, `/jobs` and `/jobs/upload`. A share-safe
+run forces `mask` redaction (no reversible tokens, no mapping file), drops evidence snippets and refers to
+every document by an opaque `doc-<hash>` label; the label-to-name map is written only to the run's
+`audit.jsonl`, which stays in the tenant workspace. The report says so in its data-handling section, so a
+reader can tell the two kinds apart. Re-run the assessment with the flag rather than editing a normal
+report by hand. Scores and recommendations are identical; only names and snippets differ.
+
 ## What analysts must do when handling a client pack
 
 Analysts are never on the client's network: the pack is pushed to the operator, or pulled read-only from a
@@ -86,5 +99,6 @@ folder the client shares (`docs/security/DEPLOYMENT_POSTURE.md`). The rules belo
 
 - Run with `READINESS_PROVIDER=local` and `READINESS_LLM_PROVIDER=mock` unless the client has approved model use in writing.
 - Keep `READINESS_REDACTION_MODE=pseudonymize` (default). Use `--snippets` only for a report that stays with the client.
+- Use `--share-safe` for any report that leaves the tenant (section above); never share a report that names documents.
 - Keep `pseudonym_mapping.local.json` on the analyst machine. Do not attach it to e-mail, tickets or shared drives.
 - Hand the client the report; do not keep extracted text longer than the engagement needs.
