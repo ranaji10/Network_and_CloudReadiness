@@ -9,7 +9,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | Epic | Name | todo | in_progress | blocked | done | total |
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 1 | 1 | 0 | 3 | 5 |
-| API | API and UI | 1 | 1 | 0 | 5 | 7 |
+| API | API and UI | 1 | 0 | 0 | 6 | 7 |
 | DOC | Docs and governance | 1 | 0 | 0 | 6 | 7 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 4 | 0 | 0 | 5 | 9 |
@@ -19,7 +19,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 2 | 1 | 0 | 3 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 24 | 3 | 0 | 54 | 81 |
+| **All** | | 24 | 2 | 0 | 55 | 81 |
 
 ## By phase
 
@@ -104,12 +104,12 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `in_progress` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
 - `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
 
-### Phase 4: Agentic-AI depth and product polish (3/8 done)
+### Phase 4: Agentic-AI depth and product polish (4/8 done)
 
 - `in_progress` **AGT-03** Questionnaire round trip (answer discovery questions, re-score) (claude-code)
 - `todo` **AGT-05** Agent evaluation set in CI (ADK evals)
 - `done` **API-03** Web UI (upload, progress, report view) (claude-code)
-- `in_progress` **API-04** PDF export of the report (claude-code)
+- `done` **API-04** PDF export of the report (claude-code)
 - `todo` **ING-08** OCR for scanned PDFs and images
 - `done` **REC-06** Recommendation de-duplication across checks sharing a product (claude-code)
 - `done` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores (claude-code)
@@ -145,7 +145,7 @@ Owner hint: src/readiness/api and src/readiness/cli.py
 | API-01 | FastAPI service and typer CLI over the same pipeline | done | 0 |  |  |  | test_api.py round trip; readiness assess works offline |
 | API-02 | Per-tenant tokens and report keys | done | 2 | claude-code | claude/trusting-keller-qe5w65 | INF-04 | tenant resolved from token; keys prefixed; cross-tenant read returns 404 |
 | API-03 | Web UI (upload, progress, report view) | done | 4 | claude-code | claude/trusting-keller-qe5w65 | API-01 | an analyst completes an assessment without the CLI |
-| API-04 | PDF export of the report | in_progress | 4 | claude-code | claude/nifty-mendel-lcqzeb | API-01 | GET /assessments/{id}/report.pdf |
+| API-04 | PDF export of the report | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | API-01 | GET /assessments/{id}/report.pdf |
 | API-05 | SSO for the UI and API | todo | 5 |  |  | API-03 | OIDC login; tokens issued per user; audit carries user id |
 | API-06 | Async assessments with job status endpoint | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-01 | POST returns 202 and a job id; GET /jobs/{id} reports progress |
 | API-07 | OpenAPI docs published and versioned | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-01 | /docs reachable behind auth; schema checked in CI |

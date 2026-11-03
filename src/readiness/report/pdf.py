@@ -10,7 +10,8 @@ font is needed in the slim container. Core fonts cover Latin-1 only; `_t` maps t
 characters the report uses (em dash, ellipsis, curly quotes, arrows) to ASCII and replaces anything
 else with `?` instead of failing the export.
 
-Share-safe mode: when `report.extra["share_safe"]` is truthy (the flag GRD-09 will set) document names
+Share-safe mode: when `report.redaction.share_safe` is set (GRD-09; `report.extra["share_safe"]` also
+works for hand-built reports) the tenant id is withheld and document names
 are left out of the PDF (documents table and evidence references) and a note says so."""
 
 from __future__ import annotations
@@ -166,15 +167,16 @@ def render_pdf(report: AssessmentReport) -> bytes:
     except ImportError as exc:
         raise PdfExportUnavailableError(INSTALL_HINT) from exc
 
-    share_safe = bool(report.extra.get("share_safe"))
-    pdf = _make_pdf(f"Readiness report {report.id} - tenant {report.tenant_id} - profile {report.profile}")
+    share_safe = bool(report.redaction.share_safe or report.extra.get("share_safe"))
+    tenant = "withheld" if share_safe else report.tenant_id
+    pdf = _make_pdf(f"Readiness report {report.id} - tenant {tenant} - profile {report.profile}")
     pdf.add_page()
     doc = _Doc(pdf)
 
     # Title block
     doc.heading(TITLE, 1)
     doc.note(
-        f"Report {report.id} - tenant {report.tenant_id} - {report.created_at:%Y-%m-%d %H:%M UTC} - "
+        f"Report {report.id} - tenant {tenant} - {report.created_at:%Y-%m-%d %H:%M UTC} - "
         f"profile {report.profile} v{report.profile_version} - tool v{report.tool_version}"
     )
 
@@ -246,6 +248,9 @@ def render_pdf(report: AssessmentReport) -> bytes:
     for i, r in enumerate(actions, 1):
         doc.para(f"{i}. {r.title}", style="B")
         doc.note(f"effort {r.effort} - impact {r.impact} - check {r.check_id}")
+        closes = r.closes_check_ids or [r.check_id]
+        titles = r.closes_titles if len(r.closes_titles) == len(closes) else [""] * len(closes)
+        doc.note("Closes: " + ", ".join(f"{cid} {t}".strip() for cid, t in zip(closes, titles, strict=True)))
         if r.rationale:
             doc.para(r.rationale, indent=5)
         for o in r.options:

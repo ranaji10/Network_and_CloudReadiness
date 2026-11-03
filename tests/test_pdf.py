@@ -50,11 +50,19 @@ def test_render_pdf_contains_the_report(report):
 
 
 def test_share_safe_pdf_has_no_document_names(report):
-    safe = report.model_copy(update={"extra": {**report.extra, "share_safe": True}})
+    safe = report.model_copy(update={"redaction": report.redaction.model_copy(update={"share_safe": True})})
     text = _text(render_pdf(safe))
     for ref in report.documents:
         assert ref.name not in text
+    assert f"tenant {report.tenant_id}" not in text and "tenant withheld" in text
     assert "Share-safe report" in text and "document 1" in text
+
+
+def test_pdf_lists_the_checks_an_action_closes(report):
+    text = _text(render_pdf(report))
+    actions = [r for r in report.recommendations if r.kind == "action"]
+    assert actions and "Closes:" in text
+    assert actions[0].closes_check_ids[0] in text
 
 
 def test_non_latin1_text_is_mapped_not_fatal(report):

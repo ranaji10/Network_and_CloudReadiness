@@ -31,13 +31,13 @@ stories:
     notes: "v0: upload, scores table, report text and download served at /; async progress view is API-06"
   - id: API-04
     title: PDF export of the report
-    status: in_progress
+    status: done
     phase: 4
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [API-01]
     acceptance: "GET /assessments/{id}/report.pdf"
-    notes: ""
+    notes: "fpdf2 behind the pdf extra (container installs it); GET /assessments/{id}/report.pdf rendered on demand; readiness assess --pdf and export-pdf; web UI download link; share-safe and Closes: honoured"
   - id: API-05
     title: SSO for the UI and API
     status: todo
