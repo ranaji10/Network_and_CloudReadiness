@@ -56,3 +56,12 @@ stories:
     depends_on: [DOC-01]
     acceptance: "scripts/tracker_to_issues.py creates or updates issues by story id"
     notes: ""
+  - id: DOC-07
+    title: Outside-the-network posture documented, client-facing, and enforced in CI
+    status: in_progress
+    phase: 2
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
+    depends_on: [DOC-02]
+    acceptance: "ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs"
+    notes: ""
