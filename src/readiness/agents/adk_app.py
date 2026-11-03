@@ -32,6 +32,8 @@ def run_readiness_assessment(source_uri: str, profile: str = "default") -> dict:
     report, _ = run_assessment(source_uri, settings, profile)
     summary = {
         "run_id": report.id,
+        # Where report.json / report.md / audit.jsonl were written, so a client can fetch the full report.
+        "report_dir": str(Path(settings.workspace_dir) / settings.tenant_id / report.id),
         "overall_score": report.overall_score,
         "evidence_coverage": report.overall_coverage,
         "domains": [

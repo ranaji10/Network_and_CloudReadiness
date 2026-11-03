@@ -1,0 +1,129 @@
+"""AGT-04: the MCP server exposes the assessment tools to Claude Code and other MCP clients.
+Exercised through the SDK's in-memory transport, offline, with the mock LLM."""
+
+import asyncio
+import json
+
+import pytest
+from typer.testing import CliRunner
+
+from readiness.agents import mcp_server
+from readiness.cli import app
+
+pytest.importorskip("mcp")
+
+TOOLS = {"run_readiness_assessment", "list_profiles", "list_checks"}
+
+
+def _payload(result) -> object:
+    """The tool's return value: the SDK's structured content (lists are wrapped under `result`), else the text."""
+    assert not result.isError, result.content
+    structured = result.structuredContent
+    if structured is not None:
+        return structured["result"] if set(structured) == {"result"} else structured
+    return json.loads(result.content[0].text)
+
+
+def _with_client(fn):
+    from mcp.shared.memory import create_connected_server_and_client_session
+
+    async def go():
+        async with create_connected_server_and_client_session(mcp_server.build_server(), raise_exceptions=True) as c:
+            return await fn(c)
+
+    return asyncio.run(go())
+
+
+def test_server_lists_the_three_tools():
+    async def go(client):
+        return await client.list_tools()
+
+    listed = _with_client(go)
+    assert {t.name for t in listed.tools} == TOOLS
+    run_tool = next(t for t in listed.tools if t.name == "run_readiness_assessment")
+    assert set(run_tool.inputSchema["properties"]) == {"source_uri", "profile"}
+    assert run_tool.inputSchema["required"] == ["source_uri"]
+
+
+@pytest.fixture
+def stderr_logging():
+    """Apply the stdio logging setup for one test, then restore structlog's defaults for the rest of the suite."""
+    import structlog
+
+    mcp_server.route_logs_to_stderr()
+    yield
+    structlog.reset_defaults()
+
+
+def test_run_readiness_assessment_offline(monkeypatch, fixtures_dir, tmp_path, capsys, stderr_logging):
+    monkeypatch.setenv("READINESS_LLM_PROVIDER", "mock")
+    monkeypatch.setenv("READINESS_WORKSPACE_DIR", str(tmp_path))
+
+    async def go(client):
+        return await client.call_tool(
+            "run_readiness_assessment",
+            {"source_uri": str(fixtures_dir / "synthetic_acme"), "profile": "security_only"},
+        )
+
+    result = _with_client(go)
+    captured = capsys.readouterr()
+    assert captured.out == "", "stdout is the stdio protocol channel; pipeline logs must go to stderr"
+    assert "run.end" in captured.err or "score=" in captured.err
+    summary = _payload(result)
+    assert result.structuredContent is not None  # clients get a typed object, not only text
+    assert summary["run_id"] and 0 <= summary["overall_score"] <= 100
+    assert [d["id"] for d in summary["domains"]] == ["network_security"]
+    # Compact: summaries only, but the client is told where the full report lives.
+    assert set(summary) >= {"run_id", "report_dir", "overall_score", "evidence_coverage", "top_actions", "discovery"}
+    assert summary["report_dir"].startswith(str(tmp_path))
+    assert (tmp_path / "local" / summary["run_id"] / "report.md").exists()
+    assert len(summary["top_actions"]) <= 10 and len(summary["discovery"]) <= 15
+
+
+def test_list_profiles_and_checks_tools():
+    async def go(client):
+        profiles = await client.call_tool("list_profiles", {})
+        checks = await client.call_tool("list_checks", {"domain": "network_security"})
+        all_checks = await client.call_tool("list_checks", {})
+        return profiles, checks, all_checks
+
+    profiles, checks, all_checks = _with_client(go)
+    assert {p["id"] for p in _payload(profiles)} >= {"default", "gcp_migration", "security_only"}
+    ids = {c["id"] for c in _payload(checks)}
+    assert "NS-PER-01" in ids and all(i.startswith("NS-") for i in ids)
+    assert {c["domain"] for c in _payload(all_checks)} > {"network_security"}
+
+
+def test_tool_delegates_to_the_adk_function(monkeypatch):
+    """One function, many wrappers (ADR-20261023-adk-wrapper-kept-thin): no second pipeline call."""
+    calls: list[tuple[str, str]] = []
+
+    def fake(source_uri: str, profile: str = "default") -> dict:
+        calls.append((source_uri, profile))
+        return {"run_id": "x"}
+
+    monkeypatch.setattr("readiness.agents.adk_app.run_readiness_assessment", fake)
+    assert mcp_server.run_readiness_assessment("src", "gcp_migration") == {"run_id": "x"}
+    assert calls == [("src", "gcp_migration")]
+
+
+def test_cli_reports_install_hint_when_sdk_missing(monkeypatch):
+    def boom():
+        raise ImportError("No module named 'mcp'")
+
+    monkeypatch.setattr(mcp_server, "build_server", boom)
+    r = CliRunner().invoke(app, ["mcp"])
+    assert r.exit_code == 1
+    assert "uv sync --extra mcp" in r.output
+
+
+def test_cli_runs_server_on_stdio(monkeypatch):
+    seen: dict[str, str] = {}
+
+    class FakeServer:
+        def run(self, transport: str) -> None:
+            seen["transport"] = transport
+
+    monkeypatch.setattr(mcp_server, "build_server", lambda: FakeServer())
+    assert CliRunner().invoke(app, ["mcp"]).exit_code == 0
+    assert seen == {"transport": "stdio"}

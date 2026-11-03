@@ -115,6 +115,20 @@ def serve(host: str = "0.0.0.0", port: int = 8080):  # noqa: S104 - container en
     uvicorn.run("readiness.api.app:app", host=host, port=port)
 
 
+@app.command()
+def mcp():
+    """Run the MCP server on stdio (Claude Code, Claude Desktop and other MCP clients). Needs `readiness[mcp]`."""
+    from readiness.agents.mcp_server import build_server, route_logs_to_stderr
+
+    try:
+        server = build_server()
+    except ImportError as exc:
+        typer.echo(f"error: the MCP SDK is not installed ({exc}); install it with: uv sync --extra mcp", err=True)
+        raise typer.Exit(code=1) from None
+    route_logs_to_stderr()  # stdout belongs to the protocol
+    server.run(transport="stdio")
+
+
 # --------------------------------------------------------------------------------------------------
 # Tenant offboarding (MIG-05): export everything stored for a client, then purge it.
 # --------------------------------------------------------------------------------------------------

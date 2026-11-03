@@ -37,7 +37,9 @@ adk = ["google-adk>=2.2", "google-cloud-agentplatform[agent-engines]>=2.2,<3"]
 aws = ["boto3>=1.34"]
 anthropic = ["anthropic>=0.40"]
 pii = ["presidio-analyzer>=2.2"]
-all = ["readiness[gcp,adk,aws,anthropic]"]
+# MCP server (`readiness mcp`) for Claude Code / Claude Desktop and other MCP clients; see docs/runbooks/MCP_SERVER.md.
+mcp = ["mcp>=1.2,<2"]
+all = ["readiness[gcp,adk,aws,anthropic,mcp]"]
 
 [dependency-groups]
 dev = [
@@ -46,6 +48,7 @@ dev = [
   "ruff>=0.6",
   "mypy>=1.10",
   "types-PyYAML",
+  "mcp>=1.2,<2",  # so tests/test_mcp_server.py exercises the MCP surface without the extra
 ]
 
 [project.scripts]

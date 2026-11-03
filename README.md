@@ -93,5 +93,6 @@ The Cloud Controls Matrix (CCM) v4.1 and Consensus Assessments Initiative Questi
 | Google Cloud | Cloud Run via Cloud Build | `docs/runbooks/DEPLOY_GCP.md` (`_DEPLOY=true`) |
 | Gemini Enterprise users | ADK agent on Vertex AI Agent Engine | `docs/runbooks/DEPLOY_AGENT_ENGINE.md` (`_DEPLOY_AGENT=true`; registered once in Gemini Enterprise, updated on every main build) |
 | Python integrators | Package with bundled default config | `pip install "readiness[gcp] @ git+https://github.com/<owner>/<repo>@<tag>"` then `readiness assess <folder>` |
+| MCP clients (Claude Code, Claude Desktop, others) | MCP server on stdio (`readiness mcp`, needs the `mcp` extra) | `uv sync --extra mcp` then `claude mcp add readiness -e READINESS_WORKSPACE_DIR=$PWD/workspace -- uv run readiness mcp`. Tools: `run_readiness_assessment`, `list_profiles`, `list_checks`. `READINESS_LLM_PROVIDER` stays `mock` unless an operator opts in. See `docs/runbooks/MCP_SERVER.md` |
 
 All channels are built from the same commit and run the same engine, so scores never differ by channel.

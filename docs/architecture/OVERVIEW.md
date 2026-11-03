@@ -35,7 +35,7 @@
 
 | Component | Responsibility | Key files |
 |---|---|---|
-| Surfaces | Accept a source and a profile, return a report | `cli.py`, `api/app.py`, `agents/adk_app.py` |
+| Surfaces | Accept a source and a profile, return a report | `cli.py`, `api/app.py`, `agents/adk_app.py`, `agents/mcp_server.py` (MCP server on stdio for Claude Code and other MCP clients; wraps the ADK tool) |
 | Pipeline | The only orchestration; identical for all surfaces | `pipeline.py` |
 | Ingestion | bytes to text (pdf, docx, xlsx, text/structured), heuristic classification | `ingestion/extract.py`, `ingestion/classify.py` |
 | Guardrails | redaction, egress policy, prompt wrapping, audit | `guardrails/` |
@@ -57,6 +57,9 @@ temporary folder, assessed as a local source). Result stored through `BlobStore`
 **ADK agent**: `agents/adk_app.py` exposes one tool, `run_readiness_assessment`, that calls the same
 pipeline and returns a compact summary. The coordinator prompt handles the "coverage below threshold,
 ask discovery questions, re-run" loop from V1.
+
+**MCP server**: `readiness mcp` (`agents/mcp_server.py`) serves `run_readiness_assessment`, `list_profiles`
+and `list_checks` over stdio to Claude Code, Claude Desktop and other MCP clients; see `docs/runbooks/MCP_SERVER.md`.
 
 ## Inside `run_assessment`
 
