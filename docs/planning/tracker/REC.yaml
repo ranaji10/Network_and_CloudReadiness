@@ -49,10 +49,10 @@ stories:
     notes: "V1 roadmap generator behaviour"
   - id: REC-06
     title: Recommendation de-duplication across checks sharing a product
-    status: in_progress
+    status: done
     phase: 4
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [REC-01]
     acceptance: "one action per product family with the checks it closes listed"
-    notes: ""
+    notes: "rules.dedupe_by_product (default true); family tags on 73 catalog options; merged actions carry closes_check_ids and a Closes: line in the report"

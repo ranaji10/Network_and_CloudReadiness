@@ -31,13 +31,13 @@ stories:
     notes: "V1 assisted discovery flow"
   - id: AGT-04
     title: Expose the assessment as an MCP server
-    status: in_progress
+    status: done
     phase: 3
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [AGT-01]
     acceptance: "run_readiness_assessment callable from Claude Code and other MCP clients"
-    notes: ""
+    notes: "readiness mcp (stdio) with run_readiness_assessment, list_profiles, list_checks; mcp extra; docs/runbooks/MCP_SERVER.md; logs routed to stderr"
   - id: AGT-05
     title: Agent evaluation set in CI (ADK evals)
     status: todo
