@@ -67,13 +67,13 @@ stories:
     notes: "llm_refine_classification: batch, unsure docs only, guarded; tests with the mock"
   - id: ING-08
     title: OCR for scanned PDFs and images
-    status: in_progress
+    status: done
     phase: 4
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [ING-02]
     acceptance: "scanned PDF in fixtures yields text; optional dependency"
-    notes: ""
+    notes: "ocr extra (pytesseract, pypdfium2, pillow) + tesseract-ocr in the image and both CIs; sparse PDF pages and png/jpg/tiff; READINESS_OCR_* settings; synthetic_scanned fixtures"
   - id: ING-09
     title: PPTX and legacy DOC/XLS extraction
     status: done

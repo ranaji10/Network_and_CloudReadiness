@@ -14,12 +14,12 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 4 | 0 | 0 | 5 | 9 |
 | INF | Infrastructure | 3 | 1 | 0 | 6 | 10 |
-| ING | Ingestion | 2 | 1 | 0 | 6 | 9 |
+| ING | Ingestion | 2 | 0 | 0 | 7 | 9 |
 | LLM | Model providers | 2 | 1 | 0 | 3 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 1 | 1 | 0 | 4 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 19 | 4 | 0 | 58 | 81 |
+| **All** | | 19 | 3 | 0 | 59 | 81 |
 
 ## By phase
 
@@ -104,13 +104,13 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
 - `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
 
-### Phase 4: Agentic-AI depth and product polish (5/8 done)
+### Phase 4: Agentic-AI depth and product polish (6/8 done)
 
 - `done` **AGT-03** Questionnaire round trip (answer discovery questions, re-score) (claude-code)
 - `todo` **AGT-05** Agent evaluation set in CI (ADK evals)
 - `done` **API-03** Web UI (upload, progress, report view) (claude-code)
 - `done` **API-04** PDF export of the report (claude-code)
-- `in_progress` **ING-08** OCR for scanned PDFs and images (claude-code)
+- `done` **ING-08** OCR for scanned PDFs and images (claude-code)
 - `done` **REC-06** Recommendation de-duplication across checks sharing a product (claude-code)
 - `done` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores (claude-code)
 - `todo` **SCR-06** Agentic-AI domain reviewed with two external practitioners
@@ -225,7 +225,7 @@ Owner hint: sources and extraction; touches src/readiness/adapters/sources and s
 | ING-05 | GCS source verified against a live bucket | done | 2 | claude-code | main | INF-03 | gs://bucket/prefix assessed from Cloud Run with the runtime service account |
 | ING-06 | S3 source verified against a live bucket | todo | 3 |  |  | INF-06 | s3://bucket/prefix assessed from an AWS runtime role |
 | ING-07 | Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER | done | 1 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | classification confidence improves on the evaluation set; falls back to keywords |
-| ING-08 | OCR for scanned PDFs and images | in_progress | 4 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | scanned PDF in fixtures yields text; optional dependency |
+| ING-08 | OCR for scanned PDFs and images | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | scanned PDF in fixtures yields text; optional dependency |
 | ING-09 | PPTX and legacy DOC/XLS extraction | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | slides and legacy Office files produce text |
 
 ### LLM: Model providers
