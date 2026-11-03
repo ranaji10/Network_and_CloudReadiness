@@ -34,7 +34,7 @@ nothing has yet been run against a live cloud account or a real model.
 | F-SCR-2 | Each check maps to CSA CCM v4.1 control ids; catalog shipped in the package | done (`src/readiness/data/ccm_v4.1.json`) |
 | F-SCR-3 | Rule engine: signals, strong signals, negative signals, four statuses | done (`engine.py`) |
 | F-SCR-4 | Posture score and evidence coverage reported separately per pillar, domain and overall | done |
-| F-SCR-5 | Profiles select domains, weights, thresholds and provider preference | done (`default`, `gcp_migration`, `security_only`) |
+| F-SCR-5 | Profiles select domains, weights, thresholds and provider preference | done (`default`, `gcp_migration`, `security_only`, `healthcare`, `finance`, `public_sector`) |
 | F-SCR-6 | Optional LLM judge refines rule verdicts when confident | hook done, tested with mock only |
 | F-SCR-7 | A new check or pillar is a YAML edit; a config typo fails fast | done (pydantic validation) |
 

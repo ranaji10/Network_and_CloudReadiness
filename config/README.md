@@ -98,6 +98,25 @@ Copy `profiles/default.yaml`, change `id`, domain weights, `thresholds`, `rules`
 New profiles are discovered automatically and selected with `--profile <id>` or the `profile` query
 parameter of the API. Domain weights are relative; they do not need to sum to 100.
 
+A profile may also carry `pillar_weight_overrides: {domain_id: {pillar_id: weight}}` to stress some
+pillars of a domain without editing `scoring/<domain>.yaml`. Pillars not listed keep their configured
+weight; an unknown domain or pillar id, or a weight of zero or less, fails at load time. The overrides are
+applied once, in `load_domains`, so scores, recommendation priorities and the report all use them.
+
+Shipped profiles:
+
+| Profile | Emphasis | When to use |
+|---|---|---|
+| `default` | Balanced security / cloud / agentic AI (40 / 35 / 25) | First look at any organisation |
+| `gcp_migration` | Cloud readiness dominates (50 / 35 / 15), GCP products listed first | A migration roadmap engagement |
+| `security_only` | Network security only | A pure posture review, no cloud or AI scope |
+| `healthcare` | HIPAA / HITRUST style data protection: identity, audit logging, encryption, recoverability; security 45 / cloud 30 / AI 25; grade A at 90, evidence gate 80 | Providers, payers, life sciences, anyone handling PHI |
+| `finance` | PCI DSS / SOX style controls: segmentation, tamper-evident logging, change control, resilience; security 45 / cloud 35 / AI 20; three signals for a PASS, grade A at 90, evidence gate 80, 50 recommendations | Banks, payments, insurers, anyone in an audited control environment |
+| `public_sector` | FedRAMP style baselines, data sovereignty and residency, transparent AI governance; cloud 45 / security 35 / AI 20; open-source options before AWS; evidence gate 75 | Government, education, public bodies with residency or procurement constraints |
+
+Industry profiles raise `high_confidence_coverage` and the grade thresholds where the sector expects
+stronger evidence; they never change which checks exist or how signals are matched.
+
 ## Redaction rules
 
 Rules in `redaction.yaml` run in file order with the `re.I | re.M` flags. `kind: secret` rules are

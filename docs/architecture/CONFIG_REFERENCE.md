@@ -31,6 +31,14 @@ Profiles, domains, the catalog and `redaction.yaml` are all read from that one d
 | `rules` | object | see below | Signal evaluation rules |
 | `target_providers` | list of string | `[gcp, aws, oss]` | Preference order for recommendation options; providers not listed are dropped, `process` is always kept and listed last |
 | `max_recommendations` | integer | `40` | Truncates the prioritised list (actions and discovery items together) |
+| `pillar_weight_overrides` | map of `{domain_id: {pillar_id: number}}` | `{}` | Replaces the `weight` of the named pillars for this profile only; unlisted pillars keep the domain's weight |
+
+`pillar_weight_overrides` is validated at load time: every domain id must appear in `domains`, every
+pillar id must exist in that domain's `scoring/<id>.yaml`, and every weight must be greater than zero.
+`readiness.scoring.profiles.load_domains` applies the overrides to the loaded `DomainDef`s, so the
+domain score, coverage, recommendation priority (`base` below) and the pillar weight printed in the
+report all use the overridden value. The domain file on disk is never changed. The shipped
+`healthcare`, `finance` and `public_sector` profiles use this to express their compliance emphasis.
 
 `thresholds` defaults: `high_confidence_coverage: 70`, `grade_a: 85`, `grade_b: 70`, `grade_c: 50`.
 Grades use `>=`: A at or above `grade_a`, B at or above `grade_b`, C at or above `grade_c`, else D.

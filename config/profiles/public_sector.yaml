@@ -1,0 +1,48 @@
+# Industry profile: public sector (FedRAMP style authorisation, data sovereignty, residency, transparency).
+# Emphasis: where data lives and who can reach it, authorisation-ready security baselines, and transparent,
+# accountable use of AI. Cloud readiness carries the most weight because residency, sovereignty and exit
+# strategy decide whether a migration is permitted at all; inside each domain, data, security/compliance,
+# identity and AI governance pillars are raised with pillar_weight_overrides. Open-source options are
+# listed before AWS so that sovereignty and lock-in trade-offs stay visible in recommendations.
+id: public_sector
+name: Public sector (FedRAMP / sovereignty emphasis)
+version: "1.0"
+description: >-
+  Government, education and other public bodies. Compliance emphasis on FedRAMP style authorisation
+  baselines, data sovereignty and residency, freedom-of-information style transparency and
+  accountable AI governance. Cloud readiness and data residency weigh most; AI governance is stressed.
+domains:
+  - { id: cloud_readiness,       weight: 45 }
+  - { id: network_security,      weight: 35 }
+  - { id: agentic_ai_readiness,  weight: 20 }
+# Pillars not listed keep the weight from config/scoring/<domain>.yaml. Weights are relative within a domain.
+pillar_weight_overrides:
+  cloud_readiness:
+    compute: 10
+    data: 30                # residency, sovereignty, classification and retention schedules
+    network_identity: 20
+    security_compliance: 30 # authorisation baseline, control inheritance, continuous monitoring
+    cost_licensing: 10
+  network_security:
+    perimeter: 20
+    segmentation: 20
+    identity: 25            # citizen and workforce identity, privileged access, MFA
+    detection: 25           # continuous monitoring and incident reporting obligations
+    resilience: 10
+  agentic_ai_readiness:
+    data_foundations: 20
+    integration: 15
+    governance: 40          # transparency, explainability, human oversight, public accountability
+    agent_security: 25
+thresholds:
+  high_confidence_coverage: 75
+  grade_a: 85
+  grade_b: 70
+  grade_c: 50
+rules:
+  met_min_signals: 2
+  partial_points_ratio: 0.5
+  negative_overrides: true
+  llm_override_min_confidence: 0.7
+target_providers: [gcp, oss, aws]   # sovereign/assured cloud first, open source second for exit strategy
+max_recommendations: 40

@@ -21,5 +21,8 @@ def test_assess_flags_do_not_clobber_env(monkeypatch, fixtures_dir, tmp_path):
 
 
 def test_profiles_and_checks_commands():
-    assert "gcp_migration" in runner.invoke(app, ["profiles"]).output
+    out = runner.invoke(app, ["profiles"]).output
+    assert "gcp_migration" in out
+    for industry in ("healthcare", "finance", "public_sector"):
+        assert industry in out
     assert "NS-PER-01" in runner.invoke(app, ["checks", "network_security"]).output

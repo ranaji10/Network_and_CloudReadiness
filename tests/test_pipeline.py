@@ -1,7 +1,10 @@
 import json
 
+import pytest
+
 from readiness.models import CheckStatus
 from readiness.pipeline import run_assessment
+from readiness.scoring.profiles import load_profile
 
 
 def test_end_to_end_offline(settings, fixtures_dir):
@@ -41,6 +44,34 @@ def test_profiles_change_weighting(settings, fixtures_dir):
         "gcp",
         "process",
     )
+
+
+@pytest.mark.parametrize("profile_id", ["healthcare", "finance", "public_sector"])
+def test_industry_profiles_run_offline(settings, fixtures_dir, profile_id):
+    profile = load_profile(settings.config_dir, profile_id)
+    report, md = run_assessment(f"file://{fixtures_dir / 'synthetic_acme'}", settings, profile_id)
+    assert report.llm_provider == "none" and report.profile == profile_id
+    assert [d.domain_id for d in report.domains] == [d.id for d in profile.domains]
+    assert 0 < report.overall_score <= 100 and 0 < report.overall_coverage <= 100
+    assert len(report.recommendations) <= profile.max_recommendations
+    # the profile's pillar emphasis reaches the scored pillars and therefore the report
+    for dom in report.domains:
+        overrides = profile.pillar_weight_overrides.get(dom.domain_id, {})
+        for pillar in dom.pillars:
+            if pillar.pillar_id in overrides:
+                assert pillar.weight == overrides[pillar.pillar_id], (profile_id, dom.domain_id, pillar.pillar_id)
+                assert f"{pillar.name} (weight {pillar.weight:g})" in md
+    assert "Sup3rSecretValue1" not in md and "10.10.0.1" not in md
+
+
+def test_finance_profile_demands_more_corroboration(settings, fixtures_dir):
+    """Three distinct signals are needed for a PASS under finance, so it can never score above default."""
+    default, _ = run_assessment(f"file://{fixtures_dir / 'synthetic_acme'}", settings, "default")
+    finance, _ = run_assessment(f"file://{fixtures_dir / 'synthetic_acme'}", settings, "finance")
+    ns_default = next(d for d in default.domains if d.domain_id == "network_security")
+    ns_finance = next(d for d in finance.domains if d.domain_id == "network_security")
+    met = lambda dom: {c.check_id for p in dom.pillars for c in p.checks if c.status == CheckStatus.MET}  # noqa: E731
+    assert met(ns_finance) <= met(ns_default)
 
 
 def test_llm_judge_uses_guarded_mock(settings, fixtures_dir):

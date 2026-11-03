@@ -37,8 +37,13 @@ Assess your own folder:
 
 ```bash
 uv run readiness assess /path/to/client-docs --profile default --snippets
+uv run readiness assess /path/to/client-docs --profile healthcare     # or finance, public_sector
 uv run readiness assess gs://bucket/prefix --profile gcp_migration     # needs: uv sync --extra gcp
 ```
+
+Profiles: `default`, `gcp_migration`, `security_only`, plus industry profiles `healthcare` (HIPAA / HITRUST
+emphasis), `finance` (PCI DSS / SOX emphasis) and `public_sector` (FedRAMP / sovereignty emphasis). See the
+table in [config/README.md](config/README.md).
 
 Reports land in `./workspace/<tenant>/<run-id>/` (git-ignored): `report.md`, `report.json`, `audit.jsonl`.
 

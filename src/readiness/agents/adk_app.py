@@ -21,7 +21,7 @@ def run_readiness_assessment(source_uri: str, profile: str = "default") -> dict:
 
     Args:
         source_uri: folder path, gs://bucket/prefix, s3://bucket/prefix or gdrive://<folder id or URL>.
-        profile: scoring profile id (default, gcp_migration, security_only).
+        profile: scoring profile id (default, gcp_migration, security_only, healthcare, finance, public_sector).
     """
     from readiness.pipeline import run_assessment
 

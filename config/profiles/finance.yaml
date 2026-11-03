@@ -1,0 +1,47 @@
+# Industry profile: financial services (PCI DSS / SOX style controls, audit logging, resilience).
+# Emphasis: cardholder-data segmentation, tamper-evident audit trails, change control and operational
+# resilience (PCI DSS requirements 1, 7, 8, 10 and 12; SOX ITGC; DORA style resilience). Detection and
+# logging, segmentation and security/compliance alignment are raised with pillar_weight_overrides.
+# Controls must be corroborated: three distinct signals are needed for a PASS without a strong signal.
+id: finance
+name: Financial services (PCI DSS / SOX emphasis)
+version: "1.0"
+description: >-
+  Banking, payments, insurance and other regulated financial services. Compliance emphasis on PCI DSS
+  and SOX style controls: network segmentation of sensitive zones, tamper-evident audit logging and
+  monitoring, change control, and operational resilience. Highest evidence bar of the shipped profiles.
+domains:
+  - { id: network_security,      weight: 45 }
+  - { id: cloud_readiness,       weight: 35 }
+  - { id: agentic_ai_readiness,  weight: 20 }
+# Pillars not listed keep the weight from config/scoring/<domain>.yaml. Weights are relative within a domain.
+pillar_weight_overrides:
+  network_security:
+    perimeter: 20
+    segmentation: 25        # PCI DSS scope reduction: isolate the cardholder data environment
+    identity: 15
+    detection: 25           # PCI DSS req. 10 / SOX: log everything, review it, keep it tamper-evident
+    resilience: 15          # operational resilience, RTO/RPO and tested recovery
+  cloud_readiness:
+    compute: 15
+    data: 20
+    network_identity: 20
+    security_compliance: 30 # control mapping, attestation evidence and shared-responsibility clarity
+    cost_licensing: 15      # licence and contract exposure matters to audit and exit planning
+  agentic_ai_readiness:
+    data_foundations: 20
+    integration: 20
+    governance: 35          # model risk management, explainability and approval workflows
+    agent_security: 25
+thresholds:
+  high_confidence_coverage: 80   # audit-grade evidence expected before prioritising actions
+  grade_a: 90
+  grade_b: 75
+  grade_c: 55
+rules:
+  met_min_signals: 3             # a control counts only when corroborated by three distinct statements
+  partial_points_ratio: 0.5
+  negative_overrides: true
+  llm_override_min_confidence: 0.7
+target_providers: [gcp, aws, oss]
+max_recommendations: 50          # auditors want the complete list, not a short one
