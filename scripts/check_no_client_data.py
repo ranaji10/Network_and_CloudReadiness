@@ -19,7 +19,7 @@ FORBIDDEN_DIRS = ("data/", "workspace/", "uploads/", "reports/")
 FORBIDDEN_NAMES = ("pseudonym_mapping", ".env", ".tfvars", ".tfstate", "service-account", "-credentials", "backend.")
 FORBIDDEN_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".jks")
 ALLOWED_NAME_SUFFIX = (".example",)
-SAMPLE_DIRS = ("samples/", "tests/fixtures/", "tests/evals/packs/")
+SAMPLE_DIRS = ("samples/", "tests/fixtures/", "tests/evals/")
 MAX_BYTES = 10 * 1024 * 1024
 BIG_OK_PREFIXES = ("reference/", "legacy/")
 

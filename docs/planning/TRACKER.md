@@ -18,8 +18,8 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | LLM | Model providers | 3 | 0 | 0 | 3 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 2 | 1 | 0 | 3 | 6 |
-| SCR | Scoring | 2 | 1 | 0 | 6 | 9 |
-| **All** | | 24 | 4 | 0 | 53 | 81 |
+| SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
+| **All** | | 24 | 3 | 0 | 54 | 81 |
 
 ## By phase
 
@@ -104,7 +104,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `in_progress` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
 - `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
 
-### Phase 4: Agentic-AI depth and product polish (2/8 done)
+### Phase 4: Agentic-AI depth and product polish (3/8 done)
 
 - `in_progress` **AGT-03** Questionnaire round trip (answer discovery questions, re-score) (claude-code)
 - `todo` **AGT-05** Agent evaluation set in CI (ADK evals)
@@ -112,7 +112,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `in_progress` **API-04** PDF export of the report (claude-code)
 - `todo` **ING-08** OCR for scanned PDFs and images
 - `done` **REC-06** Recommendation de-duplication across checks sharing a product (claude-code)
-- `in_progress` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores (claude-code)
+- `done` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores (claude-code)
 - `todo` **SCR-06** Agentic-AI domain reviewed with two external practitioners
 
 ### Phase 5: Hardening and commercial (0/4 done)
@@ -276,7 +276,7 @@ Owner hint: config/scoring, config/profiles, src/readiness/scoring
 | SCR-02 | Profiles with domain weights, thresholds and provider preference | done | 0 |  |  | SCR-01 | default, gcp_migration, security_only load and validate |
 | SCR-03 | Rule engine with posture score and evidence coverage kept separate | done | 0 |  |  | SCR-01 | met/partial/not_met/unknown; negative signals override; composite across domains |
 | SCR-04 | Tune signals against three anonymised real document packs | todo | 1 |  |  | SCR-03 | false positives and misses recorded; signals adjusted; packs never committed |
-| SCR-05 | Evaluation set of 20 synthetic document packs with expected scores | in_progress | 4 | claude-code | claude/nifty-mendel-lcqzeb | SCR-03 | tests/evals runs rules and judge; score drift fails CI beyond a tolerance |
+| SCR-05 | Evaluation set of 20 synthetic document packs with expected scores | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | SCR-03 | tests/evals runs rules and judge; score drift fails CI beyond a tolerance |
 | SCR-06 | Agentic-AI domain reviewed with two external practitioners | todo | 4 |  |  | SCR-01 | review notes recorded in an ADR; checks updated |
 | SCR-07 | LLM judge hook with confidence-gated override | done | 0 |  |  | SCR-03 | llm_refine overrides only above llm_override_min_confidence; tested with mock |
 | SCR-08 | Per-check signal weights and regex signals documented in config README | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-03 | config/README.md explains every field with an example |

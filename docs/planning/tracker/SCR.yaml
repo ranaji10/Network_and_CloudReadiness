@@ -40,13 +40,13 @@ stories:
     notes: ""
   - id: SCR-05
     title: Evaluation set of 20 synthetic document packs with expected scores
-    status: in_progress
+    status: done
     phase: 4
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [SCR-03]
     acceptance: "tests/evals runs rules and judge; score drift fails CI beyond a tolerance"
-    notes: ""
+    notes: "tests/evals: 20 synthetic packs x rules/judge(mock) modes, expected.yaml with 1.0-point tolerance, make evals / evals-refresh; client-data check now covers tests/evals"
   - id: SCR-06
     title: Agentic-AI domain reviewed with two external practitioners
     status: todo
