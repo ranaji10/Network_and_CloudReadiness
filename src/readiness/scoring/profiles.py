@@ -6,10 +6,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class CheckDef(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # a misspelt field is an error, not silently ignored
     id: str
     title: str
     points: float = 5
@@ -23,6 +24,7 @@ class CheckDef(BaseModel):
 
 
 class PillarDef(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # a misspelt field is an error, not silently ignored
     id: str
     name: str
     weight: float
@@ -35,6 +37,7 @@ class PillarDef(BaseModel):
 
 
 class DomainDef(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # a misspelt field is an error, not silently ignored
     id: str
     name: str
     version: str = "1"
@@ -51,11 +54,13 @@ class DomainDef(BaseModel):
 
 
 class DomainWeight(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # a misspelt field is an error, not silently ignored
     id: str
     weight: float
 
 
 class ProfileRules(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # a misspelt field is an error, not silently ignored
     met_min_signals: int = 2
     partial_points_ratio: float = 0.5
     negative_overrides: bool = True
@@ -63,6 +68,7 @@ class ProfileRules(BaseModel):
 
 
 class Profile(BaseModel):
+    model_config = ConfigDict(extra="forbid")  # a misspelt field is an error, not silently ignored
     id: str
     name: str
     version: str = "1"

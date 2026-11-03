@@ -76,10 +76,10 @@ stories:
     notes: "signal semantics (word vs regex, strong/negative, doc_classes fallback) documented in config/README.md; IP-literal signals removed from CR-NET-02"
   - id: SCR-09
     title: Industry profiles (healthcare, finance, public sector)
-    status: in_progress
+    status: done
     phase: 3
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [SCR-02]
     acceptance: "three new profiles with domain weights and compliance emphasis"
-    notes: ""
+    notes: "healthcare, finance, public_sector profiles; new optional pillar_weight_overrides field; config models now forbid unknown fields"

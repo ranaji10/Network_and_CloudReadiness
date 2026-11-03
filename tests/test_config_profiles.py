@@ -102,3 +102,15 @@ def test_every_check_has_catalog_entry_and_valid_ccm_ids():
                 for cid in c.ccm:
                     assert control(cid), f"{c.id} references unknown CCM control {cid}"
                 assert c.signals or c.strong_signals, f"{c.id} has no signals"
+
+
+def test_unknown_profile_field_is_rejected():
+    import pytest
+    from pydantic import ValidationError
+
+    from readiness.scoring.profiles import Profile
+
+    base = {"id": "x", "name": "x", "version": "1", "domains": [{"id": "network_security", "weight": 100}]}
+    Profile.model_validate(base)
+    with pytest.raises(ValidationError):
+        Profile.model_validate({**base, "pillar_weight_override": {}})

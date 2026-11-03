@@ -18,8 +18,8 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | LLM | Model providers | 3 | 0 | 0 | 3 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 2 | 2 | 0 | 2 | 6 |
-| SCR | Scoring | 2 | 2 | 0 | 5 | 9 |
-| **All** | | 24 | 9 | 0 | 48 | 81 |
+| SCR | Scoring | 2 | 1 | 0 | 6 | 9 |
+| **All** | | 24 | 8 | 0 | 49 | 81 |
 
 ## By phase
 
@@ -89,7 +89,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **MIG-01** Migrate the GCP project from the personal account to an organisation
 - `done` **MIG-05** Data export and deletion procedure per tenant (claude-code)
 
-### Phase 3: Recommendations depth and AWS (0/12 done)
+### Phase 3: Recommendations depth and AWS (1/12 done)
 
 - `in_progress` **AGT-04** Expose the assessment as an MCP server (claude-code)
 - `todo` **INF-06** Validate AWS skeleton and add App Runner service
@@ -102,7 +102,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **REC-03** Catalog expansion with sizing hints and documentation links
 - `todo` **REC-04** Rough cost bands per option
 - `in_progress` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
-- `in_progress` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
+- `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
 
 ### Phase 4: Agentic-AI depth and product polish (1/8 done)
 
@@ -280,4 +280,4 @@ Owner hint: config/scoring, config/profiles, src/readiness/scoring
 | SCR-06 | Agentic-AI domain reviewed with two external practitioners | todo | 4 |  |  | SCR-01 | review notes recorded in an ADR; checks updated |
 | SCR-07 | LLM judge hook with confidence-gated override | done | 0 |  |  | SCR-03 | llm_refine overrides only above llm_override_min_confidence; tested with mock |
 | SCR-08 | Per-check signal weights and regex signals documented in config README | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-03 | config/README.md explains every field with an example |
-| SCR-09 | Industry profiles (healthcare, finance, public sector) | in_progress | 3 | claude-code | claude/nifty-mendel-lcqzeb | SCR-02 | three new profiles with domain weights and compliance emphasis |
+| SCR-09 | Industry profiles (healthcare, finance, public sector) | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | SCR-02 | three new profiles with domain weights and compliance emphasis |
