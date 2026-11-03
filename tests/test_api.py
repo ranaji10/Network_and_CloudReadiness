@@ -1,4 +1,8 @@
+import io
+import sys
+
 from fastapi.testclient import TestClient
+from pypdf import PdfReader
 
 from readiness.api import app as api_module
 
@@ -17,6 +21,15 @@ def test_api_roundtrip(settings, fixtures_dir, monkeypatch):
     assert client.get(f"/assessments/{run_id}").status_code == 200
     md = client.get(f"/assessments/{run_id}/report.md").text
     assert md.startswith("# Network, Cloud")
+    pdf = client.get(f"/assessments/{run_id}/report.pdf")
+    assert pdf.status_code == 200 and pdf.headers["content-type"] == "application/pdf"
+    assert pdf.headers["content-disposition"] == f'attachment; filename="report-{run_id}.pdf"'
+    assert pdf.content.startswith(b"%PDF")
+    assert run_id in PdfReader(io.BytesIO(pdf.content)).pages[0].extract_text()
+    assert client.get("/assessments/nope/report.pdf").status_code == 404
+    monkeypatch.setitem(sys.modules, "fpdf", None)  # deployment without the `pdf` extra
+    r = client.get(f"/assessments/{run_id}/report.pdf")
+    assert r.status_code == 501 and "uv sync --extra pdf" in r.json()["detail"]
     files = [
         (
             "files",
@@ -58,6 +71,8 @@ def test_per_tenant_tokens_scope_reports(settings, fixtures_dir):
     run_id = r.json()["id"]
     assert client.get(f"/assessments/{run_id}", headers=acme).status_code == 200
     assert client.get(f"/assessments/{run_id}", headers=globex).status_code == 404  # other tenant cannot see it
+    assert client.get(f"/assessments/{run_id}/report.pdf", headers=globex).status_code == 404
+    assert client.get(f"/assessments/{run_id}/report.pdf", headers=acme).status_code == 200
     assert client.get(f"/assessments/{run_id}", headers={"Authorization": "Bearer nope"}).status_code == 401
     assert (settings.workspace_dir / "reports" / "acme" / run_id / "report.json").exists()
     api_module.app.dependency_overrides.clear()

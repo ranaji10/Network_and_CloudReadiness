@@ -6,10 +6,10 @@ ENV UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never UV_NO_CACHE=1
 WORKDIR /app
 # Dependencies first (cached layer), then the project itself.
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-dev --no-install-project --extra gcp --extra anthropic --extra office
+RUN uv sync --frozen --no-dev --no-install-project --extra gcp --extra anthropic --extra office --extra pdf
 COPY src ./src
 COPY config ./config
-RUN uv sync --frozen --no-dev --extra gcp --extra anthropic --extra office
+RUN uv sync --frozen --no-dev --extra gcp --extra anthropic --extra office --extra pdf
 
 FROM python:3.12-slim-bookworm AS runtime
 RUN groupadd -r app && useradd -r -g app -d /app app \

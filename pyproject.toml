@@ -41,7 +41,10 @@ pii = ["presidio-analyzer>=2.2"]
 mcp = ["mcp>=1.2,<2"]
 # Office formats beyond the core PDF/DOCX/XLSX set: PPTX slides, legacy .xls and .doc (ING-09).
 office = ["python-pptx>=1.0,<2", "xlrd>=2.0,<3", "olefile>=0.47,<1"]
-all = ["readiness[gcp,adk,aws,anthropic,mcp,office]"]
+# PDF export of the report (API-04). fpdf2 is pure Python: no cairo/pango/system fonts, so it works in the
+# slim runtime image. Kept optional so the core stays small; the Dockerfile installs it.
+pdf = ["fpdf2>=2.8,<3"]
+all = ["readiness[gcp,adk,aws,anthropic,mcp,office,pdf]"]
 
 [dependency-groups]
 dev = [
@@ -55,6 +58,7 @@ dev = [
   "python-pptx>=1.0,<2",
   "xlrd>=2.0,<3",
   "olefile>=0.47,<1",
+  "fpdf2>=2.8,<3",  # so tests/test_pdf.py exercises the real renderer (same pin as the `pdf` extra)
 ]
 
 [project.scripts]

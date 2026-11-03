@@ -39,6 +39,7 @@ Assess your own folder:
 uv run readiness assess /path/to/client-docs --profile default --snippets
 uv run readiness assess /path/to/client-docs --profile healthcare     # or finance, public_sector
 uv run readiness assess gs://bucket/prefix --profile gcp_migration     # needs: uv sync --extra gcp
+uv run readiness assess /path/to/client-docs --pdf                      # also write report.pdf (needs: uv sync --extra pdf)
 ```
 
 Profiles: `default`, `gcp_migration`, `security_only`, plus industry profiles `healthcare` (HIPAA / HITRUST
@@ -48,7 +49,9 @@ table in [config/README.md](config/README.md).
 Supported inputs: PDF, DOCX, XLSX, Markdown, text, CSV, JSON and YAML out of the box; PPTX and legacy
 DOC/XLS need `uv sync --extra office` (the container image installs it). Other types are skipped, never guessed.
 
-Reports land in `./workspace/<tenant>/<run-id>/` (git-ignored): `report.md`, `report.json`, `audit.jsonl`.
+Reports land in `./workspace/<tenant>/<run-id>/` (git-ignored): `report.md`, `report.json`, `audit.jsonl`, and
+`report.pdf` with `--pdf` (or later: `uv run readiness export-pdf workspace/<tenant>/<run-id>/report.json`).
+The API serves the same PDF at `GET /assessments/{id}/report.pdf`.
 
 ## Repository map
 

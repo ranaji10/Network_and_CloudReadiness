@@ -42,7 +42,7 @@
   </section>
 
   <section class="card" id="report" hidden>
-    <h2 style="margin-top:0">Report <a id="dl" download="report.md" class="note" style="font-weight:400;margin-left:8px">download .md</a></h2>
+    <h2 style="margin-top:0">Report <a id="dl" download="report.md" class="note" style="font-weight:400;margin-left:8px">download .md</a> <a id="pdf" href="#" class="note" style="font-weight:400;margin-left:8px">download PDF</a></h2>
     <pre id="md"></pre>
   </section>
 </main>
@@ -85,10 +85,29 @@
       const m = await fetch('assessments/' + rep.id + '/report.md', { headers: headers() });
       const md = await m.text();
       $('md').textContent = md; $('dl').href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+      $('pdf').dataset.run = rep.id; $('pdf').removeAttribute('download'); $('pdf').href = '#';
       $('report').hidden = false; $('status').textContent = 'Done. Run ' + rep.id + '.';
     } catch (e) {
       $('status').textContent = 'Failed: ' + e.message;
     } finally { $('go').disabled = false; }
+  });
+
+  // The PDF is rendered on demand by GET assessments/<run>/report.pdf. A plain link cannot carry the bearer
+  // token, so fetch it with the same headers and hand the browser a blob to save.
+  $('pdf').addEventListener('click', async (ev) => {
+    const a = $('pdf');
+    if (a.getAttribute('download')) return;  // second click: href already points at the fetched blob
+    ev.preventDefault();
+    if (!a.dataset.run) return;
+    a.textContent = 'rendering PDF…';
+    try {
+      const r = await fetch('assessments/' + a.dataset.run + '/report.pdf', { headers: headers() });
+      if (!r.ok) throw new Error(r.status + ' ' + (await r.text()).slice(0, 300));
+      a.href = URL.createObjectURL(await r.blob()); a.setAttribute('download', 'report-' + a.dataset.run + '.pdf');
+      a.textContent = 'download PDF'; a.click();
+    } catch (e) {
+      a.textContent = 'download PDF'; $('status').textContent = 'PDF export failed: ' + e.message;
+    }
   });
 })();
 </script>

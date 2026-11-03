@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 
 from readiness.config import get_settings
+
+if TYPE_CHECKING:
+    from readiness.models import AssessmentReport
 
 app = typer.Typer(help="Network security, cloud readiness and agentic-AI readiness assessor.", no_args_is_help=True)
 
@@ -41,6 +45,7 @@ def assess(
         "(default: READINESS_SHARE_SAFE)",
     ),
     print_md: bool = typer.Option(True, "--print/--no-print", help="Print the markdown report"),
+    pdf: bool = typer.Option(False, "--pdf", help="Also write report.pdf to the run folder (needs the `pdf` extra)"),
 ):
     """Assess a document source. Flags override the environment only when given explicitly."""
     from readiness.pipeline import run_assessment
@@ -60,11 +65,39 @@ def assess(
     report, md = run_assessment(source, settings, profile)
     if print_md:
         typer.echo(md)
+    run_dir = Path(settings.workspace_dir) / settings.tenant_id / report.id
+    if pdf:
+        _write_pdf(report, run_dir / "report.pdf")
     typer.echo(
         f"[done] run={report.id} score={report.overall_score} coverage={report.overall_coverage} "
-        f"llm={report.llm_provider} -> {Path(settings.workspace_dir) / settings.tenant_id / report.id}",
+        f"llm={report.llm_provider} -> {run_dir}",
         err=True,
     )
+
+
+def _write_pdf(report: AssessmentReport, out: Path) -> None:
+    from readiness.report.pdf import PdfExportUnavailableError, render_pdf
+
+    try:
+        data = render_pdf(report)
+    except PdfExportUnavailableError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(data)
+    typer.echo(f"[pdf] {out} ({len(data)} bytes)", err=True)
+
+
+@app.command("export-pdf")
+def export_pdf(
+    report_json: Path = typer.Argument(..., help="report.json of an existing run (workspace/<tenant>/<run>/)"),
+    out: Path | None = typer.Option(None, help="Output file (default: report.pdf next to the input)"),
+):
+    """Render an existing run's report.json to PDF (needs the `pdf` extra)."""
+    from readiness.models import AssessmentReport
+
+    report = AssessmentReport.model_validate_json(report_json.read_text())
+    _write_pdf(report, out or report_json.with_name("report.pdf"))
 
 
 @app.command()

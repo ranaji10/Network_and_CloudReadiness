@@ -13,6 +13,7 @@ POST /jobs/upload            upload files, assess in the background -> job recor
 GET  /jobs/{job_id}          job record (queued | running | done | failed)
 GET  /assessments/{id}       report JSON        (tenant-scoped)
 GET  /assessments/{id}/report.md               (tenant-scoped)
+GET  /assessments/{id}/report.pdf              (tenant-scoped; rendered on demand, needs the `pdf` extra)
 
 Tenancy: `READINESS_TENANT_TOKENS` (JSON map tenant -> token) gives each client its own token; a request's
 tenant is derived from the token it presents and every key it can read or write is prefixed with that tenant.
@@ -30,7 +31,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Header, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from pydantic import BaseModel
 
 from readiness import __version__
@@ -38,6 +39,7 @@ from readiness.adapters.registry import make_blob_store
 from readiness.config import Settings, get_settings
 from readiness.models import AssessmentReport
 from readiness.ports import BlobStore
+from readiness.report.pdf import PdfExportUnavailableError, render_pdf
 from readiness.scoring.profiles import list_profiles
 
 app = FastAPI(title="Network & Cloud Readiness Assessor", version=__version__)
@@ -297,3 +299,30 @@ def get_report_md(run_id: str, principal: Principal = Depends(auth), settings: S
     if not store.exists(key):
         raise HTTPException(404, "unknown assessment")
     return store.get(key).decode()
+
+
+@app.get(
+    "/assessments/{run_id}/report.pdf",
+    response_class=Response,
+    responses={
+        200: {"content": {"application/pdf": {}}, "description": "The report rendered as PDF"},
+        404: {"description": "Unknown assessment (or not this tenant's)"},
+        501: {"description": "PDF export not installed on this deployment (`pdf` extra)"},
+    },
+)
+def get_report_pdf(run_id: str, principal: Principal = Depends(auth), settings: Settings = Depends(settings_dep)):
+    """Render the stored report.json to PDF on demand (nothing extra is stored); same tenant rules as the JSON."""
+    store = make_blob_store(_tenant_settings(settings, principal), "reports")
+    key = f"{principal.tenant_id}/{run_id}/report.json"
+    if not store.exists(key):
+        raise HTTPException(404, "unknown assessment")
+    report = AssessmentReport.model_validate_json(store.get(key))
+    try:
+        data = render_pdf(report)
+    except PdfExportUnavailableError as exc:
+        raise HTTPException(501, str(exc)) from exc
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="report-{report.id}.pdf"'},
+    )

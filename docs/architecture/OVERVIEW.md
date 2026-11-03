@@ -41,7 +41,7 @@
 | Guardrails | redaction, egress policy, prompt wrapping, audit | `guardrails/` |
 | Scoring | load profile and domains, evaluate checks by signals, optional LLM judge, grades, composite | `scoring/` |
 | Recommend | failed/partial checks to actions with provider options; unknown checks to CAIQ discovery questions | `recommend/engine.py` |
-| Report | Markdown deliverable; JSON is the pydantic model | `report/markdown.py`, `models.py` |
+| Report | Markdown deliverable and an optional PDF (fpdf2, `pdf` extra), both rendered from the pydantic model | `report/markdown.py`, `report/pdf.py`, `models.py` |
 | Ports/adapters | the cloud-neutral boundary | `ports/__init__.py`, `adapters/` |
 | Config | all tunables | `config/` |
 
@@ -52,7 +52,8 @@ prints Markdown, writes `workspace/<tenant>/<run>/`.
 
 **API**: `POST /assessments` (JSON `source_uri`) or `POST /assessments/upload` (multipart, written to a
 temporary folder, assessed as a local source). Result stored through `BlobStore` under
-`<tenant>/<run>/report.{json,md}`; `GET /assessments/{run}` reads it back. Bearer token required.
+`<tenant>/<run>/report.{json,md}`; `GET /assessments/{run}` reads it back and `GET /assessments/{run}/report.pdf`
+renders the stored JSON to PDF on demand. Bearer token required.
 
 **ADK agent**: `agents/adk_app.py` exposes one tool, `run_readiness_assessment`, that calls the same
 pipeline and returns a compact summary. The coordinator prompt handles the "coverage below threshold,

@@ -360,6 +360,64 @@
         "summary": "Get Report Md"
       }
     },
+    "/assessments/{run_id}/report.pdf": {
+      "get": {
+        "description": "Render the stored report.json to PDF on demand (nothing extra is stored); same tenant rules as the JSON.",
+        "operationId": "get_report_pdf_assessments__run_id__report_pdf_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/pdf": {}
+            },
+            "description": "The report rendered as PDF"
+          },
+          "404": {
+            "description": "Unknown assessment (or not this tenant's)"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "501": {
+            "description": "PDF export not installed on this deployment (`pdf` extra)"
+          }
+        },
+        "summary": "Get Report Pdf"
+      }
+    },
     "/healthz": {
       "get": {
         "operationId": "healthz_healthz_get",
