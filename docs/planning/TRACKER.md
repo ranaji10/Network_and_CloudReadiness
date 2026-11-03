@@ -10,7 +10,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 1 | 2 | 0 | 2 | 5 |
 | API | API and UI | 1 | 1 | 0 | 5 | 7 |
-| DOC | Docs and governance | 1 | 1 | 0 | 5 | 7 |
+| DOC | Docs and governance | 1 | 0 | 0 | 6 | 7 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 4 | 1 | 0 | 4 | 9 |
 | INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
@@ -19,7 +19,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 2 | 2 | 0 | 2 | 6 |
 | SCR | Scoring | 2 | 2 | 0 | 5 | 9 |
-| **All** | | 24 | 10 | 0 | 47 | 81 |
+| **All** | | 24 | 9 | 0 | 48 | 81 |
 
 ## By phase
 
@@ -53,10 +53,10 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-03** Rule engine with posture score and evidence coverage kept separate
 - `done` **SCR-07** LLM judge hook with confidence-gated override
 
-### Phase 1: MVP for one analyst (11/15 done)
+### Phase 1: MVP for one analyst (12/15 done)
 
 - `done` **DOC-04** Config reference for scoring, profiles, catalog and redaction (claude-code)
-- `in_progress` **DOC-06** Tracker sync to GitHub Issues (optional script) (claude-code)
+- `done` **DOC-06** Tracker sync to GitHub Issues (optional script) (claude-code)
 - `done` **FND-06** Pin dependency upper bounds and add a monthly dependency refresh story (claude-code)
 - `done` **FND-07** Type checking (mypy) added to make check (claude-code)
 - `done` **FND-08** Default config resolvable from a wheel, a checkout or an Agent Engine bundle (claude-code)
@@ -161,7 +161,7 @@ Owner hint: docs/, README, CLAUDE.md, AGENTS.md
 | DOC-03 | Collaboration, portability, runbooks and legacy summary | done | 0 |  |  |  | CLAUDE.md, AGENTS.md, CONTRIBUTING.md, docs/collaboration, docs/architecture, docs/runbooks |
 | DOC-04 | Config reference for scoring, profiles, catalog and redaction | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-08 | config/README.md with every field explained |
 | DOC-05 | Support and incident process for customers | todo | 5 |  |  |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
-| DOC-06 | Tracker sync to GitHub Issues (optional script) | in_progress | 1 | claude-code | claude/nifty-mendel-lcqzeb | DOC-01 | scripts/tracker_to_issues.py creates or updates issues by story id |
+| DOC-06 | Tracker sync to GitHub Issues (optional script) | done | 1 | claude-code | claude/nifty-mendel-lcqzeb | DOC-01 | scripts/tracker_to_issues.py creates or updates issues by story id |
 | DOC-07 | Outside-the-network posture documented, client-facing, and enforced in CI | done | 2 | claude-code | claude/nifty-mendel-lcqzeb | DOC-02 | ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs |
 
 ### FND: Foundation
