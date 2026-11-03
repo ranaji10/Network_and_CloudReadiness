@@ -31,10 +31,10 @@ stories:
     notes: "v0: upload, scores table, report text and download served at /; async progress view is API-06"
   - id: API-04
     title: PDF export of the report
-    status: todo
+    status: in_progress
     phase: 4
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [API-01]
     acceptance: "GET /assessments/{id}/report.pdf"
     notes: ""

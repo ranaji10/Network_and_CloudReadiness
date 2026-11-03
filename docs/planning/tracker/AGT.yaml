@@ -22,19 +22,19 @@ stories:
     notes: "deployed from Cloud Build, pinned by id; Playground returns the same scores as the CLI on the synthetic pack (58 / 63%, A-D-D)"
   - id: AGT-03
     title: Questionnaire round trip (answer discovery questions, re-score)
-    status: todo
+    status: in_progress
     phase: 4
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [AGT-02]
     acceptance: "answers stored as a document in the tenant workspace; coverage rises on re-run"
     notes: "V1 assisted discovery flow"
   - id: AGT-04
     title: Expose the assessment as an MCP server
-    status: todo
+    status: in_progress
     phase: 3
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [AGT-01]
     acceptance: "run_readiness_assessment callable from Claude Code and other MCP clients"
     notes: ""

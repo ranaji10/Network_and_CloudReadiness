@@ -49,10 +49,10 @@ stories:
     notes: ""
   - id: DOC-06
     title: Tracker sync to GitHub Issues (optional script)
-    status: todo
+    status: in_progress
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [DOC-01]
     acceptance: "scripts/tracker_to_issues.py creates or updates issues by story id"
     notes: ""

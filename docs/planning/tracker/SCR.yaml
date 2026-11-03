@@ -40,10 +40,10 @@ stories:
     notes: ""
   - id: SCR-05
     title: Evaluation set of 20 synthetic document packs with expected scores
-    status: todo
+    status: in_progress
     phase: 4
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [SCR-03]
     acceptance: "tests/evals runs rules and judge; score drift fails CI beyond a tolerance"
     notes: ""
@@ -76,10 +76,10 @@ stories:
     notes: "signal semantics (word vs regex, strong/negative, doc_classes fallback) documented in config/README.md; IP-literal signals removed from CR-NET-02"
   - id: SCR-09
     title: Industry profiles (healthcare, finance, public sector)
-    status: todo
+    status: in_progress
     phase: 3
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [SCR-02]
     acceptance: "three new profiles with domain weights and compliance emphasis"
     notes: ""
