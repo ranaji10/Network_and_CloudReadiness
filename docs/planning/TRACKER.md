@@ -8,7 +8,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 
 | Epic | Name | todo | in_progress | blocked | done | total |
 |---|---|---:|---:|---:|---:|---:|
-| AGT | Agents and ADK | 1 | 1 | 0 | 3 | 5 |
+| AGT | Agents and ADK | 1 | 0 | 0 | 4 | 5 |
 | API | API and UI | 1 | 0 | 0 | 6 | 7 |
 | DOC | Docs and governance | 1 | 0 | 0 | 6 | 7 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
@@ -19,7 +19,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 2 | 0 | 0 | 4 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 24 | 1 | 0 | 56 | 81 |
+| **All** | | 24 | 0 | 0 | 57 | 81 |
 
 ## By phase
 
@@ -104,9 +104,9 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
 - `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
 
-### Phase 4: Agentic-AI depth and product polish (4/8 done)
+### Phase 4: Agentic-AI depth and product polish (5/8 done)
 
-- `in_progress` **AGT-03** Questionnaire round trip (answer discovery questions, re-score) (claude-code)
+- `done` **AGT-03** Questionnaire round trip (answer discovery questions, re-score) (claude-code)
 - `todo` **AGT-05** Agent evaluation set in CI (ADK evals)
 - `done` **API-03** Web UI (upload, progress, report view) (claude-code)
 - `done` **API-04** PDF export of the report (claude-code)
@@ -132,7 +132,7 @@ Owner hint: src/readiness/agents
 |---|---|---|---:|---|---|---|---|
 | AGT-01 | ADK wrapper exposing the assessment as a tool | done | 0 |  |  |  | adk web src/readiness/agents loads; root_agent None without ADK installed |
 | AGT-02 | Deploy the ADK agent to Vertex AI Agent Engine | done | 2 | claude-code | claude/trusting-keller-qe5w65 | AGT-01, LLM-01 | agent answers with the same scores as the CLI for the same folder |
-| AGT-03 | Questionnaire round trip (answer discovery questions, re-score) | in_progress | 4 | claude-code | claude/nifty-mendel-lcqzeb | AGT-02 | answers stored as a document in the tenant workspace; coverage rises on re-run |
+| AGT-03 | Questionnaire round trip (answer discovery questions, re-score) | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | AGT-02 | answers stored as a document in the tenant workspace; coverage rises on re-run |
 | AGT-04 | Expose the assessment as an MCP server | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | AGT-01 | run_readiness_assessment callable from Claude Code and other MCP clients |
 | AGT-05 | Agent evaluation set in CI (ADK evals) | todo | 4 |  |  | AGT-02, SCR-05 | five conversations with expected tool calls pass in CI |
 

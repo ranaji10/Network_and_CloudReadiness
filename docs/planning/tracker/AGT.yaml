@@ -22,13 +22,13 @@ stories:
     notes: "deployed from Cloud Build, pinned by id; Playground returns the same scores as the CLI on the synthetic pack (58 / 63%, A-D-D)"
   - id: AGT-03
     title: Questionnaire round trip (answer discovery questions, re-score)
-    status: in_progress
+    status: done
     phase: 4
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [AGT-02]
     acceptance: "answers stored as a document in the tenant workspace; coverage rises on re-run"
-    notes: "V1 assisted discovery flow"
+    notes: "questionnaire.py; answers stored under <tenant>/answers and mirrored to the reports store; POST /assessments/{id}/answers and /rerun; include_answers on every create path, CLI answer/--include-answers, ADK and MCP tools; only answer bodies are scored"
   - id: AGT-04
     title: Expose the assessment as an MCP server
     status: done

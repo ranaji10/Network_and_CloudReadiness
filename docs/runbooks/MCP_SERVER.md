@@ -31,7 +31,8 @@ Then, in Claude Code: "assess ./data/<folder> with the security_only profile" ca
 
 | Tool | Arguments | Returns |
 |---|---|---|
-| `run_readiness_assessment` | `source_uri` (folder, `gs://`, `s3://`, `gdrive://`), `profile` (default `default`) | compact summary: `run_id`, `report_dir`, `overall_score`, `evidence_coverage`, per-domain scores and grades, up to 10 `top_actions`, up to 15 `discovery` questions, `warnings` |
+| `run_readiness_assessment` | `source_uri` (folder, `gs://`, `s3://`, `gdrive://`), `profile` (default `default`), `include_answers` (default false: also score the stored questionnaire answers) | compact summary: `run_id`, `report_dir`, `overall_score`, `evidence_coverage`, per-domain scores and grades, up to 10 `top_actions`, up to 15 `discovery` questions, `warnings` |
+| `submit_questionnaire_answers` | `run_id`, `answers` (list of `{check_id, answer, question?}`) | stored document id and counts, never the answer text; follow with `run_readiness_assessment(..., include_answers=true)` |
 | `list_profiles` | none | profile ids, names, domain weights, target providers |
 | `list_checks` | `domain` (optional) | check id, title, points, pillar, CCM ids, discovery question |
 

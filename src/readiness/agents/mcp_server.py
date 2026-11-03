@@ -24,19 +24,39 @@ INSTRUCTIONS = (
 )
 
 
-def run_readiness_assessment(source_uri: str, profile: str = "default") -> dict[str, Any]:
+def run_readiness_assessment(
+    source_uri: str, profile: str = "default", include_answers: bool = False
+) -> dict[str, Any]:
     """Assess all documents under `source_uri` and return scores, grades and prioritised recommendations.
 
     Args:
         source_uri: folder path, gs://bucket/prefix, s3://bucket/prefix or gdrive://<folder id or URL>.
         profile: scoring profile id (see list_profiles).
+        include_answers: also score the questionnaire answers stored earlier with
+            submit_questionnaire_answers (the re-run after the client answered the discovery questions).
 
     Returns the compact summary (run_id, report_dir, overall_score, evidence_coverage, domains, top_actions,
     discovery questions, warnings), not the full report.
     """
     from readiness.agents.adk_app import run_readiness_assessment as _run
 
-    return _run(source_uri, profile)
+    return _run(source_uri, profile, include_answers=include_answers)
+
+
+def submit_questionnaire_answers(run_id: str, answers: list[dict[str, str]]) -> dict[str, Any]:
+    """Store the client's answers to the discovery questions of an earlier run as a document in the tenant
+    workspace, then call run_readiness_assessment again on the same source with include_answers=true.
+
+    Args:
+        run_id: the run_id returned by run_readiness_assessment whose discovery items are being answered.
+        answers: one entry per answered check: {"check_id": "<id from the discovery list>", "answer": "<text>"}
+            and optionally "question".
+
+    Returns the stored document id and counts, never the answer text.
+    """
+    from readiness.agents.adk_app import submit_questionnaire_answers as _submit
+
+    return _submit(run_id, answers)
 
 
 def list_profiles() -> list[dict[str, Any]]:
@@ -100,6 +120,7 @@ def build_server():
 
     server = FastMCP(SERVER_NAME, instructions=INSTRUCTIONS)
     server.tool()(run_readiness_assessment)
+    server.tool()(submit_questionnaire_answers)
     server.tool()(list_profiles)
     server.tool()(list_checks)
     return server

@@ -12,7 +12,7 @@ from readiness.cli import app
 
 pytest.importorskip("mcp")
 
-TOOLS = {"run_readiness_assessment", "list_profiles", "list_checks"}
+TOOLS = {"run_readiness_assessment", "submit_questionnaire_answers", "list_profiles", "list_checks"}
 
 
 def _payload(result) -> object:
@@ -41,7 +41,7 @@ def test_server_lists_the_three_tools():
     listed = _with_client(go)
     assert {t.name for t in listed.tools} == TOOLS
     run_tool = next(t for t in listed.tools if t.name == "run_readiness_assessment")
-    assert set(run_tool.inputSchema["properties"]) == {"source_uri", "profile"}
+    assert set(run_tool.inputSchema["properties"]) == {"source_uri", "profile", "include_answers"}
     assert run_tool.inputSchema["required"] == ["source_uri"]
 
 
@@ -96,15 +96,15 @@ def test_list_profiles_and_checks_tools():
 
 def test_tool_delegates_to_the_adk_function(monkeypatch):
     """One function, many wrappers (ADR-20261023-adk-wrapper-kept-thin): no second pipeline call."""
-    calls: list[tuple[str, str]] = []
+    calls: list[tuple[str, str, bool]] = []
 
-    def fake(source_uri: str, profile: str = "default") -> dict:
-        calls.append((source_uri, profile))
+    def fake(source_uri: str, profile: str = "default", include_answers: bool = False) -> dict:
+        calls.append((source_uri, profile, include_answers))
         return {"run_id": "x"}
 
     monkeypatch.setattr("readiness.agents.adk_app.run_readiness_assessment", fake)
     assert mcp_server.run_readiness_assessment("src", "gcp_migration") == {"run_id": "x"}
-    assert calls == [("src", "gcp_migration")]
+    assert calls == [("src", "gcp_migration", False)]
 
 
 def test_cli_reports_install_hint_when_sdk_missing(monkeypatch):
@@ -127,3 +127,32 @@ def test_cli_runs_server_on_stdio(monkeypatch):
     monkeypatch.setattr(mcp_server, "build_server", lambda: FakeServer())
     assert CliRunner().invoke(app, ["mcp"]).exit_code == 0
     assert seen == {"transport": "stdio"}
+
+
+def test_questionnaire_round_trip_over_mcp(monkeypatch, fixtures_dir, tmp_path, stderr_logging):
+    """AGT-03 over MCP: run, submit answers (metadata only comes back), re-run with include_answers."""
+    monkeypatch.setenv("READINESS_WORKSPACE_DIR", str(tmp_path))
+    monkeypatch.setenv("READINESS_LLM_PROVIDER", "mock")
+    src = str(fixtures_dir / "synthetic_acme")
+
+    async def go(client):
+        first = _payload(
+            await client.call_tool("run_readiness_assessment", {"source_uri": src, "profile": "security_only"})
+        )
+        stored = await client.call_tool(
+            "submit_questionnaire_answers",
+            {
+                "run_id": first["run_id"],
+                "answers": [{"check_id": "NS-PER-02", "answer": "Public apps sit behind a WAF with DDoS protection."}],
+            },
+        )
+        again = _payload(
+            await client.call_tool(
+                "run_readiness_assessment", {"source_uri": src, "profile": "security_only", "include_answers": True}
+            )
+        )
+        return first, stored, again
+
+    first, stored, again = _with_client(go)
+    assert _payload(stored)["answers"] == 1 and "WAF" not in str(stored.content)
+    assert again["evidence_coverage"] > first["evidence_coverage"] and again["answers_included"] == 1
