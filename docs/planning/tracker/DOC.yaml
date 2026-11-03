@@ -40,13 +40,13 @@ stories:
     notes: "config/README.md (orientation, worked example) + docs/architecture/CONFIG_REFERENCE.md (field reference, scoring and priority math)"
   - id: DOC-05
     title: Support and incident process for customers
-    status: in_progress
+    status: done
     phase: 5
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: []
     acceptance: "docs/runbooks/SUPPORT.md with SLAs and escalation"
-    notes: ""
+    notes: "docs/runbooks/SUPPORT.md; SLA numbers, support hours and contact alias are [proposed] pending product-owner sign-off"
   - id: DOC-06
     title: Tracker sync to GitHub Issues (optional script)
     status: done

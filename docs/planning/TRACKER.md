@@ -10,7 +10,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 1 | 0 | 0 | 4 | 5 |
 | API | API and UI | 1 | 0 | 0 | 6 | 7 |
-| DOC | Docs and governance | 0 | 1 | 0 | 6 | 7 |
+| DOC | Docs and governance | 0 | 0 | 0 | 7 | 7 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 4 | 0 | 0 | 5 | 9 |
 | INF | Infrastructure | 3 | 1 | 0 | 6 | 10 |
@@ -19,7 +19,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 1 | 1 | 0 | 4 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 19 | 5 | 0 | 57 | 81 |
+| **All** | | 19 | 4 | 0 | 58 | 81 |
 
 ## By phase
 
@@ -115,10 +115,10 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores (claude-code)
 - `todo` **SCR-06** Agentic-AI domain reviewed with two external practitioners
 
-### Phase 5: Hardening and commercial (0/4 done)
+### Phase 5: Hardening and commercial (1/4 done)
 
 - `todo` **API-05** SSO for the UI and API
-- `in_progress` **DOC-05** Support and incident process for customers (claude-code)
+- `done` **DOC-05** Support and incident process for customers (claude-code)
 - `todo` **GRD-07** Tool assesses itself with security_only profile above grade B
 - `in_progress` **INF-07** Staging and prod environments in separate projects (claude-code)
 
@@ -160,7 +160,7 @@ Owner hint: docs/, README, CLAUDE.md, AGENTS.md
 | DOC-02 | Security docs (threat model, data handling policy, guardrails) | done | 0 |  |  |  | docs/security complete; SECURITY.md at root |
 | DOC-03 | Collaboration, portability, runbooks and legacy summary | done | 0 |  |  |  | CLAUDE.md, AGENTS.md, CONTRIBUTING.md, docs/collaboration, docs/architecture, docs/runbooks |
 | DOC-04 | Config reference for scoring, profiles, catalog and redaction | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-08 | config/README.md with every field explained |
-| DOC-05 | Support and incident process for customers | in_progress | 5 | claude-code | claude/nifty-mendel-lcqzeb |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
+| DOC-05 | Support and incident process for customers | done | 5 | claude-code | claude/nifty-mendel-lcqzeb |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
 | DOC-06 | Tracker sync to GitHub Issues (optional script) | done | 1 | claude-code | claude/nifty-mendel-lcqzeb | DOC-01 | scripts/tracker_to_issues.py creates or updates issues by story id |
 | DOC-07 | Outside-the-network posture documented, client-facing, and enforced in CI | done | 2 | claude-code | claude/nifty-mendel-lcqzeb | DOC-02 | ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs |
 
