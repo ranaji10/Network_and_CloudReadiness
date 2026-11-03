@@ -1,0 +1,1 @@
+Data classification: patient data is restricted, personal data (PII) under the privacy regulation; data residency in-country. Database and storage tagged.

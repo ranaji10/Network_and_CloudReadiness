@@ -1,0 +1,1 @@
+Intrusion detection: Suricata sensors plus EDR on all endpoints; endpoint detection alerts go to the SIEM monitoring queue.

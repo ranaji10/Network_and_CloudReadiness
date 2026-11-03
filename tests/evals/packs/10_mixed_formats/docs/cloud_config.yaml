@@ -1,0 +1,20 @@
+# Saffron Comet Retail - cloud foundation configuration (SYNTHETIC)
+landing_zone:
+  security_baseline: cis benchmark
+  organization_policy: enforced
+  kms: cloud kms with cmek
+  monitoring: [security command center, cloud audit log, cloud logging]
+identity:
+  federation: identity federation via okta (saml), workload identity for services
+network:
+  vpc_design: address space 10.200.0.0/16, non-overlapping with store subnet ranges
+  dns: cloud dns
+  certificates: acme automation
+operations:
+  iac: terraform
+  cicd: github actions pipeline
+  observability: prometheus
+cost:
+  finops_owner: platform lead
+  tagging_policy: labels required
+  budget_alert: monthly

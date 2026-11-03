@@ -1,0 +1,4 @@
+hostname,vcpu,ram,os version
+clinic-app-01,4,16,Windows Server 2022
+clinic-db-01,8,32,RHEL 9
+# server inventory export from the CMDB (hardware list)

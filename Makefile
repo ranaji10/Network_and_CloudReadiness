@@ -22,6 +22,12 @@ fmt: ## Auto-format and fix lint
 test: ## Run the test suite
 	$(UV) run pytest -q
 
+evals: ## Score the 20 synthetic evaluation packs (tests/evals) and fail on drift beyond tolerance
+	$(UV) run pytest -q tests/evals
+
+evals-refresh: ## Re-pin tests/evals/packs/*/expected.yaml after an intended scoring change (review the diff!)
+	$(UV) run python tests/evals/generate_expected.py --write
+
 policy: ## Repo guardrails: portability, no client data, no system access, tracker and OpenAPI export in sync
 	$(UV) run python scripts/check_portability.py
 	$(UV) run python scripts/check_no_client_data.py
@@ -68,4 +74,4 @@ tf-plan: ## terraform plan with envs/$(ENV).tfvars (extra flags via TF_ARGS)
 tf-apply: ## terraform apply with envs/$(ENV).tfvars (extra flags via TF_ARGS, e.g. TF_ARGS='-target=...')
 	cd $(TF_DIR) && terraform apply -var-file=envs/$(ENV).tfvars $(TF_ARGS)
 
-.PHONY: help setup lint fmt test policy secrets-scan check tracker tracker-issues catalog demo serve docker-build docker-run tf-init tf-plan tf-apply
+.PHONY: help setup lint fmt test evals evals-refresh policy secrets-scan check tracker tracker-issues catalog demo serve docker-build docker-run tf-init tf-plan tf-apply

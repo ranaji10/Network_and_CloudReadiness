@@ -262,6 +262,17 @@ A model with no entry yields `estimated_cost_usd: null` rather than an error, so
 models. Cached-input, batch and long-context tiers are not modelled; treat the figure as an upper bound at
 list price.
 
+## Evaluation packs and score drift
+
+`tests/evals/packs/` holds 20 synthetic document packs, each with an `expected.yaml` that pins the composite
+score, the composite coverage and every domain's score and coverage for the configuration as committed, in
+rules-only mode and with the (mock) LLM judge. `tests/evals/test_evals.py` runs them as part of `make test`;
+a value outside the pack's tolerance (1.0 point by default) or a changed designed check status fails CI.
+
+Changing scoring configuration therefore has one extra step: run `make evals`; if the drift is what you
+intended, run `make evals-refresh` and review the diff of the `expected.yaml` files like a snapshot. The
+packs and the refresh workflow are documented in `tests/evals/packs/README.md`.
+
 ## What is not configurable (requires a code change)
 
 - the confidence values attached to rule verdicts (0.6, 0.7, 0.5, 0.3) and the evidence cap of eight hits

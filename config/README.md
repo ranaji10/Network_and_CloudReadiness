@@ -24,6 +24,19 @@ make test                                      # schema validation and invariant
 make demo                                      # full offline run on the synthetic sample, with snippets
 ```
 
+## Changing scoring configuration
+
+Scores are pinned by an evaluation set of 20 synthetic document packs (`tests/evals/packs/`, part of
+`make test`). After editing anything under `scoring/` or `profiles/`:
+
+```bash
+make evals            # runs just the packs; fails on drift beyond each pack's tolerance (1.0 point)
+make evals-refresh    # if the change is intended: re-pin expected.yaml, then review `git diff tests/evals/packs`
+```
+
+Every number that moves in the diff should be explained by the change you made; commit the refreshed files with
+the configuration change. `tests/evals/packs/README.md` describes each pack and how to widen a tolerance.
+
 Tests enforce these invariants (`tests/test_config_profiles.py`):
 
 - every profile and every domain parses against the pydantic schema (unknown fields are an error);

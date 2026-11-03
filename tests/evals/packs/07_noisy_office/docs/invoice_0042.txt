@@ -1,0 +1,7 @@
+INVOICE 0042 (SYNTHETIC)
+Blue Teacup Catering, 1 Example Street
+Bill to: Example Events Ltd
+Item: lunch for 40 people, 3 days ........ 2,400.00
+Item: coffee service .................... 180.00
+Total due .............................. 2,580.00
+Invoice payable within 30 days. Receipt issued on payment.

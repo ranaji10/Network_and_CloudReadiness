@@ -1,0 +1,7 @@
+Saffron Comet Retail - backup and storage notes (SYNTHETIC)
+Backup policy: nightly backup, retention period 30 days, weekly snapshot kept 12 months, offsite copy immutable.
+Restore test every six months; RPO 24h, RTO 8h; disaster recovery runbook maintained.
+Storage: 25 TB on the NAS (SMB file share), 5k IOPS SAN for the POS database (SQL Server 2019, database size 900 GB).
+Data classification: card data is restricted (PCI DSS scope); customer personal data is confidential.
+Compliance: PCI DSS and GDPR apply.
+Encryption: TLS 1.2 minimum; encryption at rest with AES-256 on the SAN.

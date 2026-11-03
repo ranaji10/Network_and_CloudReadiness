@@ -1,0 +1,1 @@
+Perimeter firewall: FortiGate next-generation firewall cluster at the internet edge. Firewall rule review quarterly, default deny.

@@ -1,0 +1,1 @@
+Public booking site is behind a web application firewall (Cloudflare WAF) with DDoS protection. Firewall logs feed the SIEM.

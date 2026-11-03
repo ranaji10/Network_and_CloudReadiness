@@ -1,0 +1,5 @@
+hostname,vcpu,ram_gb,os_version,hypervisor
+pos-db-01,8,64,Windows Server 2019,VMware
+web-01,4,16,Ubuntu 22.04,VMware
+web-02,4,16,Ubuntu 22.04,VMware
+# server inventory export from the CMDB

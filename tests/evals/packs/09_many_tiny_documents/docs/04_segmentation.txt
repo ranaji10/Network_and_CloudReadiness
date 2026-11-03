@@ -1,0 +1,1 @@
+Network segmentation: clinic VLAN, imaging VLAN, guest VLAN and a management VLAN. Firewall between VLANs.

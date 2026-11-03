@@ -37,6 +37,8 @@ Full rules on parallel work: `docs/collaboration/WORKING_AGREEMENT.md`.
 - `pytest`, fixtures in `tests/conftest.py`. Tests never read a developer's `.env` and never call a network.
 - Every new check needs a catalog entry (a test enforces it). Every new adapter needs a test with a fake client.
 - Test data is synthetic. Put it in `tests/fixtures/` with a README that says so.
+- Scoring changes are pinned by the evaluation packs in `tests/evals/packs/`: run `make evals`, and if the drift
+  is intended, `make evals-refresh` and review the diff of the `expected.yaml` files before committing them.
 
 ## Docs
 

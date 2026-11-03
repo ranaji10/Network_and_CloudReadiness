@@ -1,0 +1,1 @@
+Incident response plan with an incident playbook; tabletop exercise annually. Monitoring and logging support the plan.

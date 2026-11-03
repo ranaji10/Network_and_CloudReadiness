@@ -1,0 +1,1 @@
+High availability: redundant firewall pair and router pair, dual ISP with failover, load balancer pair for the booking system.

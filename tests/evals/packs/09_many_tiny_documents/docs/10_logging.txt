@@ -1,0 +1,1 @@
+Centralised logging: syslog to a SIEM (Elastic) with 12 months log retention. Monitoring alerts to on-call.

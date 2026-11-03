@@ -1,0 +1,8 @@
+hostname,vcpu,ram_gb,os_version,hypervisor,utilization_cpu_avg_pct,application
+claims-app-01,8,32,Windows Server 2019,VMware,35,Claims
+claims-app-02,8,32,Windows Server 2019,VMware,30,Claims
+claims-db-01,16,128,Windows Server 2019,VMware,55,Claims
+policy-app-01,4,16,RHEL 8,VMware,20,Policy Admin
+policy-db-01,8,64,RHEL 8,VMware,40,Policy Admin
+file-01,4,16,Windows Server 2016,Hyper-V,10,File shares
+# server inventory from the CMDB with utilization data (CPU usage monthly average) for right-sizing

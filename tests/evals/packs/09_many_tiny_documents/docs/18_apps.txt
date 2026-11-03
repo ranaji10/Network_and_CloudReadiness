@@ -1,0 +1,1 @@
+Application inventory: practice management (tier 1, mission critical), imaging archive (tier 1), intranet (tier 3). Application owner listed per app. CMDB maintained.

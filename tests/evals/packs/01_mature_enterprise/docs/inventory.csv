@@ -1,0 +1,7 @@
+hostname,role,vcpu,ram_gb,os_version,hypervisor,application,business_criticality,application_owner
+app-01,web,4,16,Ubuntu 22.04,VMware,Orchard Portal,tier 1,platform team
+app-02,web,4,16,Ubuntu 22.04,VMware,Orchard Portal,tier 1,platform team
+db-01,database,8,64,RHEL 9,VMware,Orchard Portal,tier 1,data team
+erp-01,erp,8,32,Windows Server 2022,VMware,Finance ERP,mission critical,finance IT
+file-01,fileshare,2,8,Windows Server 2022,VMware,Shared drives,tier 2,workplace IT
+Notes: full server inventory exported from the CMDB; the application portfolio with a dependency map lives in the same tool.
