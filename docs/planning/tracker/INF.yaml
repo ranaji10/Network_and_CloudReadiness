@@ -58,13 +58,13 @@ stories:
     notes: ""
   - id: INF-07
     title: Staging and prod environments in separate projects
-    status: in_progress
+    status: done
     phase: 5
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [INF-05]
     acceptance: "envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN"
-    notes: ""
+    notes: "staging/prod tfvars + backend examples, env-labelled resources, tag-triggered prod build with approval, promotion section in RELEASE_PLAN, ADR one-project-per-environment. NOT yet run: make tf-validate / apply (no Terraform in the session); operator must validate before first apply"
   - id: INF-08
     title: Monitoring, alerting and uptime check for the API
     status: todo

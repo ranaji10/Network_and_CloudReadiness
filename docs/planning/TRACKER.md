@@ -13,13 +13,13 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | DOC | Docs and governance | 0 | 0 | 0 | 7 | 7 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 4 | 0 | 0 | 5 | 9 |
-| INF | Infrastructure | 3 | 1 | 0 | 6 | 10 |
+| INF | Infrastructure | 3 | 0 | 0 | 7 | 10 |
 | ING | Ingestion | 2 | 0 | 0 | 7 | 9 |
 | LLM | Model providers | 2 | 1 | 0 | 3 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 1 | 1 | 0 | 4 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 19 | 3 | 0 | 59 | 81 |
+| **All** | | 19 | 2 | 0 | 60 | 81 |
 
 ## By phase
 
@@ -115,12 +115,12 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores (claude-code)
 - `todo` **SCR-06** Agentic-AI domain reviewed with two external practitioners
 
-### Phase 5: Hardening and commercial (1/4 done)
+### Phase 5: Hardening and commercial (2/4 done)
 
 - `todo` **API-05** SSO for the UI and API
 - `done` **DOC-05** Support and incident process for customers (claude-code)
 - `todo` **GRD-07** Tool assesses itself with security_only profile above grade B
-- `in_progress` **INF-07** Staging and prod environments in separate projects (claude-code)
+- `done` **INF-07** Staging and prod environments in separate projects (claude-code)
 
 ## By epic
 
@@ -207,7 +207,7 @@ Owner hint: infra/, Dockerfile, cloudbuild.yaml, Makefile
 | INF-04 | IAP in front of Cloud Run | todo | 2 |  |  | INF-03 | no public ingress; users authenticate with Google identity |
 | INF-05 | Terraform applied for dev (buckets, SAs, secrets, registry) | done | 1 | claude-code | main | INF-01 | make tf-apply ENV=dev succeeds; outputs pasted on the trigger |
 | INF-06 | Validate AWS skeleton and add App Runner service | todo | 3 |  |  | INF-01 | infra/terraform/aws applies in a sandbox account; API served from App Runner |
-| INF-07 | Staging and prod environments in separate projects | in_progress | 5 | claude-code | claude/nifty-mendel-lcqzeb | INF-05 | envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN |
+| INF-07 | Staging and prod environments in separate projects | done | 5 | claude-code | claude/nifty-mendel-lcqzeb | INF-05 | envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN |
 | INF-08 | Monitoring, alerting and uptime check for the API | todo | 2 |  |  | INF-03 | alert on 5xx rate and latency; uptime check on /healthz |
 | INF-09 | GitHub Actions mirror of the quality gate | done | 0 |  |  | INF-01 | .github/workflows/ci.yml runs lint, tests, policy checks |
 | INF-10 | Publish the container image to GHCR on release tags | done | 1 | claude-code | claude/trusting-keller-qe5w65 | INF-09 | ghcr.io/<owner>/readiness:<tag> pullable after pushing a v* tag |
