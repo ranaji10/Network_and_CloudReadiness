@@ -10,16 +10,16 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 |---|---|---:|---:|---:|---:|---:|
 | AGT | Agents and ADK | 1 | 0 | 0 | 4 | 5 |
 | API | API and UI | 1 | 0 | 0 | 6 | 7 |
-| DOC | Docs and governance | 1 | 0 | 0 | 6 | 7 |
+| DOC | Docs and governance | 0 | 1 | 0 | 6 | 7 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 4 | 0 | 0 | 5 | 9 |
-| INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
-| ING | Ingestion | 3 | 0 | 0 | 6 | 9 |
-| LLM | Model providers | 3 | 0 | 0 | 3 | 6 |
+| INF | Infrastructure | 3 | 1 | 0 | 6 | 10 |
+| ING | Ingestion | 2 | 1 | 0 | 6 | 9 |
+| LLM | Model providers | 2 | 1 | 0 | 3 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
-| REC | Recommendations | 2 | 0 | 0 | 4 | 6 |
+| REC | Recommendations | 1 | 1 | 0 | 4 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 24 | 0 | 0 | 57 | 81 |
+| **All** | | 19 | 5 | 0 | 57 | 81 |
 
 ## By phase
 
@@ -96,10 +96,10 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **ING-06** S3 source verified against a live bucket
 - `done` **ING-09** PPTX and legacy DOC/XLS extraction (claude-code)
 - `todo` **LLM-03** Amazon Bedrock adapter
-- `todo` **LLM-06** Prompt caching and batching for large document sets
+- `in_progress` **LLM-06** Prompt caching and batching for large document sets (claude-code)
 - `todo` **MIG-02** Terraform state move drill
 - `todo` **MIG-04** Provider switch drill (local to gcp to aws) with the same report output
-- `todo` **REC-03** Catalog expansion with sizing hints and documentation links
+- `in_progress` **REC-03** Catalog expansion with sizing hints and documentation links (claude-code)
 - `todo` **REC-04** Rough cost bands per option
 - `done` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
 - `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
@@ -110,7 +110,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **AGT-05** Agent evaluation set in CI (ADK evals)
 - `done` **API-03** Web UI (upload, progress, report view) (claude-code)
 - `done` **API-04** PDF export of the report (claude-code)
-- `todo` **ING-08** OCR for scanned PDFs and images
+- `in_progress` **ING-08** OCR for scanned PDFs and images (claude-code)
 - `done` **REC-06** Recommendation de-duplication across checks sharing a product (claude-code)
 - `done` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores (claude-code)
 - `todo` **SCR-06** Agentic-AI domain reviewed with two external practitioners
@@ -118,9 +118,9 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 ### Phase 5: Hardening and commercial (0/4 done)
 
 - `todo` **API-05** SSO for the UI and API
-- `todo` **DOC-05** Support and incident process for customers
+- `in_progress` **DOC-05** Support and incident process for customers (claude-code)
 - `todo` **GRD-07** Tool assesses itself with security_only profile above grade B
-- `todo` **INF-07** Staging and prod environments in separate projects
+- `in_progress` **INF-07** Staging and prod environments in separate projects (claude-code)
 
 ## By epic
 
@@ -160,7 +160,7 @@ Owner hint: docs/, README, CLAUDE.md, AGENTS.md
 | DOC-02 | Security docs (threat model, data handling policy, guardrails) | done | 0 |  |  |  | docs/security complete; SECURITY.md at root |
 | DOC-03 | Collaboration, portability, runbooks and legacy summary | done | 0 |  |  |  | CLAUDE.md, AGENTS.md, CONTRIBUTING.md, docs/collaboration, docs/architecture, docs/runbooks |
 | DOC-04 | Config reference for scoring, profiles, catalog and redaction | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-08 | config/README.md with every field explained |
-| DOC-05 | Support and incident process for customers | todo | 5 |  |  |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
+| DOC-05 | Support and incident process for customers | in_progress | 5 | claude-code | claude/nifty-mendel-lcqzeb |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
 | DOC-06 | Tracker sync to GitHub Issues (optional script) | done | 1 | claude-code | claude/nifty-mendel-lcqzeb | DOC-01 | scripts/tracker_to_issues.py creates or updates issues by story id |
 | DOC-07 | Outside-the-network posture documented, client-facing, and enforced in CI | done | 2 | claude-code | claude/nifty-mendel-lcqzeb | DOC-02 | ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs |
 
@@ -207,7 +207,7 @@ Owner hint: infra/, Dockerfile, cloudbuild.yaml, Makefile
 | INF-04 | IAP in front of Cloud Run | todo | 2 |  |  | INF-03 | no public ingress; users authenticate with Google identity |
 | INF-05 | Terraform applied for dev (buckets, SAs, secrets, registry) | done | 1 | claude-code | main | INF-01 | make tf-apply ENV=dev succeeds; outputs pasted on the trigger |
 | INF-06 | Validate AWS skeleton and add App Runner service | todo | 3 |  |  | INF-01 | infra/terraform/aws applies in a sandbox account; API served from App Runner |
-| INF-07 | Staging and prod environments in separate projects | todo | 5 |  |  | INF-05 | envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN |
+| INF-07 | Staging and prod environments in separate projects | in_progress | 5 | claude-code | claude/nifty-mendel-lcqzeb | INF-05 | envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN |
 | INF-08 | Monitoring, alerting and uptime check for the API | todo | 2 |  |  | INF-03 | alert on 5xx rate and latency; uptime check on /healthz |
 | INF-09 | GitHub Actions mirror of the quality gate | done | 0 |  |  | INF-01 | .github/workflows/ci.yml runs lint, tests, policy checks |
 | INF-10 | Publish the container image to GHCR on release tags | done | 1 | claude-code | claude/trusting-keller-qe5w65 | INF-09 | ghcr.io/<owner>/readiness:<tag> pullable after pushing a v* tag |
@@ -225,7 +225,7 @@ Owner hint: sources and extraction; touches src/readiness/adapters/sources and s
 | ING-05 | GCS source verified against a live bucket | done | 2 | claude-code | main | INF-03 | gs://bucket/prefix assessed from Cloud Run with the runtime service account |
 | ING-06 | S3 source verified against a live bucket | todo | 3 |  |  | INF-06 | s3://bucket/prefix assessed from an AWS runtime role |
 | ING-07 | Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER | done | 1 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | classification confidence improves on the evaluation set; falls back to keywords |
-| ING-08 | OCR for scanned PDFs and images | todo | 4 |  |  | ING-02 | scanned PDF in fixtures yields text; optional dependency |
+| ING-08 | OCR for scanned PDFs and images | in_progress | 4 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | scanned PDF in fixtures yields text; optional dependency |
 | ING-09 | PPTX and legacy DOC/XLS extraction | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | slides and legacy Office files produce text |
 
 ### LLM: Model providers
@@ -239,7 +239,7 @@ Owner hint: src/readiness/adapters/llm and guardrails/policy.py
 | LLM-03 | Amazon Bedrock adapter | todo | 3 |  |  | LLM-02 | READINESS_LLM_PROVIDER=bedrock works from an AWS runtime role |
 | LLM-04 | Mock provider with canned responses for tests | done | 0 |  |  |  | MockLLM returns conservative defaults or canned schema instances |
 | LLM-05 | Token and cost accounting per run in the audit log | done | 2 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | llm.ok events carry input/output token counts; report shows model cost |
-| LLM-06 | Prompt caching and batching for large document sets | todo | 3 |  |  | LLM-01 | judge cost per run halves on a 100-document pack |
+| LLM-06 | Prompt caching and batching for large document sets | in_progress | 3 | claude-code | claude/nifty-mendel-lcqzeb | LLM-01 | judge cost per run halves on a 100-document pack |
 
 ### MIG: Portability and migration
 
@@ -261,7 +261,7 @@ Owner hint: config/recommendations and src/readiness/recommend
 |---|---|---|---:|---|---|---|---|
 | REC-01 | Catalog covering every check with GCP, AWS, open-source and process options | done | 0 |  |  | SCR-01 | test_every_check_has_catalog_entry passes |
 | REC-02 | Discovery items with CAIQ questions for checks without evidence | done | 0 |  |  | FND-04 | unknown checks produce D-<check> items with up to six CAIQ questions |
-| REC-03 | Catalog expansion with sizing hints and documentation links | todo | 3 |  |  | REC-01 | every option has a url; notes mention when the option is wrong |
+| REC-03 | Catalog expansion with sizing hints and documentation links | in_progress | 3 | claude-code | claude/nifty-mendel-lcqzeb | REC-01 | every option has a url; notes mention when the option is wrong |
 | REC-04 | Rough cost bands per option | todo | 3 |  |  | REC-03 | low/medium/high monthly cost band shown in the report |
 | REC-05 | Migration wave planning (quick wins, core, legacy) from inventory documents | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-07 | gcp_migration report has a wave table derived from classified inventory |
 | REC-06 | Recommendation de-duplication across checks sharing a product | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | REC-01 | one action per product family with the checks it closes listed |

@@ -40,10 +40,10 @@ stories:
     notes: "config/README.md (orientation, worked example) + docs/architecture/CONFIG_REFERENCE.md (field reference, scoring and priority math)"
   - id: DOC-05
     title: Support and incident process for customers
-    status: todo
+    status: in_progress
     phase: 5
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: []
     acceptance: "docs/runbooks/SUPPORT.md with SLAs and escalation"
     notes: ""
