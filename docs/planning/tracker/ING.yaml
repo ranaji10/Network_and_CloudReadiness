@@ -76,10 +76,10 @@ stories:
     notes: ""
   - id: ING-09
     title: PPTX and legacy DOC/XLS extraction
-    status: in_progress
+    status: done
     phase: 3
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [ING-02]
     acceptance: "slides and legacy Office files produce text"
-    notes: ""
+    notes: "office extra (python-pptx, xlrd, olefile); .doc via piece table with printable-run fallback; synthetic_office fixtures; container installs the extra; agents/requirements.txt not extended"

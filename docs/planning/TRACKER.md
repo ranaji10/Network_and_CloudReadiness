@@ -14,12 +14,12 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
 | GRD | Guardrails | 4 | 0 | 0 | 5 | 9 |
 | INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
-| ING | Ingestion | 3 | 1 | 0 | 5 | 9 |
+| ING | Ingestion | 3 | 0 | 0 | 6 | 9 |
 | LLM | Model providers | 3 | 0 | 0 | 3 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 2 | 1 | 0 | 3 | 6 |
 | SCR | Scoring | 2 | 1 | 0 | 6 | 9 |
-| **All** | | 24 | 5 | 0 | 52 | 81 |
+| **All** | | 24 | 4 | 0 | 53 | 81 |
 
 ## By phase
 
@@ -89,12 +89,12 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **MIG-01** Migrate the GCP project from the personal account to an organisation
 - `done` **MIG-05** Data export and deletion procedure per tenant (claude-code)
 
-### Phase 3: Recommendations depth and AWS (2/12 done)
+### Phase 3: Recommendations depth and AWS (3/12 done)
 
 - `done` **AGT-04** Expose the assessment as an MCP server (claude-code)
 - `todo` **INF-06** Validate AWS skeleton and add App Runner service
 - `todo` **ING-06** S3 source verified against a live bucket
-- `in_progress` **ING-09** PPTX and legacy DOC/XLS extraction (claude-code)
+- `done` **ING-09** PPTX and legacy DOC/XLS extraction (claude-code)
 - `todo` **LLM-03** Amazon Bedrock adapter
 - `todo` **LLM-06** Prompt caching and batching for large document sets
 - `todo` **MIG-02** Terraform state move drill
@@ -226,7 +226,7 @@ Owner hint: sources and extraction; touches src/readiness/adapters/sources and s
 | ING-06 | S3 source verified against a live bucket | todo | 3 |  |  | INF-06 | s3://bucket/prefix assessed from an AWS runtime role |
 | ING-07 | Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER | done | 1 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | classification confidence improves on the evaluation set; falls back to keywords |
 | ING-08 | OCR for scanned PDFs and images | todo | 4 |  |  | ING-02 | scanned PDF in fixtures yields text; optional dependency |
-| ING-09 | PPTX and legacy DOC/XLS extraction | in_progress | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | slides and legacy Office files produce text |
+| ING-09 | PPTX and legacy DOC/XLS extraction | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | slides and legacy Office files produce text |
 
 ### LLM: Model providers
 
