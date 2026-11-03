@@ -38,4 +38,28 @@ file only; resolve by keeping both entries and renumbering the later one.
 
 The tracker lives in the repository so that any clone, including an agent's sandbox, has the full
 plan without network access, and so that a story and the code that closes it ship in one change.
-Story DOC-06 adds an optional sync to GitHub Issues for people who prefer that view.
+The optional sync below exists for people who prefer the Issues view.
+
+## Optional: mirror the tracker into GitHub Issues
+
+`scripts/tracker_to_issues.py` creates or updates one issue per story. It is **one-way** (YAML to
+Issues) and **optional**: nothing in the build depends on it, and edits made on an issue are
+overwritten by the next run. The issue title starts with `<STORY-ID>: ` (that prefix is how the
+script finds the issue again), the body repeats status, phase, owner, branch, dependencies,
+acceptance and notes, and the labels are `epic:<EPIC>`, `phase:<n>` and `status:<status>`
+(created when missing). A `done` story closes its issue; any other status reopens it. Issues that
+already match are not touched, so re-running is cheap and idempotent.
+
+```sh
+make tracker-issues                                   # dry run: prints what would change, writes nothing
+GITHUB_TOKEN=<token> GITHUB_REPOSITORY=<owner/repo> \
+  uv run python scripts/tracker_to_issues.py          # apply
+uv run python scripts/tracker_to_issues.py --repo <owner/repo> --only DOC-06 --dry-run
+```
+
+- `GITHUB_TOKEN` needs `issues: write` on the repository (a fine-grained PAT or the Actions token).
+  It is required unless `--dry-run`, and it is never printed.
+- `GITHUB_REPOSITORY` (`owner/repo`) or `--repo`; `GITHUB_API_URL` for GitHub Enterprise.
+  Both variables are set automatically inside GitHub Actions, so a workflow step that runs the
+  script after `make tracker` keeps Issues in step with `main`.
+- `--only <STORY-ID>` (repeatable) limits the run to a few stories.

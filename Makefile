@@ -41,6 +41,9 @@ check: lint test policy ## Everything CI runs (minus the secret scan, which need
 tracker: ## Re-render docs/planning/TRACKER.md from docs/planning/tracker/*.yaml
 	$(UV) run python scripts/render_tracker.py
 
+tracker-issues: ## Preview the tracker -> GitHub Issues sync (dry run; set GITHUB_TOKEN and drop --dry-run to apply)
+	$(UV) run python scripts/tracker_to_issues.py --dry-run
+
 catalog: ## Regenerate the CCM/CAIQ JSON from reference/ spreadsheets
 	$(UV) run python scripts/build_control_catalog.py
 
@@ -65,4 +68,4 @@ tf-plan: ## terraform plan with envs/$(ENV).tfvars (extra flags via TF_ARGS)
 tf-apply: ## terraform apply with envs/$(ENV).tfvars (extra flags via TF_ARGS, e.g. TF_ARGS='-target=...')
 	cd $(TF_DIR) && terraform apply -var-file=envs/$(ENV).tfvars $(TF_ARGS)
 
-.PHONY: help setup lint fmt test policy secrets-scan check tracker catalog demo serve docker-build docker-run tf-init tf-plan tf-apply
+.PHONY: help setup lint fmt test policy secrets-scan check tracker tracker-issues catalog demo serve docker-build docker-run tf-init tf-plan tf-apply
