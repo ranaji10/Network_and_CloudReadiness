@@ -225,3 +225,27 @@ def test_pipeline_default_profile_has_no_wave_section(settings, fixtures_dir):
     assert "Migration waves" not in md and "## 5. Data handling" in md
     assert AssessmentReport.model_validate_json(report.model_dump_json()).migration_waves is None
     assert isinstance(report.redaction, RedactionSummary)
+
+
+def test_share_safe_wave_table_uses_document_labels(settings, fixtures_dir):
+    s = settings.model_copy(update={"share_safe": True})
+    report, md = run_assessment(f"file://{fixtures_dir / 'synthetic_acme'}", s, "gcp_migration")
+    plan = report.migration_waves
+    assert plan is not None and plan.inventory_documents and all(d.startswith("doc-") for d in plan.inventory_documents)
+    assert "server_inventory" not in md and "acme.internal" not in md
+    assert all(x.source_doc.startswith("doc-") for w in plan.waves for x in w.systems)
+
+
+def test_pdf_has_migration_waves_section(settings, fixtures_dir):
+    from io import BytesIO
+
+    from pypdf import PdfReader
+
+    from readiness.report.pdf import render_pdf
+
+    report, _ = run_assessment(f"file://{fixtures_dir / 'synthetic_acme'}", settings, "gcp_migration")
+    text = "\n".join(p.extract_text() for p in PdfReader(BytesIO(render_pdf(report))).pages)
+    assert "Migration waves" in text and "6. Data handling" in text
+    report2, _ = run_assessment(f"file://{fixtures_dir / 'synthetic_acme'}", settings, "default")
+    text2 = "\n".join(p.extract_text() for p in PdfReader(BytesIO(render_pdf(report2))).pages)
+    assert "Migration waves" not in text2 and "5. Data handling" in text2

@@ -17,9 +17,9 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | ING | Ingestion | 3 | 0 | 0 | 6 | 9 |
 | LLM | Model providers | 3 | 0 | 0 | 3 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
-| REC | Recommendations | 2 | 1 | 0 | 3 | 6 |
+| REC | Recommendations | 2 | 0 | 0 | 4 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 24 | 2 | 0 | 55 | 81 |
+| **All** | | 24 | 1 | 0 | 56 | 81 |
 
 ## By phase
 
@@ -89,7 +89,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **MIG-01** Migrate the GCP project from the personal account to an organisation
 - `done` **MIG-05** Data export and deletion procedure per tenant (claude-code)
 
-### Phase 3: Recommendations depth and AWS (3/12 done)
+### Phase 3: Recommendations depth and AWS (4/12 done)
 
 - `done` **AGT-04** Expose the assessment as an MCP server (claude-code)
 - `todo` **INF-06** Validate AWS skeleton and add App Runner service
@@ -101,7 +101,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **MIG-04** Provider switch drill (local to gcp to aws) with the same report output
 - `todo` **REC-03** Catalog expansion with sizing hints and documentation links
 - `todo` **REC-04** Rough cost bands per option
-- `in_progress` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
+- `done` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
 - `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
 
 ### Phase 4: Agentic-AI depth and product polish (4/8 done)
@@ -263,7 +263,7 @@ Owner hint: config/recommendations and src/readiness/recommend
 | REC-02 | Discovery items with CAIQ questions for checks without evidence | done | 0 |  |  | FND-04 | unknown checks produce D-<check> items with up to six CAIQ questions |
 | REC-03 | Catalog expansion with sizing hints and documentation links | todo | 3 |  |  | REC-01 | every option has a url; notes mention when the option is wrong |
 | REC-04 | Rough cost bands per option | todo | 3 |  |  | REC-03 | low/medium/high monthly cost band shown in the report |
-| REC-05 | Migration wave planning (quick wins, core, legacy) from inventory documents | in_progress | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-07 | gcp_migration report has a wave table derived from classified inventory |
+| REC-05 | Migration wave planning (quick wins, core, legacy) from inventory documents | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-07 | gcp_migration report has a wave table derived from classified inventory |
 | REC-06 | Recommendation de-duplication across checks sharing a product | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | REC-01 | one action per product family with the checks it closes listed |
 
 ### SCR: Scoring

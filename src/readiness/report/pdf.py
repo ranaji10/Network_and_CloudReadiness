@@ -266,8 +266,28 @@ def render_pdf(report: AssessmentReport) -> bytes:
     if not disc:
         doc.note("none")
 
-    # 5. Data handling
-    doc.heading("5. Data handling", 2)
+    # 5. Migration waves (only when the profile asked for them and an inventory document existed)
+    section = 5
+    plan = report.migration_waves
+    if plan is not None and plan.inventory_documents:
+        doc.heading(f"{section}. Migration waves", 2)
+        doc.note(
+            f"{plan.total_systems} systems from {len(plan.inventory_documents)} inventory document(s), placed by the "
+            "first matching signal; rows without a signal fall into the default wave."
+        )
+        for wave in sorted(plan.waves, key=lambda v: v.order):
+            doc.heading(f"{wave.name} ({wave.count})", 3)
+            if wave.description:
+                doc.para(wave.description, size=8.5)
+            rows = [[x.system, x.reason, alias.get(x.source_doc, x.source_doc)] for x in wave.systems]
+            if rows:
+                doc.table(["System", "Reason", "Source document"], rows, (50, 70, 50), ("L", "L", "L"))
+            if wave.count > len(wave.systems):
+                doc.note(f"... and {wave.count - len(wave.systems)} more")
+        section += 1
+
+    # Data handling
+    doc.heading(f"{section}. Data handling", 2)
     counts = ", ".join(f"{k}={v}" for k, v in report.redaction.counts.items()) or "none"
     doc.para(
         f"Redaction mode {report.redaction.mode}; LLM provider {report.llm_provider}. Redaction counts: {counts}. "
