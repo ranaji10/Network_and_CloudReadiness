@@ -187,9 +187,19 @@ Top level: `version` (string, informational) and `recommendations` (list). One e
 | `impact` | `high`, `medium` or `low` | `medium` | Relative impact |
 | `options` | list of option | `[]` | Product choices, ordered by the profile's `target_providers` |
 
-Option fields: `provider` (`gcp`, `aws`, `oss` or `process`), `product` (string), `note` (string,
-default empty), `url` (string or null), `family` (string, default empty: a short tag such as
-`cloud-identity` shared by options that are the same product rollout; see *Product-family merge*).
+Option fields:
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `provider` | `gcp`, `aws`, `oss` or `process` | required | Decides ordering and filtering by the profile's `target_providers` |
+| `product` | string | required | Product or practice named in the report |
+| `url` | string or null | `null` | Official documentation landing page; **required (`https://`) for `gcp`, `aws` and `oss`**. For `process` the most relevant public reference (CSA CCM / STAR, NIST SP 800-xx, NIST AI RMF, CIS Controls, FinOps Framework); `null` only when nothing authoritative fits, and the note must then say "no authoritative reference" |
+| `note` | string | required by test | At most 220 characters, neutral, no prices: a sizing hint ("fits up to ...", "needs a team that ...") followed by a sentence starting with `Wrong when` that names the situation in which the option is the wrong choice |
+| `family` | string | `""` | Short tag such as `cloud-identity` shared by options that are the same product rollout; see *Product-family merge* |
+
+`test_every_catalog_option_has_docs_link_and_limitation_note` enforces the `url` and `note` rules. The Markdown
+report renders the product as `[product](url)` followed by the note; the PDF prints the url in parentheses after
+the product on the same line.
 
 ### What the engine produces
 

@@ -65,6 +65,16 @@ def test_pdf_lists_the_checks_an_action_closes(report):
     assert actions[0].closes_check_ids[0] in text
 
 
+def test_pdf_prints_the_documentation_url_after_the_product(report):
+    """REC-03: the option line carries the catalog url in plain text (core fonts, no link annotation)."""
+    text = _text(render_pdf(report))
+    option = next(r for r in report.recommendations if r.kind == "action" and r.options).options[0]
+    assert option.url and option.url.startswith("https://")
+    # pypdf may wrap the line, so compare without whitespace
+    flat = "".join(text.split())
+    assert f"{option.product}({option.url})".replace(" ", "") in flat
+
+
 def test_non_latin1_text_is_mapped_not_fatal(report):
     odd = report.model_copy(update={"warnings": ["em dash — ellipsis … “quotes” → arrow 中"]})
     text = _text(render_pdf(odd))

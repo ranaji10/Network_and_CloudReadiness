@@ -254,7 +254,9 @@ def render_pdf(report: AssessmentReport) -> bytes:
         if r.rationale:
             doc.para(r.rationale, indent=5)
         for o in r.options:
-            doc.para(f"- {o.provider.upper()}: {o.product}" + (f" - {o.note}" if o.note else ""), indent=5)
+            # REC-03: documentation url on the same line as the product (core fonts: plain ASCII, no link object)
+            product = f"{o.product} ({o.url})" if o.url else o.product
+            doc.para(f"- {o.provider.upper()}: {product}" + (f" - {o.note}" if o.note else ""), indent=5)
         pdf.ln(1.5)
     if not actions:
         doc.note("none")

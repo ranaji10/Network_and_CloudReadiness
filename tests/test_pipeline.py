@@ -20,6 +20,10 @@ def test_end_to_end_offline(settings, fixtures_dir):
     assert actions and all(r.closes_check_ids and r.closes_check_ids[0] == r.check_id for r in actions)
     assert all(r.closes_check_ids == [] for r in report.recommendations if r.kind == "discovery")
     assert f"Closes: {actions[0].check_id} {actions[0].closes_titles[0]}" in md
+    # REC-03: every option is rendered as a Markdown link to its documentation, followed by its note
+    first = next(r for r in actions if r.options)
+    option = first.options[0]
+    assert f"- **{option.provider.upper()}**: [{option.product}]({option.url}) — {option.note}" in md
     # guardrails: secrets and identifiers from the fixtures never reach the report
     assert "Sup3rSecretValue1" not in md and "AIzaSy" not in md and "10.10.0.1" not in md
     assert "netops@acme-widgets.example" not in md

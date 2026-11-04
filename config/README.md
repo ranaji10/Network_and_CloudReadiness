@@ -75,10 +75,26 @@ Goal: score whether DNS filtering is in place, in the network security domain.
        effort: S
        impact: medium
        options:
-         - { provider: gcp, product: "Cloud DNS response policies + Cloud Armor / Cloud NGFW threat lists" }
-         - { provider: aws, product: "Route 53 Resolver DNS Firewall" }
-         - { provider: oss, product: "Pi-hole or Technitium with threat-intel block lists; Quad9 upstream" }
+         - provider: gcp
+           product: "Cloud DNS response policies + Cloud Armor / Cloud NGFW threat lists"
+           note: "Fits every VPC that resolves through Cloud DNS. Wrong when clients resolve on-prem, where the filter belongs on that resolver."
+           url: https://cloud.google.com/dns/docs
+         - provider: aws
+           product: "Route 53 Resolver DNS Firewall"
+           note: "Fits any VPC count with one rule group per Organization. Wrong when resolution happens outside AWS."
+           url: https://docs.aws.amazon.com/route53/
+         - provider: oss
+           product: "Pi-hole or Technitium with threat-intel block lists; Quad9 upstream"
+           note: "Fits a single site or small branch network. Wrong when the client needs central policy across many sites."
+           url: https://docs.pi-hole.net/
    ```
+
+   Every `gcp`, `aws` and `oss` option needs a `url` (the product's official documentation page) and every
+   option needs a `note` of at most 220 characters: a sizing hint, then a sentence starting with
+   `Wrong when` that says when the option is the wrong choice. `process` options link to the most relevant
+   public reference (CSA CCM / STAR, NIST, CIS, FinOps Framework); `url: null` is allowed only when the
+   note says "no authoritative reference". `test_every_catalog_option_has_docs_link_and_limitation_note`
+   enforces this.
 
 4. Run `make test`, then `make demo` and confirm the new row appears with the status you expect. If the
    pillar's total points changed, nothing else needs editing: pillar maximums are computed.

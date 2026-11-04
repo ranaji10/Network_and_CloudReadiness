@@ -104,6 +104,28 @@ def test_every_check_has_catalog_entry_and_valid_ccm_ids():
                 assert c.signals or c.strong_signals, f"{c.id} has no signals"
 
 
+def test_every_catalog_option_has_docs_link_and_limitation_note():
+    """REC-03 catalog contract (see the header comment of config/recommendations/catalog.yaml):
+    product options (gcp / aws / oss) link to official documentation over https; every option has a note
+    of at most 220 characters with a sizing hint and a sentence starting "Wrong when"; a process option
+    may have url null only when its note says "no authoritative reference"."""
+    catalog = load_catalog(DEFAULT_CONFIG_DIR)
+    seen = 0
+    for e in catalog.values():
+        for o in e.options:
+            seen += 1
+            where = f"{e.check_id} {o.provider}"
+            assert o.provider in ("gcp", "aws", "oss", "process"), f"{where}: unknown provider"
+            assert o.note.strip(), f"{where}: note is empty"
+            assert len(o.note) <= 220, f"{where}: note is {len(o.note)} characters, limit is 220"
+            assert "wrong when" in o.note.lower(), f"{where}: note has no 'Wrong when ...' sentence"
+            if o.provider == "process" and o.url is None:
+                assert "no authoritative reference" in o.note.lower(), f"{where}: null url not explained"
+            else:
+                assert o.url and o.url.startswith("https://"), f"{where}: missing https documentation url"
+    assert seen >= 150, "catalog unexpectedly small"
+
+
 def test_unknown_profile_field_is_rejected():
     import pytest
     from pydantic import ValidationError

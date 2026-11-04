@@ -144,7 +144,9 @@ def render(report: AssessmentReport) -> str:
         titles = r.closes_titles if len(r.closes_titles) == len(closes) else [""] * len(closes)
         lines.append("  \nCloses: " + ", ".join(f"{cid} {t}".strip() for cid, t in zip(closes, titles, strict=True)))
         for o in r.options:
-            lines.append(f"- **{o.provider.upper()}**: {o.product}" + (f" — {o.note}" if o.note else ""))
+            # REC-03: the product links to its official documentation when the catalog has a url
+            product = f"[{o.product}]({o.url})" if o.url else o.product
+            lines.append(f"- **{o.provider.upper()}**: {product}" + (f" — {o.note}" if o.note else ""))
         lines.append("")
     lines.append(f"### 4b. Discovery — evidence to collect ({len(disc)})\n")
     if disc:
