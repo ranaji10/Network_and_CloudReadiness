@@ -17,9 +17,9 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | ING | Ingestion | 2 | 0 | 0 | 7 | 9 |
 | LLM | Model providers | 2 | 0 | 0 | 4 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
-| REC | Recommendations | 1 | 1 | 0 | 4 | 6 |
+| REC | Recommendations | 1 | 0 | 0 | 5 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 19 | 1 | 0 | 61 | 81 |
+| **All** | | 19 | 0 | 0 | 62 | 81 |
 
 ## By phase
 
@@ -89,7 +89,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **MIG-01** Migrate the GCP project from the personal account to an organisation
 - `done` **MIG-05** Data export and deletion procedure per tenant (claude-code)
 
-### Phase 3: Recommendations depth and AWS (5/12 done)
+### Phase 3: Recommendations depth and AWS (6/12 done)
 
 - `done` **AGT-04** Expose the assessment as an MCP server (claude-code)
 - `todo` **INF-06** Validate AWS skeleton and add App Runner service
@@ -99,7 +99,7 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **LLM-06** Prompt caching and batching for large document sets (claude-code)
 - `todo` **MIG-02** Terraform state move drill
 - `todo` **MIG-04** Provider switch drill (local to gcp to aws) with the same report output
-- `in_progress` **REC-03** Catalog expansion with sizing hints and documentation links (claude-code)
+- `done` **REC-03** Catalog expansion with sizing hints and documentation links (claude-code)
 - `todo` **REC-04** Rough cost bands per option
 - `done` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
 - `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
@@ -261,7 +261,7 @@ Owner hint: config/recommendations and src/readiness/recommend
 |---|---|---|---:|---|---|---|---|
 | REC-01 | Catalog covering every check with GCP, AWS, open-source and process options | done | 0 |  |  | SCR-01 | test_every_check_has_catalog_entry passes |
 | REC-02 | Discovery items with CAIQ questions for checks without evidence | done | 0 |  |  | FND-04 | unknown checks produce D-<check> items with up to six CAIQ questions |
-| REC-03 | Catalog expansion with sizing hints and documentation links | in_progress | 3 | claude-code | claude/nifty-mendel-lcqzeb | REC-01 | every option has a url; notes mention when the option is wrong |
+| REC-03 | Catalog expansion with sizing hints and documentation links | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | REC-01 | every option has a url; notes mention when the option is wrong |
 | REC-04 | Rough cost bands per option | todo | 3 |  |  | REC-03 | low/medium/high monthly cost band shown in the report |
 | REC-05 | Migration wave planning (quick wins, core, legacy) from inventory documents | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-07 | gcp_migration report has a wave table derived from classified inventory |
 | REC-06 | Recommendation de-duplication across checks sharing a product | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | REC-01 | one action per product family with the checks it closes listed |
