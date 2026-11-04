@@ -17,3 +17,8 @@ updates:
   - package-ecosystem: docker
     directory: /
     schedule: { interval: monthly }
+    ignore:
+      # The runtime image must stay on the same Python minor as the uv builder image (both 3.12), or the
+      # copied .venv breaks. Bump both lines in the Dockerfile by hand; patch tags are still proposed.
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

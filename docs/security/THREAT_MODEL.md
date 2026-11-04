@@ -16,6 +16,7 @@
 | Operator staff / agents | Have repo write access and may run the tool against real data |
 | Model provider | Receives whatever is sent to it; bound by its data-use terms |
 | CI / build system | Runs code from the repo with build credentials |
+| Client network and hosts | Never reached. The tool runs outside the client's network, receives documents by push or read-only pull and has no capability to scan or log in to systems (ADR-20261103) |
 
 ## Trust boundaries
 
@@ -47,6 +48,7 @@ is on the right of it.
 | T11 | Account-specific values leak into the repo, blocking migration and hinting at infrastructure (Information disclosure) | `scripts/check_portability.py` in CI | `scripts/` | |
 | T12 | Denial of service via huge documents (Denial of service) | `max_doc_bytes` and `max_text_chars` limits; oversize uploads rejected with 413 | `config.py`, `ingestion/extract.py`, `api/app.py` | Rate limiting at the gateway: `API` epic |
 | T13 | Tampered scoring config produces a misleading report (Tampering) | Config validated by pydantic; CODEOWNERS review on `config/`; profile version printed in the report | `scoring/profiles.py`, `.github/CODEOWNERS` | Signed config bundles: not planned |
+| T15 | Tool gains the ability to reach client systems (scanning, SSH, SNMP, SMB, raw sockets), turning a document reader into something a client must treat as an inside actor (Elevation of privilege) | Source schemes allow-listed to document stores; no scanning or remote-access library may enter the dependency set or lock file; no `socket`/`subprocess` under `src/readiness`; no network tooling in the image; all enforced in CI | `scripts/check_no_system_access.py`, `adapters/registry.py`, `config.Settings.allowed_source_schemes` | Superseding ADR required for any live-evidence feature |
 | T14 | Repudiation: who ran what against which documents | Append-only audit log per run with run id, tenant, document ids and hashes, events | `guardrails/audit.py` | Ship audit log to central logging: `INF` epic |
 
 ## Out of scope for now

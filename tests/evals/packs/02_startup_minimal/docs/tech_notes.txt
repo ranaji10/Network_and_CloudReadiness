@@ -1,0 +1,5 @@
+Pixelmoth Labs - how we run things (SYNTHETIC)
+
+We deploy with Docker on a single rented VPS. Code lives on GitHub and GitHub Actions builds the images.
+Everyone logs in with Google Workspace. We have no monitoring beyond uptime pings and logging goes to the console.
+No formal policies have been written yet; we plan to do that when we hire an ops person.

@@ -35,13 +35,13 @@
 
 | Component | Responsibility | Key files |
 |---|---|---|
-| Surfaces | Accept a source and a profile, return a report | `cli.py`, `api/app.py`, `agents/adk_app.py` |
+| Surfaces | Accept a source and a profile, return a report | `cli.py`, `api/app.py`, `agents/adk_app.py`, `agents/mcp_server.py` (MCP server on stdio for Claude Code and other MCP clients; wraps the ADK tool) |
 | Pipeline | The only orchestration; identical for all surfaces | `pipeline.py` |
-| Ingestion | bytes to text (pdf, docx, xlsx, text/structured), heuristic classification | `ingestion/extract.py`, `ingestion/classify.py` |
+| Ingestion | bytes to text (pdf, docx, xlsx, pptx, legacy doc/xls via the `office` extra, scanned pdf and png/jpeg/tiff via the `ocr` extra and a local Tesseract, text/structured), heuristic classification | `ingestion/extract.py`, `ingestion/classify.py` |
 | Guardrails | redaction, egress policy, prompt wrapping, audit | `guardrails/` |
 | Scoring | load profile and domains, evaluate checks by signals, optional LLM judge, grades, composite | `scoring/` |
-| Recommend | failed/partial checks to actions with provider options; unknown checks to CAIQ discovery questions | `recommend/engine.py` |
-| Report | Markdown deliverable; JSON is the pydantic model | `report/markdown.py`, `models.py` |
+| Recommend | failed/partial checks to actions with provider options; unknown checks to CAIQ discovery questions; inventory rows to migration waves when the profile sets `migration_waves` | `recommend/engine.py`, `recommend/waves.py` |
+| Report | Markdown deliverable and an optional PDF (fpdf2, `pdf` extra), both rendered from the pydantic model | `report/markdown.py`, `report/pdf.py`, `models.py` |
 | Ports/adapters | the cloud-neutral boundary | `ports/__init__.py`, `adapters/` |
 | Config | all tunables | `config/` |
 
@@ -52,11 +52,15 @@ prints Markdown, writes `workspace/<tenant>/<run>/`.
 
 **API**: `POST /assessments` (JSON `source_uri`) or `POST /assessments/upload` (multipart, written to a
 temporary folder, assessed as a local source). Result stored through `BlobStore` under
-`<tenant>/<run>/report.{json,md}`; `GET /assessments/{run}` reads it back. Bearer token required.
+`<tenant>/<run>/report.{json,md}`; `GET /assessments/{run}` reads it back and `GET /assessments/{run}/report.pdf`
+renders the stored JSON to PDF on demand. Bearer token required.
 
 **ADK agent**: `agents/adk_app.py` exposes one tool, `run_readiness_assessment`, that calls the same
 pipeline and returns a compact summary. The coordinator prompt handles the "coverage below threshold,
 ask discovery questions, re-run" loop from V1.
+
+**MCP server**: `readiness mcp` (`agents/mcp_server.py`) serves `run_readiness_assessment`, `list_profiles`
+and `list_checks` over stdio to Claude Code, Claude Desktop and other MCP clients; see `docs/runbooks/MCP_SERVER.md`.
 
 ## Inside `run_assessment`
 
@@ -66,8 +70,10 @@ ask discovery questions, re-run" loop from V1.
 4. **redact every document** (secrets always; identifiers per mode)
 5. score each domain with rules; if `use_llm_judge`, pass each pillar through `GuardedLLM`
 6. composite score and coverage per profile weights
-7. recommendations from the catalog, sorted by lost points x weights x impact / effort
-8. render Markdown; write outputs; audit `run.end`
+7. recommendations from the catalog, actions sharing a product family merged into one (`rules.dedupe_by_product`),
+   sorted by lost points x weights x impact / effort
+8. if the profile sets `migration_waves`, sort the redacted inventory rows into waves (`recommend/waves.py`)
+9. render Markdown; write outputs; audit `run.end`
 
 ## Where configuration lives
 

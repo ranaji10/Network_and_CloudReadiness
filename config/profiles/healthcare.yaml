@@ -1,0 +1,47 @@
+# Industry profile: healthcare (HIPAA Security Rule / HITRUST style data protection).
+# Emphasis: protected health information must be access-controlled, auditable, encrypted and recoverable
+# (HIPAA access, audit, integrity, transmission-security and contingency-plan safeguards). Network security
+# therefore carries the most weight; inside each domain, identity, data protection and recovery pillars are
+# raised with pillar_weight_overrides. Evidence expectations are stricter than the balanced profile.
+id: healthcare
+name: Healthcare (HIPAA / HITRUST emphasis)
+version: "1.0"
+description: >-
+  Healthcare and life sciences. Compliance emphasis on HIPAA Security Rule and HITRUST style data
+  protection: access control and identity, audit logging, encryption of data at rest and in transit,
+  and recoverability of patient data. Stricter grade thresholds and a higher evidence bar than default.
+domains:
+  - { id: network_security,      weight: 45 }
+  - { id: cloud_readiness,       weight: 30 }
+  - { id: agentic_ai_readiness,  weight: 25 }
+# Pillars not listed keep the weight from config/scoring/<domain>.yaml. Weights are relative within a domain.
+pillar_weight_overrides:
+  network_security:
+    perimeter: 20
+    segmentation: 20
+    identity: 25            # HIPAA access-control and person/entity authentication safeguards
+    detection: 20           # audit-control safeguard
+    resilience: 15          # contingency plan: backups, DR, data integrity
+  cloud_readiness:
+    compute: 15
+    data: 30                # PHI classification, residency, encryption and retention before migration
+    network_identity: 20
+    security_compliance: 25 # BAA, shared-responsibility and HITRUST/HIPAA control mapping
+    cost_licensing: 10
+  agentic_ai_readiness:
+    data_foundations: 30    # de-identification, data lineage and access boundaries for PHI
+    integration: 15
+    governance: 30          # model risk, human oversight, consent and PHI handling policies
+    agent_security: 25
+thresholds:
+  high_confidence_coverage: 80   # regulated data: ask for more evidence before recommending actions
+  grade_a: 90
+  grade_b: 75
+  grade_c: 55
+rules:
+  met_min_signals: 2
+  partial_points_ratio: 0.5
+  negative_overrides: true
+  llm_override_min_confidence: 0.7   # keep deterministic rule verdicts unless the judge is confident
+target_providers: [gcp, aws, oss]
+max_recommendations: 40

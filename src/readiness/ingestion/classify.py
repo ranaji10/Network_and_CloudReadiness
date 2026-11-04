@@ -26,6 +26,13 @@ _RULES: dict[DocClass, list[tuple[str, float]]] = {
     DocClass.INVENTORY: [
         (r"\b(inventory|asset (list|register)|cmdb|server list|vm list|hardware)\b", 3),
         (r"\b(cpu|ram|vcpu|hostname|serial number)\b", 1),
+        # a table whose header row starts with a host/asset column and names sizing columns is an inventory
+        # export, whatever the rows say (an inventory naturally mentions databases, storage and backups)
+        (
+            r"^\W*(hostname|host ?name|server ?name|asset ?(tag|name|id)|ci ?name|device ?name)\b"
+            r"[^\n]*\b(v?cpu|ram|memory|os version|serial)\b",
+            6,
+        ),
     ],
     DocClass.DATA_STORAGE: [
         (r"\b(database|schema|postgres|mysql|oracle|sql server|mongodb|storage|nfs|smb|san|nas|iops)\b", 2),
@@ -53,16 +60,24 @@ _RULES: dict[DocClass, list[tuple[str, float]]] = {
     DocClass.OPERATIONS: [
         (r"\b(runbook|monitoring|logging|siem|observability|on-call|sre|change management|patching)\b", 3),
     ],
+    # Answers to discovery questions (AGT-03). The pipeline recognises the stored document by its first
+    # line and sets the class directly; this rule covers a copy that landed in an ordinary source folder.
+    DocClass.QUESTIONNAIRE: [
+        (r"\bquestionnaire answers\b", 10),
+        (r"\bdiscovery questions? of assessment run\b", 10),
+    ],
 }
 _NOISE = [
     (r"\b(meeting (minutes|notes)|agenda|invoice|receipt|marketing|newsletter|press release)\b", 4),
 ]
-_COMPILED = {k: [(re.compile(p, re.I), w) for p, w in v] for k, v in _RULES.items()}
-_NOISE_C = [(re.compile(p, re.I), w) for p, w in _NOISE]
+_COMPILED = {k: [(re.compile(p, re.I | re.M), w) for p, w in v] for k, v in _RULES.items()}
+_NOISE_C = [(re.compile(p, re.I | re.M), w) for p, w in _NOISE]
+_NAME_SEPARATORS = re.compile(r"[_\-.]+")
 
 
 def classify(name: str, text: str, threshold: float = 4.0) -> tuple[DocClass, float]:
-    sample = (name + "\n" + text[:20000]).lower()
+    # `server_inventory.csv` must count as the words "server inventory csv": `\b` never fires inside snake_case.
+    sample = (_NAME_SEPARATORS.sub(" ", name) + "\n" + text[:20000]).lower()
     scores: dict[DocClass, float] = {}
     for cls, rules in _COMPILED.items():
         s = 0.0
@@ -92,7 +107,8 @@ from readiness.ports import LLMProvider  # noqa: E402
 CLASSIFIER_SYSTEM = (
     "You classify business documents for an infrastructure assessment. For each document pick exactly one class "
     "from: architecture, network, security_policy, compliance_audit, inventory, data_storage, identity, backup_dr, "
-    "contract_license, ai_ml, operations, irrelevant. Use irrelevant for meeting notes, marketing, invoices and "
+    "contract_license, ai_ml, operations, questionnaire, irrelevant. Use questionnaire only for a filled-in "
+    "answer sheet to assessment questions. Use irrelevant for meeting notes, marketing, invoices and "
     "anything without technical or governance content. Return one item per document id."
 )
 

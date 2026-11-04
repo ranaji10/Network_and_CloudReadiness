@@ -2,7 +2,12 @@
 1. nothing reaches a real model unless egress is explicitly allowed,
 2. every prompt is redacted first,
 3. document text is delimited and declared untrusted (prompt-injection mitigation),
-4. outputs are schema-validated by the provider contract."""
+4. outputs are schema-validated by the provider contract.
+
+Prompt layout (LLM-06): the caller's `system` (static instructions and, for the judge, the pillar's check
+list) plus `UNTRUSTED_PREAMBLE` form the system prompt, which never carries document text and is therefore
+byte-identical across calls and safe for provider-side prompt caching; the redacted `prompt` with the
+`<document>` blocks is the user turn. Usage accounting keeps cache reads and writes as separate numbers."""
 
 from __future__ import annotations
 
@@ -44,13 +49,15 @@ def load_pricing(config_dir: Path | None = None) -> dict[str, dict]:
 
 
 def estimate_cost_usd(usage: LLMUsage, pricing: dict[str, dict]) -> float | None:
-    """Rough cost from list prices. None when the model has no pricing entry; never an error."""
+    """Rough cost from list prices. None when the model has no pricing entry; never an error. Cached input
+    tokens are charged at the full input price, so with caching on the figure stays an upper bound."""
     entry = pricing.get(usage.model)
     if not entry:
         return None
+    billed_input = usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
     try:
         cost = (
-            usage.input_tokens * float(entry["input_per_million_usd"])
+            billed_input * float(entry["input_per_million_usd"])
             + usage.output_tokens * float(entry["output_per_million_usd"])
         ) / 1_000_000
     except (KeyError, TypeError, ValueError):
@@ -83,6 +90,8 @@ class GuardedLLM:
             "calls": u.calls,
             "input_tokens": u.input_tokens,
             "output_tokens": u.output_tokens,
+            "cache_creation_input_tokens": u.cache_creation_input_tokens,
+            "cache_read_input_tokens": u.cache_read_input_tokens,
             "estimated_cost_usd": self.estimated_cost_usd,
         }
 
@@ -105,6 +114,8 @@ class GuardedLLM:
                 model=usage.model,
                 input_tokens=usage.input_tokens,
                 output_tokens=usage.output_tokens,
+                cache_creation_input_tokens=usage.cache_creation_input_tokens,
+                cache_read_input_tokens=usage.cache_read_input_tokens,
             )
         else:
             self.usage_total = self.usage_total.model_copy(update={"calls": self.usage_total.calls + 1})

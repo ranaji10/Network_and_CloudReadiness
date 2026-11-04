@@ -1,0 +1,1 @@
+Encryption at rest with disk encryption (AES-256) on database servers; TLS 1.2 minimum. Database backup encrypted.

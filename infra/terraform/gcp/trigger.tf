@@ -1,6 +1,10 @@
-# Cloud Build trigger (2nd-gen GitHub connection). The connection itself must be created once in the
-# console (Cloud Build > Repositories > Connect) because it needs an interactive GitHub OAuth step.
-# The repo already has a trigger created by hand; import it or let this one replace it:
+# Cloud Build trigger (2nd-gen GitHub connection). The connection itself must be created once per project
+# in the console (Cloud Build > Repositories > Connect) because it needs an interactive GitHub OAuth step.
+# One trigger per environment, each in its own project (docs/decisions/ADR-20261103-one-project-per-environment.md):
+#   dev      push to main (build_branch_regex), deploys when deploy_cloud_run=true
+#   staging  push to main, deploys automatically
+#   prod     tag matching build_tag_regex (vX.Y.Z), held for manual approval (build_approval_required=true)
+# The dev repo already has a trigger created by hand; import it or let this one replace it:
 #   terraform import 'google_cloudbuild_trigger.main[0]' projects/<project>/locations/<region>/triggers/<id>
 
 resource "google_cloudbuildv2_repository" "repo" {
@@ -23,11 +27,21 @@ resource "google_cloudbuild_trigger" "main" {
   repository_event_config {
     repository = google_cloudbuildv2_repository.repo[0].id
     push {
-      branch = var.build_branch_regex
+      # Exactly one of branch / tag; a null attribute is omitted.
+      branch = var.build_tag_regex == "" ? var.build_branch_regex : null
+      tag    = var.build_tag_regex != "" ? var.build_tag_regex : null
+    }
+  }
+
+  dynamic "approval_config" {
+    for_each = var.build_approval_required ? [1] : []
+    content {
+      approval_required = true
     }
   }
 
   substitutions = {
+    _ENV             = var.env
     _REGION          = var.region
     _AR_REPO         = var.ar_repo
     _SERVICE         = var.service_name

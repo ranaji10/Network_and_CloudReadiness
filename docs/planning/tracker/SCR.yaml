@@ -40,13 +40,13 @@ stories:
     notes: ""
   - id: SCR-05
     title: Evaluation set of 20 synthetic document packs with expected scores
-    status: todo
+    status: done
     phase: 4
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [SCR-03]
     acceptance: "tests/evals runs rules and judge; score drift fails CI beyond a tolerance"
-    notes: ""
+    notes: "tests/evals: 20 synthetic packs x rules/judge(mock) modes, expected.yaml with 1.0-point tolerance, make evals / evals-refresh; client-data check now covers tests/evals"
   - id: SCR-06
     title: Agentic-AI domain reviewed with two external practitioners
     status: todo
@@ -76,10 +76,10 @@ stories:
     notes: "signal semantics (word vs regex, strong/negative, doc_classes fallback) documented in config/README.md; IP-literal signals removed from CR-NET-02"
   - id: SCR-09
     title: Industry profiles (healthcare, finance, public sector)
-    status: todo
+    status: done
     phase: 3
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [SCR-02]
     acceptance: "three new profiles with domain weights and compliance emphasis"
-    notes: ""
+    notes: "healthcare, finance, public_sector profiles; new optional pillar_weight_overrides field; config models now forbid unknown fields"

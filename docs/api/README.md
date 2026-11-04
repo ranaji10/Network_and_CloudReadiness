@@ -18,6 +18,7 @@ bump the minor version before 1.0 and the major version after; see `docs/plannin
 | `GET /jobs/{id}` | Job status: queued, running, done (with `report_id`) or failed (with `error`) |
 | `GET /assessments/{id}` | Report as JSON |
 | `GET /assessments/{id}/report.md` | Report as Markdown |
+| `GET /assessments/{id}/report.pdf` | Report as PDF (`application/pdf`, `Content-Disposition: attachment`); rendered on demand from the stored JSON, never stored. 501 with an install hint when the deployment lacks the `pdf` extra |
 
 All routes except `/` and `/healthz` require a bearer token unless `READINESS_AUTH_DISABLED=true` (local use only).
 

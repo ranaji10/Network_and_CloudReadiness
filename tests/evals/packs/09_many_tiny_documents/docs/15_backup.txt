@@ -1,0 +1,1 @@
+Backup nightly to offsite immutable storage; restore test twice a year; RPO 24h, RTO 8h; disaster recovery plan tested.

@@ -1,0 +1,1 @@
+Cloud plan: landing zone with a security baseline (CIS Benchmark); Cloud KMS with CMEK; Kubernetes pilot on GKE; cloud run for the portal. Reference architecture drafted.

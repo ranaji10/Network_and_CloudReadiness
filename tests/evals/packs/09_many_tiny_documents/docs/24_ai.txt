@@ -1,0 +1,1 @@
+AI: an LLM pilot on Vertex AI with Gemini; AI policy drafted; human-in-the-loop approval for any patient-facing agent output. Prompt templates reviewed.

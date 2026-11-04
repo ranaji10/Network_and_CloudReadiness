@@ -1,0 +1,1 @@
+Databases: SQL Server 2019 (database size 400 GB), PostgreSQL 15 (database version pinned). Storage on a NAS with SMB file share, 8 TB.

@@ -9,6 +9,8 @@ from typing import Literal
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from readiness.ingestion.extract import OcrOptions
+
 PACKAGE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = PACKAGE_DIR.parents[1]
 
@@ -40,6 +42,16 @@ class Settings(BaseSettings):
     allow_llm_egress: bool = False
     use_llm_judge: bool = False  # refine rule-based verdicts with the LLM (needs egress allowed)
     use_llm_classifier: bool = False
+    # --- LLM judge cost controls (LLM-06); see scoring/engine.py ---
+    # Documents sent to the judge per pillar: the best-ranked by signal hits for that pillar's checks,
+    # documents with no hit are never sent. 0 = every relevant document (no pre-selection).
+    judge_max_docs_per_pillar: int = 8
+    # Evidence characters per judge call; the selected documents share this budget (2,000 minimum each)
+    # and are split into several calls only when they still do not fit.
+    judge_batch_chars: int = 60_000
+    # Mark the static prompt prefix (system prompt, untrusted-data preamble, check list; never document
+    # text) as cacheable where the provider SDK supports it (Anthropic `cache_control`). No effect on the mock.
+    llm_prompt_caching: bool = True
 
     # --- GCP (read only when provider == gcp or llm_provider == gemini via Vertex) ---
     gcp_project: str = Field(default="", validation_alias="GOOGLE_CLOUD_PROJECT")
@@ -66,10 +78,35 @@ class Settings(BaseSettings):
     # --- guardrails ---
     redaction_mode: Literal["off", "mask", "pseudonymize"] = "pseudonymize"
     include_evidence_snippets: bool = False
+    # Share-safe rendering (GRD-09): for a report that leaves the tenant. Forces `mask` redaction (no reversible
+    # pseudonyms), drops evidence snippets and replaces every document name in the report with an opaque label
+    # derived from the document hash. Per run, not a deployment default: `--share-safe` / `share_safe=true`.
+    share_safe: bool = False
+    # Also ingest the tenant's stored questionnaire answers (<workspace>/<tenant>/answers/, AGT-03).
+    include_answers: bool = False
     tenant_id: str = "local"
     max_doc_bytes: int = 25 * 1024 * 1024
     max_text_chars: int = 400_000
     allowed_source_schemes: list[str] = ["file", "gs", "s3", "gdrive"]
+    # --- OCR for scanned PDFs and images (ING-08; `ocr` extra + the tesseract-ocr binary) ---
+    # Runs in-process with the local Tesseract binary; nothing is sent to an OCR service. When the extra or the
+    # binary is missing the scanned pages are reported as an extraction error (a report warning) and the run
+    # continues, so `true` is a safe default. A PDF page is OCR'd only when pypdf finds fewer than
+    # `ocr_min_chars_per_page` characters on it; at most `ocr_max_pages` pages per document are OCR'd.
+    ocr_enabled: bool = True
+    ocr_min_chars_per_page: int = 20
+    ocr_max_pages: int = 50
+    ocr_dpi: int = 200
+    ocr_languages: str = "eng"  # Tesseract language codes joined with `+`; each needs its traineddata installed
+
+    def ocr_options(self) -> OcrOptions:
+        return OcrOptions(
+            enabled=self.ocr_enabled,
+            min_chars_per_page=self.ocr_min_chars_per_page,
+            max_pages=self.ocr_max_pages,
+            dpi=self.ocr_dpi,
+            languages=self.ocr_languages,
+        )
 
     # --- paths ---
     workspace_dir: Path = Path("./workspace")

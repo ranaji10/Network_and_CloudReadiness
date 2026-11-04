@@ -6,11 +6,20 @@ GET  /healthz
 GET  /profiles
 POST /assessments            assess a source_uri synchronously -> report
 POST /assessments/upload     assess uploaded files synchronously -> report
+    `share_safe=true` (body field or query parameter; also on /jobs and /jobs/upload) renders a report fit to
+    leave the tenant: mask redaction, no snippets, opaque document labels (GRD-09).
 POST /jobs                   assess a source_uri in the background -> job record
 POST /jobs/upload            upload files, assess in the background -> job record
 GET  /jobs/{job_id}          job record (queued | running | done | failed)
 GET  /assessments/{id}       report JSON        (tenant-scoped)
 GET  /assessments/{id}/report.md               (tenant-scoped)
+GET  /assessments/{id}/report.pdf              (tenant-scoped; rendered on demand, needs the `pdf` extra)
+POST /assessments/{id}/answers   store answers to the report's discovery questions (AGT-03)
+POST /assessments/{id}/rerun     re-assess the same source with the tenant's answers included
+
+Questionnaire round trip: every create endpoint takes `include_answers` (default false) to also score the
+answers stored for the tenant; `rerun` is the shortcut when the original source still exists. Answers are
+kept in the reports store under `<tenant>/answers/` and mirrored into the pipeline workspace before a run.
 
 Tenancy: `READINESS_TENANT_TOKENS` (JSON map tenant -> token) gives each client its own token; a request's
 tenant is derived from the token it presents and every key it can read or write is prefixed with that tenant.
@@ -28,14 +37,22 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Header, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse, PlainTextResponse
-from pydantic import BaseModel
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
+from pydantic import BaseModel, Field
 
 from readiness import __version__
 from readiness.adapters.registry import make_blob_store
 from readiness.config import Settings, get_settings
 from readiness.models import AssessmentReport
 from readiness.ports import BlobStore
+from readiness.questionnaire import (
+    QuestionnaireAnswer,
+    QuestionnaireAnswers,
+    answers_dir,
+    store_answers,
+    validate_run_id,
+)
+from readiness.report.pdf import PdfExportUnavailableError, render_pdf
 from readiness.scoring.profiles import list_profiles
 
 app = FastAPI(title="Network & Cloud Readiness Assessor", version=__version__)
@@ -81,6 +98,18 @@ class AssessRequest(BaseModel):
     source_uri: str
     profile: str = "default"
     include_evidence_snippets: bool = False
+    # Share-safe report (GRD-09): mask redaction, no snippets, opaque document labels. For reports leaving the tenant.
+    share_safe: bool = False
+    include_answers: bool = False  # also score the tenant's stored questionnaire answers (AGT-03)
+
+
+class AnswersRequest(BaseModel):
+    answers: list[QuestionnaireAnswer] = Field(min_length=1, max_length=500)
+
+
+class RerunRequest(BaseModel):
+    profile: str | None = None  # default: the profile of the run being re-run
+    include_evidence_snippets: bool = False
 
 
 class JobRecord(BaseModel):
@@ -120,13 +149,52 @@ def _store_report(store: BlobStore, report: AssessmentReport, md: str) -> None:
     store.put(f"{key}/report.md", md.encode(), "text/markdown")
 
 
-def _run(source_uri: str, profile: str, snippets: bool, settings: Settings) -> AssessmentReport:
+def _run(
+    source_uri: str,
+    profile: str,
+    snippets: bool,
+    settings: Settings,
+    share_safe: bool = False,
+    include_answers: bool = False,
+) -> AssessmentReport:
     from readiness.pipeline import run_assessment
 
-    s = settings.model_copy(update={"include_evidence_snippets": snippets})
+    s = settings.model_copy(
+        update={"include_evidence_snippets": snippets, "share_safe": share_safe, "include_answers": include_answers}
+    )
+    store = make_blob_store(s, "reports")
+    if include_answers:
+        _sync_answers(store, s)
     report, md = run_assessment(source_uri, s, profile)
-    _store_report(make_blob_store(s, "reports"), report, md)
+    _store_report(store, report, md)
     return report
+
+
+# ---------------------------------------------------------------------------
+# Questionnaire answers (AGT-03). The pipeline reads them from `<workspace>/<tenant>/answers/`; the reports
+# store keeps the durable copy under `<tenant>/answers/` so a re-run on another instance (Cloud Run) still
+# sees them, and so `readiness tenant purge` covers them.
+# ---------------------------------------------------------------------------
+def _answers_prefix(tenant_id: str) -> str:
+    return f"{tenant_id}/answers/"
+
+
+def _sync_answers(store: BlobStore, settings: Settings) -> None:
+    """Mirror the tenant's stored answers from the reports store into the pipeline workspace."""
+    folder = answers_dir(settings)
+    prefix = _answers_prefix(settings.tenant_id)
+    for key in store.list(prefix):
+        name = Path(key.removeprefix(prefix)).name
+        if name.endswith(".md") and not (folder / name).exists():
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / name).write_bytes(store.get(key))
+
+
+def _load_report(store: BlobStore, tenant_id: str, run_id: str) -> dict:
+    key = f"{tenant_id}/{run_id}/report.json"
+    if not store.exists(key):
+        raise HTTPException(404, "unknown assessment")
+    return json.loads(store.get(key))
 
 
 def _http_error(exc: Exception) -> HTTPException:
@@ -151,7 +219,14 @@ def create_from_uri(
     req: AssessRequest, principal: Principal = Depends(auth), settings: Settings = Depends(settings_dep)
 ):
     try:
-        report = _run(req.source_uri, req.profile, req.include_evidence_snippets, _tenant_settings(settings, principal))
+        report = _run(
+            req.source_uri,
+            req.profile,
+            req.include_evidence_snippets,
+            _tenant_settings(settings, principal),
+            req.share_safe,
+            req.include_answers,
+        )
     except Exception as exc:  # noqa: BLE001 - mapped to an HTTP status
         raise _http_error(exc) from exc
     return report.model_dump(mode="json")
@@ -161,6 +236,8 @@ def create_from_uri(
 def create_from_upload(
     files: list[UploadFile] = File(...),
     profile: str = "default",
+    share_safe: bool = False,
+    include_answers: bool = False,
     principal: Principal = Depends(auth),
     settings: Settings = Depends(settings_dep),
 ):
@@ -168,9 +245,73 @@ def create_from_upload(
         root = Path(tmp)
         _save_uploads(files, root, settings)
         try:
-            report = _run(f"file://{root}", profile, False, _tenant_settings(settings, principal))
+            report = _run(
+                f"file://{root}", profile, False, _tenant_settings(settings, principal), share_safe, include_answers
+            )
         except Exception as exc:  # noqa: BLE001
             raise _http_error(exc) from exc
+    return report.model_dump(mode="json")
+
+
+@app.post("/assessments/{run_id}/answers")
+def submit_answers(
+    run_id: str, req: AnswersRequest, principal: Principal = Depends(auth), settings: Settings = Depends(settings_dep)
+):
+    """Store the client's answers to the discovery questions of `run_id` as a document of the tenant.
+
+    Returns the stored document id and counts, never the answer text. Score the answers with
+    `POST /assessments/{run_id}/rerun`, or with any create endpoint and `include_answers=true`."""
+    s = _tenant_settings(settings, principal)
+    store = make_blob_store(s, "reports")
+    try:
+        run_id = validate_run_id(run_id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    _load_report(store, principal.tenant_id, run_id)  # 404 unless the run belongs to this tenant
+    try:
+        stored = store_answers(QuestionnaireAnswers(run_id=run_id, answers=req.answers), s)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    store.put(
+        _answers_prefix(principal.tenant_id) + stored.document_name, Path(stored.path).read_bytes(), "text/markdown"
+    )
+    return stored.model_dump(exclude={"path"})
+
+
+@app.post("/assessments/{run_id}/rerun")
+def rerun(
+    run_id: str,
+    req: RerunRequest | None = None,
+    principal: Principal = Depends(auth),
+    settings: Settings = Depends(settings_dep),
+):
+    """Re-assess the source of `run_id` with the tenant's stored answers included. 409 when the original
+    source is gone (uploads are deleted after the request): upload again with `include_answers=true`."""
+    s = _tenant_settings(settings, principal)
+    store = make_blob_store(s, "reports")
+    try:
+        run_id = validate_run_id(run_id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    previous = _load_report(store, principal.tenant_id, run_id)
+    source_uri = str(previous.get("extra", {}).get("source_uri") or "")
+    if not source_uri:
+        raise HTTPException(409, f"run {run_id} did not record its source; re-run it with include_answers=true")
+    scheme, _, rest = source_uri.partition("://")
+    if not rest or scheme == "file":
+        if not Path(rest or source_uri).is_dir():
+            raise HTTPException(
+                409,
+                f"the documents of run {run_id} are no longer available (uploads are deleted after the request); "
+                "upload them again with include_answers=true",
+            )
+    req = req or RerunRequest()
+    try:
+        report = _run(
+            source_uri, req.profile or previous["profile"], req.include_evidence_snippets, s, include_answers=True
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise _http_error(exc) from exc
     return report.model_dump(mode="json")
 
 
@@ -188,12 +329,20 @@ def _write_job(store: BlobStore, job: JobRecord) -> None:
     store.put(_job_key(job.tenant_id, job.id), job.model_dump_json(indent=1).encode(), "application/json")
 
 
-def _execute_job(job: JobRecord, source_uri: str, snippets: bool, settings: Settings, cleanup: Path | None) -> None:
+def _execute_job(
+    job: JobRecord,
+    source_uri: str,
+    snippets: bool,
+    settings: Settings,
+    cleanup: Path | None,
+    share_safe: bool = False,
+    include_answers: bool = False,
+) -> None:
     store = make_blob_store(settings, "reports")
     job.status = "running"
     _write_job(store, job)
     try:
-        report = _run(source_uri, job.profile, snippets, settings)
+        report = _run(source_uri, job.profile, snippets, settings, share_safe, include_answers)
         job.status, job.report_id = "done", report.id
     except Exception as exc:  # noqa: BLE001 - recorded on the job, never raised out of a background task
         job.status, job.error = "failed", f"{type(exc).__name__}: {exc}"[:300]
@@ -227,7 +376,9 @@ def create_job(
     s = _tenant_settings(settings, principal)
     job = _new_job(s, req.profile)
     _write_job(make_blob_store(s, "reports"), job)
-    background.add_task(_execute_job, job, req.source_uri, req.include_evidence_snippets, s, None)
+    background.add_task(
+        _execute_job, job, req.source_uri, req.include_evidence_snippets, s, None, req.share_safe, req.include_answers
+    )
     return job.model_dump(mode="json")
 
 
@@ -236,6 +387,8 @@ def create_job_from_upload(
     background: BackgroundTasks,
     files: list[UploadFile] = File(...),
     profile: str = "default",
+    share_safe: bool = False,
+    include_answers: bool = False,
     principal: Principal = Depends(auth),
     settings: Settings = Depends(settings_dep),
 ):
@@ -244,7 +397,7 @@ def create_job_from_upload(
     staging = Path(tempfile.mkdtemp(prefix=f"readiness-job-{job.id}-"))  # removed by the job when it finishes
     _save_uploads(files, staging, settings)
     _write_job(make_blob_store(s, "reports"), job)
-    background.add_task(_execute_job, job, f"file://{staging}", False, s, staging)
+    background.add_task(_execute_job, job, f"file://{staging}", False, s, staging, share_safe, include_answers)
     return job.model_dump(mode="json")
 
 
@@ -276,3 +429,30 @@ def get_report_md(run_id: str, principal: Principal = Depends(auth), settings: S
     if not store.exists(key):
         raise HTTPException(404, "unknown assessment")
     return store.get(key).decode()
+
+
+@app.get(
+    "/assessments/{run_id}/report.pdf",
+    response_class=Response,
+    responses={
+        200: {"content": {"application/pdf": {}}, "description": "The report rendered as PDF"},
+        404: {"description": "Unknown assessment (or not this tenant's)"},
+        501: {"description": "PDF export not installed on this deployment (`pdf` extra)"},
+    },
+)
+def get_report_pdf(run_id: str, principal: Principal = Depends(auth), settings: Settings = Depends(settings_dep)):
+    """Render the stored report.json to PDF on demand (nothing extra is stored); same tenant rules as the JSON."""
+    store = make_blob_store(_tenant_settings(settings, principal), "reports")
+    key = f"{principal.tenant_id}/{run_id}/report.json"
+    if not store.exists(key):
+        raise HTTPException(404, "unknown assessment")
+    report = AssessmentReport.model_validate_json(store.get(key))
+    try:
+        data = render_pdf(report)
+    except PdfExportUnavailableError as exc:
+        raise HTTPException(501, str(exc)) from exc
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="report-{report.id}.pdf"'},
+    )

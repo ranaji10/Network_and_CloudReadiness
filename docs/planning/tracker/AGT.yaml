@@ -22,22 +22,22 @@ stories:
     notes: "deployed from Cloud Build, pinned by id; Playground returns the same scores as the CLI on the synthetic pack (58 / 63%, A-D-D)"
   - id: AGT-03
     title: Questionnaire round trip (answer discovery questions, re-score)
-    status: todo
+    status: done
     phase: 4
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [AGT-02]
     acceptance: "answers stored as a document in the tenant workspace; coverage rises on re-run"
-    notes: "V1 assisted discovery flow"
+    notes: "questionnaire.py; answers stored under <tenant>/answers and mirrored to the reports store; POST /assessments/{id}/answers and /rerun; include_answers on every create path, CLI answer/--include-answers, ADK and MCP tools; only answer bodies are scored"
   - id: AGT-04
     title: Expose the assessment as an MCP server
-    status: todo
+    status: done
     phase: 3
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [AGT-01]
     acceptance: "run_readiness_assessment callable from Claude Code and other MCP clients"
-    notes: ""
+    notes: "readiness mcp (stdio) with run_readiness_assessment, list_profiles, list_checks; mcp extra; docs/runbooks/MCP_SERVER.md; logs routed to stderr"
   - id: AGT-05
     title: Agent evaluation set in CI (ADK evals)
     status: todo

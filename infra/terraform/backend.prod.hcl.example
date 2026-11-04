@@ -1,0 +1,5 @@
+# Copy to backend.prod.hcl (git-ignored). The state bucket lives in the *prod* project and is created by
+# `PROJECT_ID=<prod-project> ENV=prod ./infra/scripts/bootstrap_gcp.sh`. State never crosses projects;
+# only the release owners' accounts have access to the prod project and therefore to this bucket.
+bucket = "REPLACE-prod-tfstate-bucket"
+prefix = "readiness/prod"

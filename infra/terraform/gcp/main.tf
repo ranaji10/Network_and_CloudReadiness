@@ -1,5 +1,7 @@
 locals {
-  labels = merge({ app = "readiness", env = var.env, managed_by = "terraform" }, var.labels)
+  # `environment` is the label every billing export / asset inventory query filters on (one project per
+  # environment, ADR-20261103-one-project-per-environment); `env` is kept for resources created before it.
+  labels = merge({ app = "readiness", env = var.env, environment = var.env, managed_by = "terraform" }, var.labels)
   apis = [
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
@@ -213,17 +215,18 @@ resource "google_secret_manager_secret_iam_member" "runtime_reads" {
 
 # ---------------- Cloud Run ----------------
 resource "google_cloud_run_v2_service" "api" {
-  count    = var.deploy_cloud_run ? 1 : 0
-  name     = var.service_name
-  location = var.region
-  ingress  = var.ingress
-  labels   = local.labels
+  count               = var.deploy_cloud_run ? 1 : 0
+  name                = var.service_name
+  location            = var.region
+  ingress             = var.ingress
+  labels              = local.labels
+  deletion_protection = var.deletion_protection
 
   template {
     service_account = google_service_account.runtime.email
     scaling {
-      min_instance_count = 0
-      max_instance_count = 5
+      min_instance_count = var.min_instances
+      max_instance_count = var.max_instances
     }
     containers {
       image = var.image != "" ? var.image : "us-docker.pkg.dev/cloudrun/container/hello"

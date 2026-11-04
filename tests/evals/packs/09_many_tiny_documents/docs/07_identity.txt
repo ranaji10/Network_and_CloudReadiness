@@ -1,0 +1,1 @@
+Identity provider: Entra with single sign-on (SSO); MFA enforced for all users and admins (passkey). RBAC roles.

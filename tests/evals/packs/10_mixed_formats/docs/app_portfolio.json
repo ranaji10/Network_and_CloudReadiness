@@ -1,0 +1,28 @@
+{
+ "application_portfolio": [
+  {
+   "name": "POS",
+   "business_criticality": "tier 1",
+   "application_owner": "store ops",
+   "dependencies": [
+    "pos-db-01"
+   ]
+  },
+  {
+   "name": "Webshop",
+   "business_criticality": "tier 1",
+   "application_owner": "ecommerce",
+   "dependencies": [
+    "web-01",
+    "web-02"
+   ]
+  },
+  {
+   "name": "Intranet",
+   "business_criticality": "tier 3",
+   "application_owner": "workplace IT",
+   "dependencies": []
+  }
+ ],
+ "note": "SYNTHETIC application inventory exported from the CMDB with dependency map"
+}

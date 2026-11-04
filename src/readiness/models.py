@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -28,6 +28,7 @@ class DocClass(StrEnum):
     CONTRACT_LICENSE = "contract_license"
     AI_ML = "ai_ml"
     OPERATIONS = "operations"
+    QUESTIONNAIRE = "questionnaire"  # answers to discovery questions (AGT-03); searched by every check
     IRRELEVANT = "irrelevant"
 
 
@@ -54,6 +55,8 @@ class ExtractedDocument(BaseModel):
     classification_confidence: float = 0.0
     truncated: bool = False
     extraction_error: str | None = None
+    answers: int = 0  # questionnaire answers carried by this document (AGT-03); 0 for client documents
+    ocr_pages: int = 0  # pages or image frames whose text came from local OCR (ING-08); 0 for text documents
 
     @property
     def is_relevant(self) -> bool:
@@ -113,16 +116,26 @@ class DomainScore(BaseModel):
     thresholds: dict[str, float] = {}
 
 
+CostBand = Literal["none", "low", "medium", "high"]
+COST_BAND_RANK: dict[str, int] = {"none": 0, "low": 1, "medium": 2, "high": 3}
+
+
 class RecommendationOption(BaseModel):
     provider: str  # gcp | aws | oss | process
     product: str
     note: str = ""
     url: str | None = None
+    family: str = ""  # product family tag; options sharing provider+family close several checks with one rollout
+    # REC-04: indicative incremental monthly run cost for a mid-sized organisation (roughly 200 to 2,000 staff),
+    # excluding implementation effort. none = no recurring cost, low < ~500 USD/month, medium ~500-5,000,
+    # high > ~5,000. Indicative only; varies by region and usage; never a quote. Semantics and the rule set
+    # live in the header of config/recommendations/catalog.yaml.
+    cost_band: CostBand | None = None
 
 
 class Recommendation(BaseModel):
     id: str
-    check_id: str
+    check_id: str  # primary check (the highest-priority member when several were merged)
     domain_id: str
     pillar_id: str
     title: str
@@ -134,6 +147,9 @@ class Recommendation(BaseModel):
     options: list[RecommendationOption] = []
     caiq_questions: list[str] = []
     ccm_controls: list[str] = []
+    family: str = ""  # `<provider>:<family>` of the preferred option; empty for discovery items
+    closes_check_ids: list[str] = []  # every check this action closes (actions only; includes check_id)
+    closes_titles: list[str] = []  # check titles in the same order, for rendering
 
 
 class LLMUsage(BaseModel):
@@ -144,6 +160,10 @@ class LLMUsage(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     total_tokens: int = 0
+    # Prompt-cache accounting (LLM-06): tokens written to and served from the provider's prompt cache,
+    # reported separately from `input_tokens` the way the Anthropic API does; 0 when the provider has no cache.
+    cache_creation_input_tokens: int = 0
+    cache_read_input_tokens: int = 0
     calls: int = 1
 
     def add(self, other: LLMUsage) -> LLMUsage:
@@ -153,6 +173,8 @@ class LLMUsage(BaseModel):
             input_tokens=self.input_tokens + other.input_tokens,
             output_tokens=self.output_tokens + other.output_tokens,
             total_tokens=self.total_tokens + other.total_tokens,
+            cache_creation_input_tokens=self.cache_creation_input_tokens + other.cache_creation_input_tokens,
+            cache_read_input_tokens=self.cache_read_input_tokens + other.cache_read_input_tokens,
             calls=self.calls + other.calls,
         )
 
@@ -160,6 +182,37 @@ class LLMUsage(BaseModel):
 class RedactionSummary(BaseModel):
     mode: str
     counts: dict[str, int] = {}
+    share_safe: bool = False  # mask mode, no snippets, opaque document labels (GRD-09)
+
+
+class WaveSystem(BaseModel):
+    """One inventory row placed in a migration wave. `system` is the first cell of the redacted row (a
+    pseudonym such as `<host-01>` when the row named a host); `reason` is the configured signal that matched,
+    never document text."""
+
+    system: str
+    reason: str
+    source_doc: str  # document name as it appears in AssessmentReport.documents
+
+
+class MigrationWave(BaseModel):
+    id: str
+    name: str
+    order: int
+    description: str = ""
+    count: int = 0  # all rows placed in this wave
+    systems: list[WaveSystem] = []  # at most `MigrationWavePlan.max_rows_per_wave` of them
+
+
+class MigrationWavePlan(BaseModel):
+    """Migration waves derived from inventory documents (REC-05). Present only when the profile enables
+    `migration_waves`; `inventory_documents` is empty when no document was classified as inventory."""
+
+    waves: list[MigrationWave]
+    inventory_documents: list[str] = []
+    total_systems: int = 0
+    default_wave: str
+    max_rows_per_wave: int
 
 
 class AssessmentReport(BaseModel):
@@ -177,5 +230,6 @@ class AssessmentReport(BaseModel):
     recommendations: list[Recommendation]
     redaction: RedactionSummary
     llm_provider: str
+    migration_waves: MigrationWavePlan | None = None
     warnings: list[str] = []
     extra: dict[str, Any] = {}

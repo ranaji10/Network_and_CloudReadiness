@@ -1,0 +1,32 @@
+# Copy to staging.tfvars (git-ignored) and fill in the REPLACE-... values. Applies to the *staging*
+# project only: one GCP project per environment (docs/decisions/ADR-20261103-one-project-per-environment.md).
+#
+# Staging mirrors prod's security posture (CMEK, deletion protection, IAM-only access, same image, same
+# pipeline) at a fraction of the cost: scale to zero, few instances, short retention, small budget.
+# It is deployed automatically by the staging Cloud Build trigger on every push to main and only ever
+# sees synthetic or pilot data (docs/planning/RELEASE_PLAN.md, "Promotion").
+project_id              = "REPLACE-with-your-staging-project-id"
+region                  = "asia-south1"
+env                     = "staging"
+deploy_cloud_run        = true
+allow_unauthenticated   = false
+ingress                 = "INGRESS_TRAFFIC_ALL" # IAM still required; lets `gcloud run services proxy` verify a candidate. Mirror prod (internal + LB) once IAP exists (INF-04).
+min_instances           = 0                     # scale to zero: staging is idle most of the day
+max_instances           = 3
+deletion_protection     = true
+llm_provider            = "mock" # a real model in staging needs the same signed checklist as prod (docs/security/LLM_PROVIDER_CHECKLIST.md)
+allow_llm_egress        = false
+use_cmek                = true # same encryption path as prod so a KMS problem shows up here first
+report_retention_days   = 30   # pilot data only: shortest retention that still lets a release be verified
+tenant_tokens_secret    = false
+deploy_agent_engine     = false # true once the agent is promoted together with the API (DEPLOY_AGENT_ENGINE.md)
+agent_engine_id         = ""
+create_build_trigger    = false # true after GitHub is connected in the staging project (DEPLOY_GCP.md step 4)
+github_connection       = ""
+github_repo_uri         = ""
+build_branch_regex      = "^main$" # staging follows main automatically
+build_tag_regex         = ""
+build_approval_required = false
+billing_account         = "" # "XXXXXX-XXXXXX-XXXXXX" to enable the budget alert (recommended)
+monthly_budget_usd      = 50
+labels                  = {}

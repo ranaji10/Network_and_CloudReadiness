@@ -5,6 +5,13 @@ from __future__ import annotations
 
 from readiness.models import AssessmentReport, CheckStatus
 
+# REC-04: printed once under the actions heading, in Markdown and PDF. Bands are indicative, not a quote.
+COST_BAND_LEGEND = (
+    "cost bands: indicative monthly run cost for a mid-sized organisation (none = no recurring cost, "
+    "low < ~500 USD, medium ~500-5,000, high > ~5,000); varies by region and usage, not a quote; "
+    "see config/recommendations/catalog.yaml"
+)
+
 _ICON = {
     CheckStatus.MET: "PASS",
     CheckStatus.PARTIAL: "PARTIAL",
@@ -13,11 +20,56 @@ _ICON = {
 }
 
 
+def _cell(text: str) -> str:
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _render_waves(report: AssessmentReport, lines: list[str], section: int) -> int:
+    """Appends the migration-wave section. Returns the number of numbered sections it added (0 or 1): when the
+    profile asked for waves but no inventory document was found, only a one-line note is written."""
+    plan = report.migration_waves
+    assert plan is not None
+    if not plan.inventory_documents:
+        lines.append(
+            "\n_Migration waves: no document was classified as `inventory`, so no wave plan was produced. "
+            "Supply a server, VM or application inventory (CSV, XLSX or a table) to get one._"
+        )
+        return 0
+    lines.append(f"\n## {section}. Migration waves\n")
+    lines.append(
+        f"{plan.total_systems} system(s) read from {len(plan.inventory_documents)} inventory document(s): "
+        + ", ".join(f"`{n}`" for n in plan.inventory_documents)
+        + ". **How to read this:** each row of the inventory is placed in the first wave, from legacy down to "
+        "quick wins, whose configured signal matches it; the signal is the *reason*. Rows matching nothing go to "
+        f"the `{plan.default_wave}` wave. System labels are taken from the redacted documents, so hosts appear as "
+        f"pseudonyms. At most {plan.max_rows_per_wave} rows are listed per wave; the count is always complete. "
+        "Treat the plan as a starting point for dependency mapping, not as a schedule."
+    )
+    for w in plan.waves:
+        lines.append(f"\n### {w.name} ({w.count})\n")
+        if w.description:
+            lines.append(f"{w.description}\n")
+        if not w.systems:
+            lines.append("_No inventory row matched this wave._")
+            continue
+        lines.append("| System | Reason | Source document |")
+        lines.append("|---|---|---|")
+        for s in w.systems:
+            # code span: a pseudonym such as <host-01> must not be read as an HTML tag by Markdown renderers
+            lines.append(f"| `{_cell(s.system)}` | {_cell(s.reason)} | {_cell(s.source_doc)} |")
+        if w.count > len(w.systems):
+            hidden = w.count - len(w.systems)
+            lines.append(f"\n_… and {hidden} more row(s) not listed (cap of {plan.max_rows_per_wave})._")
+    return 1
+
+
 def render(report: AssessmentReport) -> str:
     lines: list[str] = []
     lines.append("# Network, Cloud & Agentic-AI Readiness Assessment\n")
+    # A share-safe report leaves the tenant; its id is an operator label that can name the client.
+    tenant = "withheld" if report.redaction.share_safe else report.tenant_id
     lines.append(
-        f"*Report {report.id} · tenant `{report.tenant_id}` · {report.created_at:%Y-%m-%d %H:%M UTC} · "
+        f"*Report {report.id} · tenant `{tenant}` · {report.created_at:%Y-%m-%d %H:%M UTC} · "
         f"profile `{report.profile}` v{report.profile_version} · tool v{report.tool_version}*\n"
     )
     lines.append("## 1. Scores at a glance\n")
@@ -52,6 +104,12 @@ def render(report: AssessmentReport) -> str:
     lines.append("|---|---|---|")
     for ref in report.documents:
         lines.append(f"| {ref.name} | {report.document_classes.get(ref.id, '-')} | {ref.source} |")
+    if "answers_included" in report.extra:
+        n_ans, n_docs = report.extra["answers_included"], report.extra.get("answer_documents", 0)
+        lines.append(
+            f"\n{n_ans} questionnaire answer(s) from {n_docs} answer document(s) stored in the tenant workspace "
+            "were included as evidence (source `answers`). Only the answer text is scored, not the questions."
+        )
     lines.append("\n## 3. Detailed findings\n")
     for d in report.domains:
         lines.append(f"### {d.name} — {d.score:.0f}/100 (grade {d.grade}, coverage {d.coverage:.0f}%)\n")
@@ -85,24 +143,48 @@ def render(report: AssessmentReport) -> str:
     actions = [r for r in report.recommendations if r.kind == "action"]
     disc = [r for r in report.recommendations if r.kind == "discovery"]
     lines.append(f"### 4a. Actions ({len(actions)}) — prioritised\n")
+    lines.append(f"_{COST_BAND_LEGEND}_\n")
     for i, r in enumerate(actions, 1):
         lines.append(f"**{i}. {r.title}** · effort {r.effort} · impact {r.impact} · check {r.check_id}")
         if r.rationale:
             lines.append(f"  \n{r.rationale}")
+        closes = r.closes_check_ids or [r.check_id]
+        titles = r.closes_titles if len(r.closes_titles) == len(closes) else [""] * len(closes)
+        lines.append("  \nCloses: " + ", ".join(f"{cid} {t}".strip() for cid, t in zip(closes, titles, strict=True)))
         for o in r.options:
-            lines.append(f"- **{o.provider.upper()}**: {o.product}" + (f" — {o.note}" if o.note else ""))
+            # REC-03: the product links to its official documentation when the catalog has a url
+            product = f"[{o.product}]({o.url})" if o.url else o.product
+            # REC-04: the indicative monthly cost band follows the product, before the note
+            band = f" · cost: {o.cost_band}" if o.cost_band else ""
+            lines.append(f"- **{o.provider.upper()}**: {product}{band}" + (f" — {o.note}" if o.note else ""))
         lines.append("")
     lines.append(f"### 4b. Discovery — evidence to collect ({len(disc)})\n")
+    if disc:
+        lines.append(
+            f'Answer these with `readiness answer {report.id} --check <check id> --answer "..."` '
+            f"(or `POST /assessments/{report.id}/answers`), then re-run with answers included "
+            "(`readiness assess <source> --include-answers` or `POST /assessments/"
+            f"{report.id}/rerun`): the answers count as evidence on the next run.\n"
+        )
     for r in disc:
         lines.append(f"- **{r.check_id}** {r.title.removeprefix('Provide evidence for: ')}")
         for q in r.caiq_questions[:3]:
             lines.append(f"  - {q}")
-    lines.append("\n## 5. Data handling\n")
+    section = 5
+    if report.migration_waves is not None:
+        section += _render_waves(report, lines, section)
+    lines.append(f"\n## {section}. Data handling\n")
     lines.append(
         f"Redaction mode `{report.redaction.mode}`; LLM provider `{report.llm_provider}`. Redaction counts: "
         + (", ".join(f"{k}={v}" for k, v in report.redaction.counts.items()) or "none")
         + ". No document content is stored in logs; see docs/security/DATA_HANDLING_POLICY.md."
     )
+    if report.redaction.share_safe:
+        lines.append(
+            "\n**Rendered share-safe.** Identifiers are masked (not pseudonymised), evidence snippets are omitted "
+            "and documents are referred to by opaque labels (`doc-xxxxxx`, derived from the file hash) instead of "
+            "their names. The label-to-name map exists only in the run's audit log inside the tenant workspace."
+        )
     usage = report.extra.get("llm_usage")
     if usage:
         cost = usage.get("estimated_cost_usd")

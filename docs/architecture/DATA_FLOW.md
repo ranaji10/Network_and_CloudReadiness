@@ -34,15 +34,38 @@ AssessmentReport (JSON) + Markdown
 | `audit.jsonl` | events with run id, tenant, doc ids, hashes, counts, classes; no content | same | same (and stdout logs) | same |
 | `pseudonym_mapping.local.json` | token to original identifier map | written only when provider is `local` and mode is `pseudonymize` | never written | analyst machine only |
 | Temporary upload folder (API) | raw uploaded files | OS temp dir, deleted after the request | same (container ephemeral disk) | request lifetime |
+| Questionnaire answers (`readiness answer`, `POST /assessments/{id}/answers`) | the client's answers to discovery questions, as Markdown with the check title and quoted CAIQ questions | `workspace/<tenant>/answers/<run>-<timestamp>.md` | same, plus a copy in the reports bucket `<tenant>/answers/` (mirrored into the workspace before a run) | until deleted / 90 days; purged with the tenant |
+
+## Questionnaire round trip (assisted discovery)
+
+A report's *discovery* items are the checks no document covered. The client answers them; the answers are
+stored as one more client-confidential document under the tenant prefix and the assessment is re-run with
+`include_answers=true` (`readiness assess --include-answers`, `POST /assessments/{id}/rerun`, or any create
+endpoint with the flag), which ingests the answers folder as a second source tagged `answers`. Answer
+documents follow exactly the path above: extract, classify (`questionnaire`), redact, score. Two details:
+
+- Only the text under each `Answer:` heading is scored. The stored file also quotes the check title and the
+  CAIQ questions for the reader, and those contain the very words the checks look for.
+- The audit log records `questionnaire.stored` and `answers.ingested` with document id and counts only.
+
+Share-safe runs (`--share-safe` / `share_safe=true`, GRD-09) change the flow right after ingestion: every
+`DocumentRef` name and uri is swapped for an opaque `doc-<hash>` label before redaction and scoring, so
+evidence, warnings, model prompts, `report.json` and `report.md` never carry a document name; redaction is
+forced to `mask` (no `pseudonym_mapping.local.json`) and snippets are off. The only place the label meets
+the original name is a `doc.share_safe_label` event in `audit.jsonl`.
 
 ## What can reach an external model
 
 Only when `READINESS_LLM_PROVIDER` is not `mock` **and** `READINESS_ALLOW_LLM_EGRESS=true` **and**
 `READINESS_USE_LLM_JUDGE=true` (or a future classifier flag):
 
-- the system prompt (`JUDGE_SYSTEM` + untrusted-data preamble),
-- the list of check ids and questions for one pillar,
-- each relevant document's **redacted** text, truncated to a per-document budget, inside `<document>` tags.
+- the system prompt (`JUDGE_SYSTEM`, the list of check ids and questions for one pillar, the untrusted-data
+  preamble): static configuration text, the same for every run, and the only part a provider-side prompt
+  cache may hold (Anthropic `cache_control`, entries expire minutes after last use),
+- in the user turn, the **redacted** text of at most `READINESS_JUDGE_MAX_DOCS_PER_PILLAR` (default 8)
+  documents per pillar, the ones with the most signal hits for that pillar's checks, each truncated to its
+  share of `READINESS_JUDGE_BATCH_CHARS`, inside `<document>` tags. A document that matches none of the
+  pillar's signals is not sent for that pillar; with the setting at `0`, every relevant document is.
 
 Never: raw bytes, un-redacted text, the pseudonym map, secrets, file paths, tenant ids, previous reports.
 

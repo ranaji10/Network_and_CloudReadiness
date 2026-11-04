@@ -5,7 +5,8 @@
 Do not open a public issue. Use the private channel agreed inside the organisation (see
 `.github/ISSUE_TEMPLATE/security.md` for what to include) or GitHub private vulnerability reporting if it
 is enabled on this repository. If client data has been exposed, follow
-`docs/runbooks/INCIDENT_DATA_LEAK.md` immediately, then report.
+`docs/runbooks/INCIDENT_DATA_LEAK.md` immediately, then report. Severity levels, response targets and the
+escalation path for customers are in `docs/runbooks/SUPPORT.md`.
 
 ## Supported versions
 
@@ -15,6 +16,7 @@ Only the `main` branch and the latest tagged release receive fixes.
 
 | Commitment | How it is kept |
 |---|---|
+| Nothing runs inside the client's network; the tool cannot scan, probe or log in to systems | `scripts/check_no_system_access.py` in CI; source schemes allow-listed; `docs/security/DEPLOYMENT_POSTURE.md` |
 | Client documents never enter version control | `.gitignore`, `scripts/check_no_client_data.py`, gitleaks in CI and pre-commit |
 | Secrets never enter version control or logs | gitleaks, `config/redaction.yaml` `kind: secret` rules always on, audit log rejects content-sized fields |
 | No text reaches an external model unless an operator opts in | `READINESS_ALLOW_LLM_EGRESS=false` default, enforced in `guardrails/policy.py` and `adapters/registry.py` |
@@ -25,5 +27,5 @@ Only the `main` branch and the latest tagged release receive fixes.
 | No account-specific values in the repo | `scripts/check_portability.py` in CI |
 | Runtime and build identities are least privilege | dedicated service accounts with bucket-scoped roles in `infra/terraform/gcp` |
 
-Details: `docs/security/DATA_HANDLING_POLICY.md`, `docs/security/THREAT_MODEL.md`,
+Details: `docs/security/DEPLOYMENT_POSTURE.md`, `docs/security/DATA_HANDLING_POLICY.md`, `docs/security/THREAT_MODEL.md`,
 `docs/security/GUARDRAILS.md`, `docs/security/LLM_PROVIDER_CHECKLIST.md`.

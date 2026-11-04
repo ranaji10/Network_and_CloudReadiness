@@ -1,0 +1,1 @@
+Remote access: OpenVPN with MFA for all clinic staff; zero trust access is on the roadmap. VPN concentrator is a firewall module.

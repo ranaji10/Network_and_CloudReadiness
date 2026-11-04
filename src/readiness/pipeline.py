@@ -10,20 +10,23 @@ from __future__ import annotations
 import json
 import uuid
 from pathlib import Path
+from typing import Any
 
 import structlog
 
 from readiness import __version__
-from readiness.adapters.registry import make_llm, make_source
+from readiness.adapters.registry import make_answers_source, make_llm, make_source
 from readiness.config import Settings
 from readiness.guardrails.audit import AuditLog
 from readiness.guardrails.policy import GuardedLLM
-from readiness.guardrails.redaction import Redactor
+from readiness.guardrails.redaction import Redactor, share_safe_label, share_safe_ref
 from readiness.ingestion.classify import classify, llm_refine_classification
-from readiness.ingestion.extract import extract_text
+from readiness.ingestion.extract import extract_document
 from readiness.models import AssessmentReport, DocClass, ExtractedDocument, RedactionSummary
 from readiness.ports import DocumentSource, LLMProvider
+from readiness.questionnaire import answers_dir, evidence_text, is_answers_document
 from readiness.recommend.engine import recommend
+from readiness.recommend.waves import load_wave_config, plan_waves
 from readiness.report.markdown import render
 from readiness.scoring.engine import composite, score_domain
 from readiness.scoring.profiles import load_domains, load_profile
@@ -33,6 +36,7 @@ log = structlog.get_logger()
 
 def ingest(source: DocumentSource, settings: Settings, audit: AuditLog) -> list[ExtractedDocument]:
     docs: list[ExtractedDocument] = []
+    ocr = settings.ocr_options()
     for ref in source.list():
         try:
             raw = source.read(ref)
@@ -40,8 +44,15 @@ def ingest(source: DocumentSource, settings: Settings, audit: AuditLog) -> list[
             audit.event("doc.read_error", doc=ref.id, error=type(exc).__name__)
             docs.append(ExtractedDocument(ref=ref, text="", extraction_error=f"read: {type(exc).__name__}"))
             continue
-        text, truncated, err = extract_text(ref.name, raw, settings.max_text_chars)
-        cls, conf = classify(ref.name, text) if text else (DocClass.IRRELEVANT, 0.0)
+        extracted = extract_document(ref.name, raw, settings.max_text_chars, ocr)
+        text, truncated, err = extracted.text, extracted.truncated, extracted.error
+        answers = 0
+        if text and is_answers_document(text):
+            # A stored questionnaire (AGT-03): score the answer bodies only, never the quoted questions.
+            text, answers = evidence_text(text)
+            cls, conf = (DocClass.QUESTIONNAIRE, 1.0) if answers else (DocClass.IRRELEVANT, 0.0)
+        else:
+            cls, conf = classify(ref.name, text) if text else (DocClass.IRRELEVANT, 0.0)
         docs.append(
             ExtractedDocument(
                 ref=ref,
@@ -50,9 +61,20 @@ def ingest(source: DocumentSource, settings: Settings, audit: AuditLog) -> list[
                 classification_confidence=conf,
                 truncated=truncated,
                 extraction_error=err,
+                answers=answers,
+                ocr_pages=extracted.ocr_pages,
             )
         )
-        audit.event("doc.ingested", doc=ref.id, chars=len(text), cls=str(cls), truncated=truncated, error=err or "")
+        audit.event(
+            "doc.ingested",
+            doc=ref.id,
+            chars=len(text),
+            cls=str(cls),
+            truncated=truncated,
+            error=err or "",
+            answers=answers,
+            ocr_pages=extracted.ocr_pages,
+        )
     return docs
 
 
@@ -62,19 +84,58 @@ def run_assessment(
     profile_id: str | None = None,
     llm: LLMProvider | None = None,
     write_outputs: bool = True,
+    include_answers: bool | None = None,
 ) -> tuple[AssessmentReport, str]:
-    """Returns (report, markdown). Writes report.json / report.md / audit.jsonl into the workspace."""
+    """Returns (report, markdown). Writes report.json / report.md / audit.jsonl into the workspace.
+
+    With `settings.share_safe` (GRD-09) the report is rendered for sharing outside the tenant: redaction is
+    forced to `mask` (no reversible pseudonyms), evidence snippets are off and every document name is replaced
+    by an opaque label before scoring, so nothing downstream (evidence, warnings, model prompts) sees a name.
+    The label-to-name map goes to audit.jsonl only, which stays in the tenant workspace.
+
+    `include_answers` (default `settings.include_answers`) also ingests the tenant's stored questionnaire
+    answers (`<workspace>/<tenant>/answers/`, AGT-03) as a second source tagged `answers`."""
     run_id = uuid.uuid4().hex[:12]
+    share_safe = settings.share_safe
+    redaction_mode = "mask" if share_safe else settings.redaction_mode
+    include_snippets = False if share_safe else settings.include_evidence_snippets
+    include = settings.include_answers if include_answers is None else include_answers
     profile = load_profile(settings.config_dir, profile_id or settings.default_profile)
     domains = load_domains(settings.config_dir, profile)
     out_dir = Path(settings.workspace_dir) / settings.tenant_id / run_id
     audit = AuditLog(out_dir / "audit.jsonl" if write_outputs else None, run_id, settings.tenant_id)
-    audit.event("run.start", profile=profile.id, source_scheme=source_uri.split("://")[0], llm=settings.llm_provider)
+    audit.event(
+        "run.start",
+        profile=profile.id,
+        source_scheme=source_uri.split("://")[0],
+        llm=settings.llm_provider,
+        redaction=redaction_mode,
+        share_safe=share_safe,
+        include_answers=include,
+        judge_max_docs=settings.judge_max_docs_per_pillar,
+        judge_batch_chars=settings.judge_batch_chars,
+    )
 
-    redactor = Redactor.from_config(settings.redaction_mode, Path(settings.config_dir) / "redaction.yaml")
+    redactor = Redactor.from_config(redaction_mode, Path(settings.config_dir) / "redaction.yaml")
     source = make_source(source_uri, settings)
     docs = ingest(source, settings, audit)
+    if share_safe:
+        # Swap names for opaque labels before anything else runs. The original name is recorded here, in the
+        # audit log, and nowhere else in the run output.
+        for d in docs:
+            audit.event("doc.share_safe_label", doc=d.ref.id, label=share_safe_label(d.ref), name=d.ref.name[:200])
+            d.ref = share_safe_ref(d.ref)
     warnings: list[str] = []
+    extra: dict[str, Any] = {"source_uri": source_uri}
+    if include:
+        folder = answers_dir(settings)
+        answer_docs = ingest(make_answers_source(folder, settings), settings, audit) if folder.is_dir() else []
+        docs += answer_docs
+        extra["answer_documents"] = len(answer_docs)
+        extra["answers_included"] = sum(d.answers for d in answer_docs)
+        audit.event("answers.ingested", docs=len(answer_docs), answers=extra["answers_included"])
+        if not answer_docs:
+            warnings.append("Answers were requested but no questionnaire answers are stored for this tenant.")
     if not any(d.is_relevant for d in docs):
         warnings.append("No relevant documents were found; every check is 'no evidence'.")
 
@@ -91,10 +152,30 @@ def run_assessment(
         audit.event("docs.llm_classified", provider=guarded.name)
     judge = guarded if settings.use_llm_judge else None
 
-    scores = [score_domain(dom, docs, profile, judge, settings.include_evidence_snippets) for dom in domains]
+    scores = [
+        score_domain(
+            dom,
+            docs,
+            profile,
+            judge,
+            include_snippets,
+            judge_max_docs=settings.judge_max_docs_per_pillar,
+            judge_batch_chars=settings.judge_batch_chars,
+        )
+        for dom in domains
+    ]
     overall, coverage = composite(scores, profile)
     recs = recommend(scores, profile, settings.config_dir)
+    waves = None
+    if profile.migration_waves:
+        # Runs on the redacted, classified documents; the plan carries pseudonymised labels and config signals only.
+        waves = plan_waves(docs, load_wave_config(Path(settings.config_dir)))
+        if not waves.inventory_documents:
+            warnings.append("Migration waves: no document was classified as inventory, so no wave plan was produced.")
+        audit.event("waves.planned", inventory_docs=len(waves.inventory_documents), systems=waves.total_systems)
     usage = guarded.usage_summary() if guarded is not None else None
+    if usage:
+        extra["llm_usage"] = usage
     report = AssessmentReport(
         id=run_id,
         tenant_id=settings.tenant_id,
@@ -107,9 +188,10 @@ def run_assessment(
         overall_score=overall,
         overall_coverage=coverage,
         recommendations=recs,
-        redaction=RedactionSummary(mode=settings.redaction_mode, counts=redactor.summary()),
+        redaction=RedactionSummary(mode=redaction_mode, counts=redactor.summary(), share_safe=share_safe),
         llm_provider=(guarded.name if guarded else "none"),
-        extra={"llm_usage": usage} if usage else {},
+        migration_waves=waves,
+        extra=extra,
         warnings=warnings + [f"{d.ref.name}: {d.extraction_error}" for d in docs if d.extraction_error],
     )
     md = render(report)
@@ -117,7 +199,7 @@ def run_assessment(
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "report.json").write_text(report.model_dump_json(indent=1))
         (out_dir / "report.md").write_text(md)
-        if settings.redaction_mode == "pseudonymize" and settings.provider == "local" and redactor.mapping:
+        if redaction_mode == "pseudonymize" and settings.provider == "local" and redactor.mapping:
             # Reverse mapping stays local-only, never uploaded. Lets an analyst de-pseudonymise on site.
             (out_dir / "pseudonym_mapping.local.json").write_text(json.dumps(redactor.mapping, indent=1))
     audit.event(

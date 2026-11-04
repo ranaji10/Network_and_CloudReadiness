@@ -76,10 +76,10 @@ stories:
     notes: ""
   - id: GRD-09
     title: Report redaction review step before sharing outside the tenant
-    status: todo
+    status: done
     phase: 2
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [GRD-01]
     acceptance: "API flag to render a share-safe report with mask mode and no document names"
-    notes: ""
+    notes: "share_safe run option (CLI --share-safe, API share_safe, env READINESS_SHARE_SAFE): mask mode, no snippets, doc-<hash> labels, tenant id withheld; label map only in audit.jsonl"

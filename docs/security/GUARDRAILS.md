@@ -14,21 +14,27 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 | Identifiers are pseudonymised with a stable per-run map that never leaves the process | `guardrails/redaction.Redactor` | `tests/test_redaction.py::test_pseudonymize_is_stable_and_masks_secrets` |
 | Scoring runs on redacted text, so reports cannot contain hidden identifiers | `pipeline.run_assessment` (redaction happens before scoring) | `tests/test_pipeline.py::test_end_to_end_offline` asserts fixture IPs and e-mails are absent from the report |
 | Evidence snippets are off unless explicitly requested | `Settings.include_evidence_snippets=False`, `--snippets` | `tests/test_scoring.py::test_snippets_only_when_requested` |
+| Migration wave tables carry only the first cell of each redacted inventory row (a pseudonym for hosts, 60 characters at most) and the configured signal name as the reason, never row text | `recommend/waves.plan_waves` runs after redaction in `pipeline.run_assessment` | `tests/test_waves.py::test_pipeline_gcp_migration_has_wave_table` asserts only `<host-NN>` labels and no fixture hostnames in the report |
 | Audit log stores metadata only; content-sized strings are refused | `guardrails/audit.AuditLog.event` | `test_end_to_end_offline` asserts secrets never appear in `audit.jsonl` |
 | Pseudonym map is written only for local provider runs and marked `.local.json` (git-ignored pattern) | `pipeline.run_assessment` | `test_end_to_end_offline` |
+| Share-safe rendering for reports that leave the tenant: redaction forced to `mask` (no reversible tokens, no mapping file), snippets forced off, every document name replaced by an opaque `doc-<hash>` label; the label-to-name map is written only to `audit.jsonl` | `Settings.share_safe`, `pipeline.run_assessment`, `guardrails/redaction.share_safe_ref`, CLI `--share-safe`, API `share_safe` on `POST /assessments`, `/assessments/upload`, `/jobs`, `/jobs/upload` | `tests/test_pipeline.py::test_share_safe_report_hides_names_and_pseudonyms`, `tests/test_api.py::test_share_safe_flag_on_api`, `tests/test_cli.py::test_assess_share_safe_flag` |
 | Local source cannot escape its root; symlinks resolved and checked | `adapters/sources/local_fs.LocalFolderSource` | unit test to add under `ING` epic |
 | Blob store keys cannot escape the store root | `adapters/storage/local.LocalBlobStore._path` | unit test to add under `GRD` epic |
 | Upload file names are reduced to a basename; oversize uploads rejected | `api/app.create_from_upload` | `tests/test_api.py` |
 | Source schemes are allow-listed | `Settings.allowed_source_schemes`, `registry.make_source` | manual: set the list to `["file"]` and request `gs://` |
+| Drive source requests the read-only scope only | `adapters/sources/gdrive.GoogleDriveSource.SCOPES` | code review; the scope string is a constant |
 | API needs a bearer token unless explicitly disabled; constant-time compare | `api/app.auth` | `tests/test_api.py::test_api_requires_token_when_enabled` |
 | Document size and text length caps | `Settings.max_doc_bytes`, `max_text_chars`; `ingestion/extract.extract_text` | `tests/test_pipeline.py` (truncated flag) |
 | Tenant prefix on every output path and key | `pipeline.run_assessment`, `api/app._run` | `tests/test_api.py` round trip |
+| Questionnaire answers are stored under the tenant prefix, redacted and scored like any document, and only their answer text is scored (quoted questions and titles are not evidence); the audit log gets counts only | `questionnaire.store_answers`, `questionnaire.evidence_text`, `pipeline.ingest` | `tests/test_questionnaire.py` (audit has no answer text; a negative answer stays NO EVIDENCE; purge removes the file) |
 
 - **Web UI (`/`) adds no data path.** `src/readiness/api/static/index.html` calls the same authenticated endpoints as any client; uploads go to a temporary directory that is deleted after the run, and the only thing kept in the browser is the API token in `sessionStorage` (cleared when the tab closes).
 
 - **Optional LLM classifier is opt-in and guarded.** With `READINESS_USE_LLM_CLASSIFIER=true` only documents the keyword classifier is unsure about (confidence below 0.6) are sent, as one batch of redacted 1,500-character samples wrapped as untrusted data through `GuardedLLM`; a model verdict replaces the keyword class only when it is more confident. Off by default, like the judge (`src/readiness/ingestion/classify.py`).
 
-- **Token and cost accounting, numbers only.** `GuardedLLM` records model, input and output tokens on every `llm.ok` audit event and totals them into `report.extra["llm_usage"]` and the `run.end` event, with a list-price estimate from `config/llm_pricing.yaml` (null for unknown models). Prompts and responses are never logged.
+- **Token and cost accounting, numbers only.** `GuardedLLM` records model, input, output and prompt-cache tokens on every `llm.ok` audit event and totals them into `report.extra["llm_usage"]` and the `run.end` event, with a list-price estimate from `config/llm_pricing.yaml` (null for unknown models). Prompts and responses are never logged.
+
+- **Fewer documents reach the model, chosen deterministically.** The judge sees at most `READINESS_JUDGE_MAX_DOCS_PER_PILLAR` (default 8) documents per pillar, the best-ranked by signal hits for that pillar's checks; a document with no hit for the pillar is never sent, and the same pack always yields the same selection (`scoring/engine.rank_documents`, `tests/test_judge_preselection.py`). The cacheable prompt prefix (system prompt, preamble, check list) never contains document text; document text only appears in the user turn after the cache breakpoint.
 
 ## In CI and the repo
 
@@ -37,6 +43,7 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 | Client data directories and secret file patterns are ignored by git | `.gitignore` | `git check-ignore data/x.pdf .env infra/terraform/gcp/envs/dev.tfvars` |
 | Tracked files are scanned for client-data-like content | `scripts/check_no_client_data.py` (in `make check`, Cloud Build, GitHub Actions) | `uv run python scripts/check_no_client_data.py` |
 | Tracked files are scanned for account-specific values | `scripts/check_portability.py` | `uv run python scripts/check_portability.py` |
+| The package cannot reach client systems: no scanning, remote-access or protocol-client library in `pyproject.toml` or `uv.lock`; no `socket`/`subprocess` under `src/readiness`; registry schemes limited to document stores; no network tooling in the image (ADR-20261103) | `scripts/check_no_system_access.py` (in `make check`, Cloud Build, GitHub Actions) | `tests/test_repo_policy.py`; `uv run python scripts/check_no_system_access.py` |
 | Secret scanning on every push and before every commit | `.gitleaks.toml`, `.pre-commit-config.yaml`, `cloudbuild.yaml` step `secret-scan`, `.github/workflows/ci.yml` job `secrets` | `make secrets-scan` |
 | Every check must have a recommendation and valid CCM ids | `tests/test_config_profiles.py` | `make test` |
 | Security-sensitive paths need the security owner's review | `.github/CODEOWNERS` | GitHub branch protection |
@@ -59,6 +66,7 @@ Each guardrail lists where it is implemented and how to prove it still works. Ad
 |---|---|
 | Provider checklist must be completed before egress is enabled | `docs/security/LLM_PROVIDER_CHECKLIST.md` |
 | Data handling rules for analysts | `docs/security/DATA_HANDLING_POLICY.md` |
+| Client-facing statement of where the tool runs and what it can reach | `docs/security/DEPLOYMENT_POSTURE.md` |
 | Incident procedure | `docs/runbooks/INCIDENT_DATA_LEAK.md` |
 | Agent and contributor rules | `CLAUDE.md`, `AGENTS.md`, `CONTRIBUTING.md` |
 

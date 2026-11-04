@@ -40,19 +40,28 @@ stories:
     notes: "config/README.md (orientation, worked example) + docs/architecture/CONFIG_REFERENCE.md (field reference, scoring and priority math)"
   - id: DOC-05
     title: Support and incident process for customers
-    status: todo
+    status: done
     phase: 5
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: []
     acceptance: "docs/runbooks/SUPPORT.md with SLAs and escalation"
-    notes: ""
+    notes: "docs/runbooks/SUPPORT.md; SLA numbers, support hours and contact alias are [proposed] pending product-owner sign-off"
   - id: DOC-06
     title: Tracker sync to GitHub Issues (optional script)
-    status: todo
+    status: done
     phase: 1
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [DOC-01]
     acceptance: "scripts/tracker_to_issues.py creates or updates issues by story id"
-    notes: ""
+    notes: "one-way YAML -> Issues, idempotent on the <ID>: title prefix, dry-run default via make tracker-issues; offline tests with httpx.MockTransport"
+  - id: DOC-07
+    title: Outside-the-network posture documented, client-facing, and enforced in CI
+    status: done
+    phase: 2
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
+    depends_on: [DOC-02]
+    acceptance: "ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs"
+    notes: "ADR-20261103-outside-the-client-network; posture doc for client security teams; T15 in threat model; CLAUDE.md hard rule; tests/test_repo_policy.py"

@@ -10,9 +10,13 @@ variable "region" {
 }
 
 variable "env" {
-  description = "Environment name (dev, staging, prod). Used in resource names and labels."
+  description = "Environment name (dev, staging, prod). Used in resource names and labels. One GCP project per environment (docs/decisions/ADR-20261103-one-project-per-environment.md)."
   type        = string
   default     = "dev"
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.env)
+    error_message = "env must be one of: dev, staging, prod."
+  }
 }
 
 variable "service_name" {
@@ -92,8 +96,39 @@ variable "github_repo_uri" {
 }
 
 variable "build_branch_regex" {
-  type    = string
-  default = "^main$"
+  description = "Branch regex for the Cloud Build trigger (dev and staging deploy from main). Ignored when build_tag_regex is set."
+  type        = string
+  default     = "^main$"
+}
+
+variable "build_tag_regex" {
+  description = "When non-empty the trigger fires on git tags matching this regex instead of on branches (prod: release tags vX.Y.Z, see envs/prod.tfvars.example)."
+  type        = string
+  default     = ""
+}
+
+variable "build_approval_required" {
+  description = "Hold every build from this trigger until a Cloud Build Approver approves it in the console (prod). Needs roles/cloudbuild.builds.approver on the approvers."
+  type        = bool
+  default     = false
+}
+
+variable "deletion_protection" {
+  description = "Refuse to destroy the Cloud Run service through Terraform. Keep true in staging and prod; dev may set false so a throw-away project can be torn down. Buckets are always force_destroy=false (client data) regardless of this flag."
+  type        = bool
+  default     = true
+}
+
+variable "min_instances" {
+  description = "Cloud Run minimum instance count. 0 scales to zero (dev, staging); prod keeps 1 warm so client-facing calls do not pay a cold start."
+  type        = number
+  default     = 0
+}
+
+variable "max_instances" {
+  description = "Cloud Run maximum instance count: the cost ceiling of the environment."
+  type        = number
+  default     = 5
 }
 
 variable "billing_account" {

@@ -8,18 +8,18 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 
 | Epic | Name | todo | in_progress | blocked | done | total |
 |---|---|---:|---:|---:|---:|---:|
-| AGT | Agents and ADK | 3 | 0 | 0 | 2 | 5 |
-| API | API and UI | 2 | 0 | 0 | 5 | 7 |
-| DOC | Docs and governance | 2 | 0 | 0 | 4 | 6 |
+| AGT | Agents and ADK | 1 | 0 | 0 | 4 | 5 |
+| API | API and UI | 1 | 0 | 0 | 6 | 7 |
+| DOC | Docs and governance | 0 | 0 | 0 | 7 | 7 |
 | FND | Foundation | 0 | 0 | 0 | 8 | 8 |
-| GRD | Guardrails | 5 | 0 | 0 | 4 | 9 |
-| INF | Infrastructure | 4 | 0 | 0 | 6 | 10 |
-| ING | Ingestion | 4 | 0 | 0 | 5 | 9 |
-| LLM | Model providers | 3 | 0 | 0 | 3 | 6 |
+| GRD | Guardrails | 4 | 0 | 0 | 5 | 9 |
+| INF | Infrastructure | 3 | 0 | 0 | 7 | 10 |
+| ING | Ingestion | 2 | 0 | 0 | 7 | 9 |
+| LLM | Model providers | 2 | 0 | 0 | 4 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
-| REC | Recommendations | 4 | 0 | 0 | 2 | 6 |
-| SCR | Scoring | 4 | 0 | 0 | 5 | 9 |
-| **All** | | 34 | 0 | 0 | 46 | 80 |
+| REC | Recommendations | 0 | 0 | 0 | 6 | 6 |
+| SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
+| **All** | | 18 | 0 | 0 | 63 | 81 |
 
 ## By phase
 
@@ -53,10 +53,10 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `done` **SCR-03** Rule engine with posture score and evidence coverage kept separate
 - `done` **SCR-07** LLM judge hook with confidence-gated override
 
-### Phase 1: MVP for one analyst (11/15 done)
+### Phase 1: MVP for one analyst (12/15 done)
 
 - `done` **DOC-04** Config reference for scoring, profiles, catalog and redaction (claude-code)
-- `todo` **DOC-06** Tracker sync to GitHub Issues (optional script)
+- `done` **DOC-06** Tracker sync to GitHub Issues (optional script) (claude-code)
 - `done` **FND-06** Pin dependency upper bounds and add a monthly dependency refresh story (claude-code)
 - `done` **FND-07** Type checking (mypy) added to make check (claude-code)
 - `done` **FND-08** Default config resolvable from a wheel, a checkout or an Agent Engine bundle (claude-code)
@@ -71,15 +71,16 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **SCR-04** Tune signals against three anonymised real document packs
 - `done` **SCR-08** Per-check signal weights and regex signals documented in config README (claude-code)
 
-### Phase 2: Cloud ingestion and multi-tenant (7/14 done)
+### Phase 2: Cloud ingestion and multi-tenant (9/15 done)
 
 - `done` **AGT-02** Deploy the ADK agent to Vertex AI Agent Engine (claude-code)
 - `done` **API-02** Per-tenant tokens and report keys (claude-code)
 - `done` **API-06** Async assessments with job status endpoint (claude-code)
 - `done` **API-07** OpenAPI docs published and versioned (claude-code)
+- `done` **DOC-07** Outside-the-network posture documented, client-facing, and enforced in CI (claude-code)
 - `todo` **GRD-05** Optional Presidio-based PII detection
 - `todo` **GRD-06** Egress perimeter (VPC Service Controls or equivalent) around the runtime
-- `todo` **GRD-09** Report redaction review step before sharing outside the tenant
+- `done` **GRD-09** Report redaction review step before sharing outside the tenant (claude-code)
 - `todo` **INF-04** IAP in front of Cloud Run
 - `todo` **INF-08** Monitoring, alerting and uptime check for the API
 - `todo` **ING-04** Google Drive source verified against a live Drive
@@ -88,38 +89,38 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **MIG-01** Migrate the GCP project from the personal account to an organisation
 - `done` **MIG-05** Data export and deletion procedure per tenant (claude-code)
 
-### Phase 3: Recommendations depth and AWS (0/12 done)
+### Phase 3: Recommendations depth and AWS (7/12 done)
 
-- `todo` **AGT-04** Expose the assessment as an MCP server
+- `done` **AGT-04** Expose the assessment as an MCP server (claude-code)
 - `todo` **INF-06** Validate AWS skeleton and add App Runner service
 - `todo` **ING-06** S3 source verified against a live bucket
-- `todo` **ING-09** PPTX and legacy DOC/XLS extraction
+- `done` **ING-09** PPTX and legacy DOC/XLS extraction (claude-code)
 - `todo` **LLM-03** Amazon Bedrock adapter
-- `todo` **LLM-06** Prompt caching and batching for large document sets
+- `done` **LLM-06** Prompt caching and batching for large document sets (claude-code)
 - `todo` **MIG-02** Terraform state move drill
 - `todo` **MIG-04** Provider switch drill (local to gcp to aws) with the same report output
-- `todo` **REC-03** Catalog expansion with sizing hints and documentation links
-- `todo` **REC-04** Rough cost bands per option
-- `todo` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents
-- `todo` **SCR-09** Industry profiles (healthcare, finance, public sector)
+- `done` **REC-03** Catalog expansion with sizing hints and documentation links (claude-code)
+- `done` **REC-04** Rough cost bands per option (claude-code)
+- `done` **REC-05** Migration wave planning (quick wins, core, legacy) from inventory documents (claude-code)
+- `done` **SCR-09** Industry profiles (healthcare, finance, public sector) (claude-code)
 
-### Phase 4: Agentic-AI depth and product polish (1/8 done)
+### Phase 4: Agentic-AI depth and product polish (6/8 done)
 
-- `todo` **AGT-03** Questionnaire round trip (answer discovery questions, re-score)
+- `done` **AGT-03** Questionnaire round trip (answer discovery questions, re-score) (claude-code)
 - `todo` **AGT-05** Agent evaluation set in CI (ADK evals)
 - `done` **API-03** Web UI (upload, progress, report view) (claude-code)
-- `todo` **API-04** PDF export of the report
-- `todo` **ING-08** OCR for scanned PDFs and images
-- `todo` **REC-06** Recommendation de-duplication across checks sharing a product
-- `todo` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores
+- `done` **API-04** PDF export of the report (claude-code)
+- `done` **ING-08** OCR for scanned PDFs and images (claude-code)
+- `done` **REC-06** Recommendation de-duplication across checks sharing a product (claude-code)
+- `done` **SCR-05** Evaluation set of 20 synthetic document packs with expected scores (claude-code)
 - `todo` **SCR-06** Agentic-AI domain reviewed with two external practitioners
 
-### Phase 5: Hardening and commercial (0/4 done)
+### Phase 5: Hardening and commercial (2/4 done)
 
 - `todo` **API-05** SSO for the UI and API
-- `todo` **DOC-05** Support and incident process for customers
+- `done` **DOC-05** Support and incident process for customers (claude-code)
 - `todo` **GRD-07** Tool assesses itself with security_only profile above grade B
-- `todo` **INF-07** Staging and prod environments in separate projects
+- `done` **INF-07** Staging and prod environments in separate projects (claude-code)
 
 ## By epic
 
@@ -131,8 +132,8 @@ Owner hint: src/readiness/agents
 |---|---|---|---:|---|---|---|---|
 | AGT-01 | ADK wrapper exposing the assessment as a tool | done | 0 |  |  |  | adk web src/readiness/agents loads; root_agent None without ADK installed |
 | AGT-02 | Deploy the ADK agent to Vertex AI Agent Engine | done | 2 | claude-code | claude/trusting-keller-qe5w65 | AGT-01, LLM-01 | agent answers with the same scores as the CLI for the same folder |
-| AGT-03 | Questionnaire round trip (answer discovery questions, re-score) | todo | 4 |  |  | AGT-02 | answers stored as a document in the tenant workspace; coverage rises on re-run |
-| AGT-04 | Expose the assessment as an MCP server | todo | 3 |  |  | AGT-01 | run_readiness_assessment callable from Claude Code and other MCP clients |
+| AGT-03 | Questionnaire round trip (answer discovery questions, re-score) | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | AGT-02 | answers stored as a document in the tenant workspace; coverage rises on re-run |
+| AGT-04 | Expose the assessment as an MCP server | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | AGT-01 | run_readiness_assessment callable from Claude Code and other MCP clients |
 | AGT-05 | Agent evaluation set in CI (ADK evals) | todo | 4 |  |  | AGT-02, SCR-05 | five conversations with expected tool calls pass in CI |
 
 ### API: API and UI
@@ -144,7 +145,7 @@ Owner hint: src/readiness/api and src/readiness/cli.py
 | API-01 | FastAPI service and typer CLI over the same pipeline | done | 0 |  |  |  | test_api.py round trip; readiness assess works offline |
 | API-02 | Per-tenant tokens and report keys | done | 2 | claude-code | claude/trusting-keller-qe5w65 | INF-04 | tenant resolved from token; keys prefixed; cross-tenant read returns 404 |
 | API-03 | Web UI (upload, progress, report view) | done | 4 | claude-code | claude/trusting-keller-qe5w65 | API-01 | an analyst completes an assessment without the CLI |
-| API-04 | PDF export of the report | todo | 4 |  |  | API-01 | GET /assessments/{id}/report.pdf |
+| API-04 | PDF export of the report | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | API-01 | GET /assessments/{id}/report.pdf |
 | API-05 | SSO for the UI and API | todo | 5 |  |  | API-03 | OIDC login; tokens issued per user; audit carries user id |
 | API-06 | Async assessments with job status endpoint | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-01 | POST returns 202 and a job id; GET /jobs/{id} reports progress |
 | API-07 | OpenAPI docs published and versioned | done | 2 | claude-code | claude/trusting-keller-qe5w65 | API-01 | /docs reachable behind auth; schema checked in CI |
@@ -159,8 +160,9 @@ Owner hint: docs/, README, CLAUDE.md, AGENTS.md
 | DOC-02 | Security docs (threat model, data handling policy, guardrails) | done | 0 |  |  |  | docs/security complete; SECURITY.md at root |
 | DOC-03 | Collaboration, portability, runbooks and legacy summary | done | 0 |  |  |  | CLAUDE.md, AGENTS.md, CONTRIBUTING.md, docs/collaboration, docs/architecture, docs/runbooks |
 | DOC-04 | Config reference for scoring, profiles, catalog and redaction | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-08 | config/README.md with every field explained |
-| DOC-05 | Support and incident process for customers | todo | 5 |  |  |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
-| DOC-06 | Tracker sync to GitHub Issues (optional script) | todo | 1 |  |  | DOC-01 | scripts/tracker_to_issues.py creates or updates issues by story id |
+| DOC-05 | Support and incident process for customers | done | 5 | claude-code | claude/nifty-mendel-lcqzeb |  | docs/runbooks/SUPPORT.md with SLAs and escalation |
+| DOC-06 | Tracker sync to GitHub Issues (optional script) | done | 1 | claude-code | claude/nifty-mendel-lcqzeb | DOC-01 | scripts/tracker_to_issues.py creates or updates issues by story id |
+| DOC-07 | Outside-the-network posture documented, client-facing, and enforced in CI | done | 2 | claude-code | claude/nifty-mendel-lcqzeb | DOC-02 | ADR + docs/security/DEPLOYMENT_POSTURE.md; scripts/check_no_system_access.py in make check and both CIs |
 
 ### FND: Foundation
 
@@ -191,7 +193,7 @@ Owner hint: src/readiness/guardrails, config/redaction.yaml, docs/security
 | GRD-06 | Egress perimeter (VPC Service Controls or equivalent) around the runtime | todo | 2 |  |  | INF-03 | runtime can reach only Vertex, Storage and Secret Manager |
 | GRD-07 | Tool assesses itself with security_only profile above grade B | todo | 5 |  |  | SCR-04 | docs/ and infra/ assessed; report committed under docs/security |
 | GRD-08 | Secret scanning in CI and pre-commit (gitleaks) | done | 0 |  |  |  | .gitleaks.toml, pre-commit hook and cloudbuild step |
-| GRD-09 | Report redaction review step before sharing outside the tenant | todo | 2 |  |  | GRD-01 | API flag to render a share-safe report with mask mode and no document names |
+| GRD-09 | Report redaction review step before sharing outside the tenant | done | 2 | claude-code | claude/nifty-mendel-lcqzeb | GRD-01 | API flag to render a share-safe report with mask mode and no document names |
 
 ### INF: Infrastructure
 
@@ -205,7 +207,7 @@ Owner hint: infra/, Dockerfile, cloudbuild.yaml, Makefile
 | INF-04 | IAP in front of Cloud Run | todo | 2 |  |  | INF-03 | no public ingress; users authenticate with Google identity |
 | INF-05 | Terraform applied for dev (buckets, SAs, secrets, registry) | done | 1 | claude-code | main | INF-01 | make tf-apply ENV=dev succeeds; outputs pasted on the trigger |
 | INF-06 | Validate AWS skeleton and add App Runner service | todo | 3 |  |  | INF-01 | infra/terraform/aws applies in a sandbox account; API served from App Runner |
-| INF-07 | Staging and prod environments in separate projects | todo | 5 |  |  | INF-05 | envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN |
+| INF-07 | Staging and prod environments in separate projects | done | 5 | claude-code | claude/nifty-mendel-lcqzeb | INF-05 | envs/staging.tfvars and prod.tfvars; promotion documented in RELEASE_PLAN |
 | INF-08 | Monitoring, alerting and uptime check for the API | todo | 2 |  |  | INF-03 | alert on 5xx rate and latency; uptime check on /healthz |
 | INF-09 | GitHub Actions mirror of the quality gate | done | 0 |  |  | INF-01 | .github/workflows/ci.yml runs lint, tests, policy checks |
 | INF-10 | Publish the container image to GHCR on release tags | done | 1 | claude-code | claude/trusting-keller-qe5w65 | INF-09 | ghcr.io/<owner>/readiness:<tag> pullable after pushing a v* tag |
@@ -223,8 +225,8 @@ Owner hint: sources and extraction; touches src/readiness/adapters/sources and s
 | ING-05 | GCS source verified against a live bucket | done | 2 | claude-code | main | INF-03 | gs://bucket/prefix assessed from Cloud Run with the runtime service account |
 | ING-06 | S3 source verified against a live bucket | todo | 3 |  |  | INF-06 | s3://bucket/prefix assessed from an AWS runtime role |
 | ING-07 | Optional LLM classifier behind READINESS_USE_LLM_CLASSIFIER | done | 1 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | classification confidence improves on the evaluation set; falls back to keywords |
-| ING-08 | OCR for scanned PDFs and images | todo | 4 |  |  | ING-02 | scanned PDF in fixtures yields text; optional dependency |
-| ING-09 | PPTX and legacy DOC/XLS extraction | todo | 3 |  |  | ING-02 | slides and legacy Office files produce text |
+| ING-08 | OCR for scanned PDFs and images | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | scanned PDF in fixtures yields text; optional dependency |
+| ING-09 | PPTX and legacy DOC/XLS extraction | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-02 | slides and legacy Office files produce text |
 
 ### LLM: Model providers
 
@@ -237,7 +239,7 @@ Owner hint: src/readiness/adapters/llm and guardrails/policy.py
 | LLM-03 | Amazon Bedrock adapter | todo | 3 |  |  | LLM-02 | READINESS_LLM_PROVIDER=bedrock works from an AWS runtime role |
 | LLM-04 | Mock provider with canned responses for tests | done | 0 |  |  |  | MockLLM returns conservative defaults or canned schema instances |
 | LLM-05 | Token and cost accounting per run in the audit log | done | 2 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | llm.ok events carry input/output token counts; report shows model cost |
-| LLM-06 | Prompt caching and batching for large document sets | todo | 3 |  |  | LLM-01 | judge cost per run halves on a 100-document pack |
+| LLM-06 | Prompt caching and batching for large document sets | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | LLM-01 | judge cost per run halves on a 100-document pack |
 
 ### MIG: Portability and migration
 
@@ -259,10 +261,10 @@ Owner hint: config/recommendations and src/readiness/recommend
 |---|---|---|---:|---|---|---|---|
 | REC-01 | Catalog covering every check with GCP, AWS, open-source and process options | done | 0 |  |  | SCR-01 | test_every_check_has_catalog_entry passes |
 | REC-02 | Discovery items with CAIQ questions for checks without evidence | done | 0 |  |  | FND-04 | unknown checks produce D-<check> items with up to six CAIQ questions |
-| REC-03 | Catalog expansion with sizing hints and documentation links | todo | 3 |  |  | REC-01 | every option has a url; notes mention when the option is wrong |
-| REC-04 | Rough cost bands per option | todo | 3 |  |  | REC-03 | low/medium/high monthly cost band shown in the report |
-| REC-05 | Migration wave planning (quick wins, core, legacy) from inventory documents | todo | 3 |  |  | ING-07 | gcp_migration report has a wave table derived from classified inventory |
-| REC-06 | Recommendation de-duplication across checks sharing a product | todo | 4 |  |  | REC-01 | one action per product family with the checks it closes listed |
+| REC-03 | Catalog expansion with sizing hints and documentation links | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | REC-01 | every option has a url; notes mention when the option is wrong |
+| REC-04 | Rough cost bands per option | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | REC-03 | low/medium/high monthly cost band shown in the report |
+| REC-05 | Migration wave planning (quick wins, core, legacy) from inventory documents | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | ING-07 | gcp_migration report has a wave table derived from classified inventory |
+| REC-06 | Recommendation de-duplication across checks sharing a product | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | REC-01 | one action per product family with the checks it closes listed |
 
 ### SCR: Scoring
 
@@ -274,8 +276,8 @@ Owner hint: config/scoring, config/profiles, src/readiness/scoring
 | SCR-02 | Profiles with domain weights, thresholds and provider preference | done | 0 |  |  | SCR-01 | default, gcp_migration, security_only load and validate |
 | SCR-03 | Rule engine with posture score and evidence coverage kept separate | done | 0 |  |  | SCR-01 | met/partial/not_met/unknown; negative signals override; composite across domains |
 | SCR-04 | Tune signals against three anonymised real document packs | todo | 1 |  |  | SCR-03 | false positives and misses recorded; signals adjusted; packs never committed |
-| SCR-05 | Evaluation set of 20 synthetic document packs with expected scores | todo | 4 |  |  | SCR-03 | tests/evals runs rules and judge; score drift fails CI beyond a tolerance |
+| SCR-05 | Evaluation set of 20 synthetic document packs with expected scores | done | 4 | claude-code | claude/nifty-mendel-lcqzeb | SCR-03 | tests/evals runs rules and judge; score drift fails CI beyond a tolerance |
 | SCR-06 | Agentic-AI domain reviewed with two external practitioners | todo | 4 |  |  | SCR-01 | review notes recorded in an ADR; checks updated |
 | SCR-07 | LLM judge hook with confidence-gated override | done | 0 |  |  | SCR-03 | llm_refine overrides only above llm_override_min_confidence; tested with mock |
 | SCR-08 | Per-check signal weights and regex signals documented in config README | done | 1 | claude-code | claude/trusting-keller-qe5w65 | SCR-03 | config/README.md explains every field with an example |
-| SCR-09 | Industry profiles (healthcare, finance, public sector) | todo | 3 |  |  | SCR-02 | three new profiles with domain weights and compliance emphasis |
+| SCR-09 | Industry profiles (healthcare, finance, public sector) | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | SCR-02 | three new profiles with domain weights and compliance emphasis |

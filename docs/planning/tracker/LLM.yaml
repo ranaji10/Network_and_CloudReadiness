@@ -49,10 +49,10 @@ stories:
     notes: "LLMUsage per adapter, GuardedLLM totals, llm.ok/run.end carry token counts, report.extra.llm_usage + markdown line; config/llm_pricing.yaml (Gemini prices flagged as estimates)"
   - id: LLM-06
     title: Prompt caching and batching for large document sets
-    status: todo
+    status: done
     phase: 3
-    owner: ""
-    branch: ""
+    owner: claude-code
+    branch: claude/nifty-mendel-lcqzeb
     depends_on: [LLM-01]
     acceptance: "judge cost per run halves on a 100-document pack"
-    notes: ""
+    notes: "per-pillar document pre-selection (judge_max_docs_per_pillar=8), batching (judge_batch_chars), cacheable static prefix with Anthropic cache_control; 100-doc synthetic pack: input tokens -86%, calls -67%; scores unchanged"

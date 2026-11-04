@@ -22,9 +22,16 @@ fmt: ## Auto-format and fix lint
 test: ## Run the test suite
 	$(UV) run pytest -q
 
-policy: ## Repo guardrails: portability, no client data, tracker and OpenAPI export in sync
+evals: ## Score the 20 synthetic evaluation packs (tests/evals) and fail on drift beyond tolerance
+	$(UV) run pytest -q tests/evals
+
+evals-refresh: ## Re-pin tests/evals/packs/*/expected.yaml after an intended scoring change (review the diff!)
+	$(UV) run python tests/evals/generate_expected.py --write
+
+policy: ## Repo guardrails: portability, no client data, no system access, tracker and OpenAPI export in sync
 	$(UV) run python scripts/check_portability.py
 	$(UV) run python scripts/check_no_client_data.py
+	$(UV) run python scripts/check_no_system_access.py
 	$(UV) run python scripts/render_tracker.py --check
 	$(UV) run python scripts/export_openapi.py --check
 
@@ -39,6 +46,9 @@ check: lint test policy ## Everything CI runs (minus the secret scan, which need
 
 tracker: ## Re-render docs/planning/TRACKER.md from docs/planning/tracker/*.yaml
 	$(UV) run python scripts/render_tracker.py
+
+tracker-issues: ## Preview the tracker -> GitHub Issues sync (dry run; set GITHUB_TOKEN and drop --dry-run to apply)
+	$(UV) run python scripts/tracker_to_issues.py --dry-run
 
 catalog: ## Regenerate the CCM/CAIQ JSON from reference/ spreadsheets
 	$(UV) run python scripts/build_control_catalog.py
@@ -55,8 +65,18 @@ docker-build: ## Build the container
 docker-run: ## Run the container locally on :8080
 	docker run --rm -p 8080:8080 --env-file .env -e READINESS_AUTH_DISABLED=true readiness:local
 
+# Terraform targets take ENV=dev|staging|prod (one GCP project each). Each environment needs the two
+# git-ignored files infra/terraform/backend.$(ENV).hcl and $(TF_DIR)/envs/$(ENV).tfvars, copied from the
+# matching .example files (or written by infra/scripts/bootstrap_gcp.sh). Switching ENV switches the
+# backend, so `make tf-init` runs with -reconfigure and never migrates state between projects.
 tf-init: ## terraform init for $(TF_DIR) using infra/terraform/backend.$(ENV).hcl
-	cd $(TF_DIR) && terraform init -backend-config=../backend.$(ENV).hcl
+	@test -f infra/terraform/backend.$(ENV).hcl || { echo "missing infra/terraform/backend.$(ENV).hcl (copy backend.$(ENV).hcl.example)"; exit 1; }
+	@test -f $(TF_DIR)/envs/$(ENV).tfvars || { echo "missing $(TF_DIR)/envs/$(ENV).tfvars (copy envs/$(ENV).tfvars.example)"; exit 1; }
+	cd $(TF_DIR) && terraform init -reconfigure -backend-config=../backend.$(ENV).hcl
+
+tf-validate: ## terraform fmt -check + validate without touching any backend or account
+	terraform fmt -check -diff $(TF_DIR) infra/terraform/aws
+	cd $(TF_DIR) && terraform init -backend=false -input=false >/dev/null && terraform validate
 
 tf-plan: ## terraform plan with envs/$(ENV).tfvars (extra flags via TF_ARGS)
 	cd $(TF_DIR) && terraform plan -var-file=envs/$(ENV).tfvars $(TF_ARGS)
@@ -64,4 +84,10 @@ tf-plan: ## terraform plan with envs/$(ENV).tfvars (extra flags via TF_ARGS)
 tf-apply: ## terraform apply with envs/$(ENV).tfvars (extra flags via TF_ARGS, e.g. TF_ARGS='-target=...')
 	cd $(TF_DIR) && terraform apply -var-file=envs/$(ENV).tfvars $(TF_ARGS)
 
-.PHONY: help setup lint fmt test policy secrets-scan check tracker catalog demo serve docker-build docker-run tf-init tf-plan tf-apply
+tf-plan-all: ## terraform plan for every environment that has a tfvars file (re-inits the backend per env)
+	@for e in dev staging prod; do \
+	  if [ -f $(TF_DIR)/envs/$$e.tfvars ]; then echo "== $$e =="; $(MAKE) --no-print-directory tf-init ENV=$$e && $(MAKE) --no-print-directory tf-plan ENV=$$e || exit 1; \
+	  else echo "== $$e: no envs/$$e.tfvars, skipped =="; fi; \
+	done
+
+.PHONY: help setup lint fmt test evals evals-refresh policy secrets-scan check tracker tracker-issues catalog demo serve docker-build docker-run tf-init tf-validate tf-plan tf-apply tf-plan-all

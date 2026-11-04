@@ -18,5 +18,6 @@ rules:
   partial_points_ratio: 0.5
   negative_overrides: true
   llm_override_min_confidence: 0.6
+  dedupe_by_product: true        # one action per product family (preferred option's provider + family), listing every check it closes
 target_providers: [gcp, aws, oss]   # preference order shown in recommendations
 max_recommendations: 40

@@ -22,9 +22,19 @@ output "buckets" {
   value = { uploads = google_storage_bucket.uploads.name, reports = google_storage_bucket.reports.name }
 }
 
+output "cloudbuild_trigger_event" {
+  description = "What the trigger for this environment listens to (paste on a hand-made trigger if create_build_trigger=false)."
+  value = {
+    branch_regex      = var.build_tag_regex == "" ? var.build_branch_regex : null
+    tag_regex         = var.build_tag_regex != "" ? var.build_tag_regex : null
+    approval_required = var.build_approval_required
+  }
+}
+
 output "cloudbuild_substitutions" {
   description = "Paste these on the existing trigger if create_build_trigger=false."
   value = {
+    _ENV             = var.env
     _REGION          = var.region
     _AR_REPO         = var.ar_repo
     _SERVICE         = var.service_name

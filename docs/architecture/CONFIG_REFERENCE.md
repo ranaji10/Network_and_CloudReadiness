@@ -1,8 +1,8 @@
 # Configuration reference
 
 Field-by-field reference for the YAML under `config/`. Values are validated by the pydantic models in
-`src/readiness/scoring/profiles.py` and `src/readiness/recommend/engine.py`; an unknown field or a wrong
-type fails at load time. `config/README.md` is the short orientation; this page is the contract.
+`src/readiness/scoring/profiles.py`, `src/readiness/recommend/engine.py` and `src/readiness/recommend/waves.py`;
+an unknown field or a wrong type fails at load time. `config/README.md` is the short orientation; this page is the contract.
 
 ## Where configuration is loaded from
 
@@ -31,6 +31,15 @@ Profiles, domains, the catalog and `redaction.yaml` are all read from that one d
 | `rules` | object | see below | Signal evaluation rules |
 | `target_providers` | list of string | `[gcp, aws, oss]` | Preference order for recommendation options; providers not listed are dropped, `process` is always kept and listed last |
 | `max_recommendations` | integer | `40` | Truncates the prioritised list (actions and discovery items together) |
+| `pillar_weight_overrides` | map of `{domain_id: {pillar_id: number}}` | `{}` | Replaces the `weight` of the named pillars for this profile only; unlisted pillars keep the domain's weight |
+| `migration_waves` | boolean | `false` | Derive migration waves from inventory documents with `recommendations/waves.yaml` and add them to the report (`gcp_migration` sets it) |
+
+`pillar_weight_overrides` is validated at load time: every domain id must appear in `domains`, every
+pillar id must exist in that domain's `scoring/<id>.yaml`, and every weight must be greater than zero.
+`readiness.scoring.profiles.load_domains` applies the overrides to the loaded `DomainDef`s, so the
+domain score, coverage, recommendation priority (`base` below) and the pillar weight printed in the
+report all use the overridden value. The domain file on disk is never changed. The shipped
+`healthcare`, `finance` and `public_sector` profiles use this to express their compliance emphasis.
 
 `thresholds` defaults: `high_confidence_coverage: 70`, `grade_a: 85`, `grade_b: 70`, `grade_c: 50`.
 Grades use `>=`: A at or above `grade_a`, B at or above `grade_b`, C at or above `grade_c`, else D.
@@ -45,6 +54,8 @@ Grades use `>=`: A at or above `grade_a`, B at or above `grade_b`, C at or above
 | `partial_points_ratio` | number | `0.5` | Share of a check's points awarded for PARTIAL |
 | `negative_overrides` | boolean | `true` | A negative signal match forces NOT_MET |
 | `llm_override_min_confidence` | number | `0.6` | Minimum confidence for an LLM verdict to replace the rule verdict |
+| `dedupe_by_product` | boolean | `true` | Merge actions whose preferred option shares a product family into one action listing every check it closes (see *Product-family merge*) |
+| `max_cost_band` | `none`, `low`, `medium`, `high` or unset | unset | Drop catalog options whose `cost_band` is above this one; unset keeps every option (see *Cost bands*). `public_sector` sets `medium` |
 
 ## Domain (`config/scoring/<id>.yaml`)
 
@@ -87,7 +98,10 @@ The pillar maximum is the sum of its checks' `points`; it is never written in th
 
 Valid `doc_classes` values are the `DocClass` enum: `architecture`, `network`, `security_policy`,
 `compliance_audit`, `inventory`, `data_storage`, `identity`, `backup_dr`, `contract_license`, `ai_ml`,
-`operations`. Documents classified `irrelevant` or with empty text are never searched.
+`operations`, `questionnaire`. Documents classified `irrelevant` or with empty text are never searched.
+`questionnaire` is assigned by the pipeline to stored questionnaire answers (`readiness answer`,
+`POST /assessments/{id}/answers`); such documents are searched by every check regardless of its
+`doc_classes`, and only their answer text is scored.
 
 ### Signal matching
 
@@ -105,10 +119,28 @@ each side of the match) are included only when `READINESS_INCLUDE_EVIDENCE_SNIPP
 | At least one distinct signal matched | PARTIAL | 0.5 |
 | Nothing matched | UNKNOWN | 0.3 |
 
-With the LLM judge enabled, each pillar is sent once to the model with all its check questions and the
-redacted documents (about 60,000 characters of evidence split evenly across documents, at least 2,000
-per document). A verdict replaces the rule result only when its confidence is at least
+With the LLM judge enabled, each pillar is sent to the model with all its check questions and a selection
+of the redacted documents. A verdict replaces the rule result only when its confidence is at least
 `llm_override_min_confidence` and its status is not `unknown`; points are recomputed from the new status.
+
+### What the judge sees (environment settings, LLM-06)
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `READINESS_JUDGE_MAX_DOCS_PER_PILLAR` | `8` | Documents sent per pillar: the best-ranked by the number of distinct signal hits for that pillar's checks (weak, strong and negative signals, each check on its own `doc_classes` pool; ties broken by document name, then id). Documents with no hit for the pillar are never sent. `0` sends every relevant document in source order (the behaviour before LLM-06). |
+| `READINESS_JUDGE_BATCH_CHARS` | `60000` | Evidence characters per call. The selected documents each get an even share, never less than 2,000 characters; when they still do not fit (only possible with pre-selection off or a very small budget) the pillar goes out in several calls and the verdicts are merged, a non-`unknown` verdict beating `unknown`, then the more confident one. |
+| `READINESS_LLM_PROMPT_CACHING` | `true` | Mark the static prompt prefix as cacheable where the provider SDK supports it (Anthropic `cache_control: ephemeral` on the system block; Gemini has no equivalent wired, see the adapter docstring). No effect on the mock. |
+
+Every judge call is laid out as a system prompt (`JUDGE_SYSTEM`, the pillar's check list, the untrusted-data
+preamble) that contains no document text and is byte-identical for every batch of a pillar and every run,
+followed by the user turn with the `<document>` blocks. The selection is deterministic: the same pack and
+configuration always send the same documents in the same order. On a 100-document synthetic pack the
+default settings cut the judge's input tokens by about 86% against pre-selection off (see
+`tests/test_judge_preselection.py`), with the mock returning no verdicts so no score moves.
+
+`report.extra["llm_usage"]` and the `run.end` audit event carry `cache_creation_input_tokens` and
+`cache_read_input_tokens` next to `input_tokens` (0 for providers without a cache); the cost estimate charges
+cached tokens at the full input price, so it remains an upper bound.
 
 ## Scoring math
 
@@ -156,8 +188,47 @@ Top level: `version` (string, informational) and `recommendations` (list). One e
 | `impact` | `high`, `medium` or `low` | `medium` | Relative impact |
 | `options` | list of option | `[]` | Product choices, ordered by the profile's `target_providers` |
 
-Option fields: `provider` (`gcp`, `aws`, `oss` or `process`), `product` (string), `note` (string,
-default empty), `url` (string or null).
+Option fields:
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `provider` | `gcp`, `aws`, `oss` or `process` | required | Decides ordering and filtering by the profile's `target_providers` |
+| `product` | string | required | Product or practice named in the report |
+| `url` | string or null | `null` | Official documentation landing page; **required (`https://`) for `gcp`, `aws` and `oss`**. For `process` the most relevant public reference (CSA CCM / STAR, NIST SP 800-xx, NIST AI RMF, CIS Controls, FinOps Framework); `null` only when nothing authoritative fits, and the note must then say "no authoritative reference" |
+| `note` | string | required by test | At most 220 characters, neutral, no prices: a sizing hint ("fits up to ...", "needs a team that ...") followed by a sentence starting with `Wrong when` that names the situation in which the option is the wrong choice |
+| `family` | string | `""` | Short tag such as `cloud-identity` shared by options that are the same product rollout; see *Product-family merge* |
+| `cost_band` | `none`, `low`, `medium` or `high` | required by test | Indicative incremental monthly run cost of the option for a mid-sized organisation; see *Cost bands* |
+
+`test_every_catalog_option_has_docs_link_and_limitation_note` enforces the `url`, `note` and `cost_band` rules.
+The Markdown report renders the product as `[product](url)`, then `· cost: <band>`, then the note; the PDF prints
+the url in parentheses after the product and ` - cost: <band>` on the same line.
+
+### Cost bands
+
+`cost_band` is the rough **incremental monthly run cost** of adopting the option for that check in a
+mid-sized organisation (roughly 200 to 2,000 staff). It excludes implementation effort, which is the
+entry's `effort`. The bands:
+
+| Band | Meaning |
+|---|---|
+| `none` | No recurring cost: process work, open source on existing capacity, a free tier that fits |
+| `low` | Under roughly 500 USD per month |
+| `medium` | Roughly 500 to 5,000 USD per month |
+| `high` | Above roughly 5,000 USD per month |
+
+Bands are indicative, vary by region and usage, and are not a quote; the catalog never carries an exact
+price. The rule set used to assign them (process is always `none`; open source is `none` on existing
+capacity, `low` with dedicated hosting, `medium` with a dedicated cluster or GPUs; managed services by
+their typical scale) is written once in the catalog's header comment, not per option. Options that share
+a `family` may carry different bands because each band is what that option adds for its check; a merged
+action shows the lead option's band. Every report prints a one-line legend under the actions heading.
+
+With `rules.max_cost_band` set, `recommend()` drops options above the ceiling *before* the preferred
+option and the family key are chosen, so the merge follows the affordable option. An action whose options
+are all above the ceiling is kept, with no options and the sentence "No option within the cost ceiling
+(profile `max_cost_band: <band>`)" appended to its rationale; it is then never merged. Options without a
+band (a catalog predating REC-04) are never dropped. The ADK/MCP `top_actions` summary lists each option
+with its `cost_band`, as `RecommendationOption.model_dump()` does.
 
 ### What the engine produces
 
@@ -180,6 +251,68 @@ Example (default profile, `network_security` weight 40, `perimeter` weight 25): 
 5 points, so base = 5 × 25 × 40 / 100 = 50 and the discovery item has priority 25. NS-PER-03 PARTIAL
 loses 2 points, base = 20; its catalog entry is effort `M`, impact `medium`, so the action has priority 20.
 The list is sorted by priority descending, then id, and cut at `max_recommendations`.
+
+### Product-family merge
+
+With `rules.dedupe_by_product: true` (the default), actions are grouped before sorting by the *family
+key* of their preferred option, the first option left after provider-preference ordering and filtering:
+
+`family key` = `<provider>:<family>`, where `family` is the option's `family` tag lower-cased, or, when
+the tag is empty, the `product` text lower-cased with whitespace collapsed.
+
+Each group becomes one action. The member with the highest priority is the *lead* and provides the
+`id` (`A-<lead check id>`), `check_id`, title, rationale and options; the merged record has:
+
+- `priority` = sum of the members' priorities (one rollout closes all of them)
+- `effort` = the largest member effort (`L` > `M` > `S`), `impact` = the largest member impact
+- `ccm_controls` = union in first-seen order
+- `closes_check_ids` / `closes_titles` = every member's check id and title, lead first
+
+Every action, merged or not, carries `closes_check_ids` (a single-member action lists its own check) and
+`family`; the Markdown report prints them as a `Closes:` line under the action. Discovery items are never
+merged, actions without options (catalog-less checks or `process`-only entries whose provider was
+filtered out) are never merged, and `max_recommendations` is applied after merging.
+
+Example (default profile, `gcp` first, a pillar of weight 25 in `network_security`): NS-IAM-01 NOT_MET
+losing 5 points has priority 5 × 25 × 40 / 100 × 1.5 × 1.0 = 75; NS-IAM-02 PARTIAL losing 2 points has
+priority 20 × 1.5 × 1.2 = 36. Both prefer a `gcp` option tagged `cloud-identity`, so the report shows one
+action "Consolidate on a central identity provider with SSO" with priority 111 and
+`Closes: NS-IAM-01 ..., NS-IAM-02 ...`. With the rule off they are two separate actions.
+
+## Migration waves (`config/recommendations/waves.yaml`)
+
+Read only when the profile sets `migration_waves: true`. Validated by `readiness.recommend.waves.WaveConfig`.
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `version` | string | `"1"` | Informational |
+| `default_wave` | string | required | Wave id for rows that match no signal; must be one of the wave ids |
+| `max_rows_per_wave` | integer | `25` | Rows listed per wave in `report.json` and `report.md`; `count` is always the full number |
+| `header_cells` | list of string | `[]` | Lower-case first-cell values that mark a header row (`hostname`, `name`, ...) |
+| `waves` | list of wave | required | At least one; ids must be unique |
+
+Wave fields: `id` (string), `name` (string, report heading), `order` (integer, report order and precedence),
+`description` (string, printed under the heading), `signals` (list of string, at least one, same syntax as
+check signals; an invalid regular expression fails at load).
+
+### How rows are placed
+
+1. Only documents classified `inventory` (keyword or LLM classifier) with non-empty text are read, after redaction.
+2. Each line is a row. Blank lines, `## sheet:` markers from XLSX extraction, Markdown table rules and lines
+   without a letter are skipped. Cells are split on `,`, `|`, tab and `;`; the system label is the first cell,
+   or the first word when the line has a single cell, cut at 60 characters.
+3. A row is a header when its first cell is in `header_cells`, or when it is the first row of the document and
+   contains no digit.
+4. The same label twice in one document counts once.
+5. Waves are tested in descending `order`; the first wave with a matching signal takes the row and the first
+   matching signal in that wave's list is the `reason`. No match: `default_wave` with the reason
+   `no signal matched (default wave)`.
+
+Output: `AssessmentReport.migration_waves` (`MigrationWavePlan`: `waves[]` with `id`, `name`, `order`,
+`description`, `count`, `systems[]` of `{system, reason, source_doc}`, plus `inventory_documents`,
+`total_systems`, `default_wave`, `max_rows_per_wave`). It is `null` when the profile has the switch off. When
+the switch is on but no inventory document exists, `inventory_documents` is empty, the report carries a
+warning and the Markdown shows a one-line note instead of the section.
 
 ## Redaction rules (`config/redaction.yaml`)
 
@@ -205,6 +338,10 @@ see redacted text. In `pseudonymize` mode with `READINESS_PROVIDER=local`, the t
 is written to `pseudonym_mapping.local.json` in the run folder and nowhere else. Counts per rule appear in
 the report's data-handling section.
 
+`READINESS_SHARE_SAFE=true` (per run: `readiness assess --share-safe`, API `share_safe=true`) overrides the
+mode with `mask`, switches snippets off and replaces document names in the report with `doc-<hash>` labels;
+see `docs/security/DATA_HANDLING_POLICY.md`, "Sharing a report outside the tenant".
+
 ## LLM pricing (`config/llm_pricing.yaml`)
 
 Used only to estimate the cost shown in reports and audit events; it never affects scoring or egress.
@@ -221,13 +358,46 @@ A model with no entry yields `estimated_cost_usd: null` rather than an error, so
 models. Cached-input, batch and long-context tiers are not modelled; treat the figure as an upper bound at
 list price.
 
+## Evaluation packs and score drift
+
+`tests/evals/packs/` holds 20 synthetic document packs, each with an `expected.yaml` that pins the composite
+score, the composite coverage and every domain's score and coverage for the configuration as committed, in
+rules-only mode and with the (mock) LLM judge. `tests/evals/test_evals.py` runs them as part of `make test`;
+a value outside the pack's tolerance (1.0 point by default) or a changed designed check status fails CI.
+
+Changing scoring configuration therefore has one extra step: run `make evals`; if the drift is what you
+intended, run `make evals-refresh` and review the diff of the `expected.yaml` files like a snapshot. The
+packs and the refresh workflow are documented in `tests/evals/packs/README.md`.
+
+## OCR for scanned documents (environment settings)
+
+Scanned PDFs and raster images (`.png`, `.jpg`, `.jpeg`, `.tif`, `.tiff`) are read with the `ocr` extra
+(pypdfium2, pytesseract, Pillow) and the `tesseract-ocr` binary, both installed in the container image. OCR
+runs inside the process with the local binary; no page image or text leaves the machine. These are
+`READINESS_*` environment settings (`src/readiness/config.py`), not YAML:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `READINESS_OCR_ENABLED` | `true` | `false` leaves scanned PDF pages empty and reports image files as unreadable (an extraction warning, never a failure) |
+| `READINESS_OCR_MIN_CHARS_PER_PAGE` | `20` | A PDF page on which `pypdf` finds fewer characters is treated as scanned and OCR'd; text PDFs never touch OCR |
+| `READINESS_OCR_MAX_PAGES` | `50` | OCR budget per document; pages or image frames beyond it are skipped and the document is marked `truncated` |
+| `READINESS_OCR_DPI` | `200` | Render resolution for PDF pages before OCR |
+| `READINESS_OCR_LANGUAGES` | `eng` | Tesseract language codes joined with `+` (`eng+deu`); each needs its `tesseract-ocr-<lang>` package |
+
+When the extra or the binary is missing, a scanned document gets an extraction error that names the install
+step (`install the ocr extra ... and the tesseract-ocr binary`), the text `pypdf` did find is kept, the run
+continues and the report lists the document under warnings. The audit log records `ocr_pages` per document
+(a count, never content).
+
 ## What is not configurable (requires a code change)
 
 - the confidence values attached to rule verdicts (0.6, 0.7, 0.5, 0.3) and the evidence cap of eight hits
 - the snippet window (80 characters) and the rule that decides whether a signal is a regex
 - the document classifier's keywords, weights and threshold (`src/readiness/ingestion/classify.py`)
-- the impact and effort weight tables, the 0.5 discovery factor and the six-question cap
-- the LLM judge prompt, the evidence budget per pillar and the one-call-per-pillar batching
+- the impact and effort weight tables, the 0.5 discovery factor, the six-question cap and the way merged
+  actions combine priority (sum), effort and impact (maximum)
+- the LLM judge prompt, the 2,000-character floor per selected document and the ranking rule for pre-selection
+  (the document count and the character budget per call are environment settings, see *What the judge sees*)
 - the composite being a weighted mean, the grade letters, and the report layout
 - supported file types and extraction behaviour (`src/readiness/ingestion/extract.py`)
-- runtime limits such as `READINESS_MAX_DOC_BYTES` and `READINESS_MAX_TEXT_CHARS`, which are environment settings, not YAML
+- runtime limits such as `READINESS_MAX_DOC_BYTES`, `READINESS_MAX_TEXT_CHARS` and the `READINESS_OCR_*` switches above, which are environment settings, not YAML

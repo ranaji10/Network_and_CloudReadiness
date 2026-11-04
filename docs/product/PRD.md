@@ -22,7 +22,7 @@ nothing has yet been run against a live cloud account or a real model.
 | F-ING-2 | Read a Google Cloud Storage prefix | written, untested live (`gcs.py`) |
 | F-ING-3 | Read an S3 prefix | written, untested live (`s3.py`) |
 | F-ING-4 | Read a Google Drive folder by id or URL, including Google-native docs | written, untested live (`gdrive.py`) |
-| F-ING-5 | Extract text from PDF, DOCX, XLSX, Markdown, text, CSV, JSON, YAML | done (`extract.py`) |
+| F-ING-5 | Extract text from PDF, DOCX, XLSX, PPTX, legacy DOC/XLS, Markdown, text, CSV, JSON, YAML; OCR scanned PDFs and images (PNG, JPEG, TIFF) | done (`extract.py`; PPTX/DOC/XLS need the `office` extra, OCR the `ocr` extra plus the `tesseract-ocr` binary, both installed in the container; OCR runs locally, in-process) |
 | F-ING-6 | Classify each document into a coarse class and skip noise | done, keyword based (`classify.py`); LLM refinement optional |
 | F-ING-7 | Enforce per-document size and text limits | done (`Settings.max_doc_bytes`, `max_text_chars`) |
 
@@ -34,7 +34,7 @@ nothing has yet been run against a live cloud account or a real model.
 | F-SCR-2 | Each check maps to CSA CCM v4.1 control ids; catalog shipped in the package | done (`src/readiness/data/ccm_v4.1.json`) |
 | F-SCR-3 | Rule engine: signals, strong signals, negative signals, four statuses | done (`engine.py`) |
 | F-SCR-4 | Posture score and evidence coverage reported separately per pillar, domain and overall | done |
-| F-SCR-5 | Profiles select domains, weights, thresholds and provider preference | done (`default`, `gcp_migration`, `security_only`) |
+| F-SCR-5 | Profiles select domains, weights, thresholds and provider preference | done (`default`, `gcp_migration`, `security_only`, `healthcare`, `finance`, `public_sector`) |
 | F-SCR-6 | Optional LLM judge refines rule verdicts when confident | hook done, tested with mock only |
 | F-SCR-7 | A new check or pillar is a YAML edit; a config typo fails fast | done (pydantic validation) |
 
@@ -46,6 +46,7 @@ nothing has yet been run against a live cloud account or a real model.
 | F-REC-2 | Every check without evidence yields a discovery item with CAIQ questions | done |
 | F-REC-3 | Options are ordered by the profile's provider preference | done |
 | F-REC-4 | Priority reflects points lost, pillar weight, impact and effort | done |
+| F-REC-5 | Inventory documents are sorted into migration waves (quick wins, core, legacy) from configurable signals when the profile asks for it; the V1 roadmap waves | done (`recommend/waves.py`, `config/recommendations/waves.yaml`, `gcp_migration` profile) |
 
 ### 2.4 Report and surfaces
 
@@ -70,10 +71,12 @@ nothing has yet been run against a live cloud account or a real model.
 | N-6 | Provider portability: no project ids, bucket names or accounts in code or IaC | ports/adapters, Terraform variables, `scripts/check_portability.py` |
 | N-7 | Reproducible builds and a CI gate that runs locally | `uv.lock`, `make check`, `cloudbuild.yaml` |
 | N-8 | Assessment of ~50 documents completes in under two minutes offline | rule engine is linear in text size |
+| N-9 | Zero footprint on the client: runs outside their network, no scanning, probing or host sessions, documents pushed or pulled read-only | ADR-20261103, `scripts/check_no_system_access.py`, `Settings.allowed_source_schemes` |
 
 ## 4. Out of scope for v1.0
 
-- Live scanning of networks or cloud accounts.
+- Live scanning of networks or cloud accounts, or any component that runs inside the client's network
+  (a permanent boundary, not a phase: see `docs/decisions/ADR-20261103-outside-the-client-network.md`).
 - Multi-language documents beyond English.
 - Fine-grained per-user permissions inside the API (one token per tenant deployment is enough).
 - A full web UI (Phase 4).

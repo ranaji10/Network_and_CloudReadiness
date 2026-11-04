@@ -1,0 +1,1 @@
+Corporate wifi WPA3 with 802.1X on the staff VLAN; guest wifi on an isolated guest network VLAN. Wireless controller is a switch module.

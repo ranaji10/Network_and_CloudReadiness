@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import typer
 
 from readiness.config import get_settings
+
+if TYPE_CHECKING:
+    from readiness.models import AssessmentReport
 
 app = typer.Typer(help="Network security, cloud readiness and agentic-AI readiness assessor.", no_args_is_help=True)
 
@@ -34,7 +38,19 @@ def assess(
         "--llm-classifier/--no-llm-classifier",
         help="Re-classify unsure documents with the model (default: READINESS_USE_LLM_CLASSIFIER)",
     ),
+    share_safe: bool | None = typer.Option(
+        None,
+        "--share-safe/--no-share-safe",
+        help="Render for sharing outside the tenant: mask redaction, no snippets, opaque document labels "
+        "(default: READINESS_SHARE_SAFE)",
+    ),
+    include_answers: bool | None = typer.Option(
+        None,
+        "--include-answers/--no-include-answers",
+        help="Also score the questionnaire answers stored with `readiness answer` (default: READINESS_INCLUDE_ANSWERS)",
+    ),
     print_md: bool = typer.Option(True, "--print/--no-print", help="Print the markdown report"),
+    pdf: bool = typer.Option(False, "--pdf", help="Also write report.pdf to the run folder (needs the `pdf` extra)"),
 ):
     """Assess a document source. Flags override the environment only when given explicitly."""
     from readiness.pipeline import run_assessment
@@ -46,17 +62,91 @@ def assess(
         overrides["use_llm_judge"] = llm_judge
     if llm_classifier is not None:
         overrides["use_llm_classifier"] = llm_classifier
+    if share_safe is not None:
+        overrides["share_safe"] = share_safe
+    if include_answers is not None:
+        overrides["include_answers"] = include_answers
     if out:
         overrides["workspace_dir"] = out
     settings = get_settings(**overrides)
     report, md = run_assessment(source, settings, profile)
     if print_md:
         typer.echo(md)
+    run_dir = Path(settings.workspace_dir) / settings.tenant_id / report.id
+    if pdf:
+        _write_pdf(report, run_dir / "report.pdf")
+    answers = f" answers={report.extra['answers_included']}" if "answers_included" in report.extra else ""
     typer.echo(
         f"[done] run={report.id} score={report.overall_score} coverage={report.overall_coverage} "
-        f"llm={report.llm_provider} -> {Path(settings.workspace_dir) / settings.tenant_id / report.id}",
+        f"llm={report.llm_provider}{answers} -> {run_dir}",
         err=True,
     )
+
+
+def _write_pdf(report: AssessmentReport, out: Path) -> None:
+    from readiness.report.pdf import PdfExportUnavailableError, render_pdf
+
+    try:
+        data = render_pdf(report)
+    except PdfExportUnavailableError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(2) from exc
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(data)
+    typer.echo(f"[pdf] {out} ({len(data)} bytes)", err=True)
+
+
+@app.command("export-pdf")
+def export_pdf(
+    report_json: Path = typer.Argument(..., help="report.json of an existing run (workspace/<tenant>/<run>/)"),
+    out: Path | None = typer.Option(None, help="Output file (default: report.pdf next to the input)"),
+):
+    """Render an existing run's report.json to PDF (needs the `pdf` extra)."""
+    from readiness.models import AssessmentReport
+
+    report = AssessmentReport.model_validate_json(report_json.read_text())
+    _write_pdf(report, out or report_json.with_name("report.pdf"))
+
+
+@app.command()
+def answer(
+    run_id: str = typer.Argument(..., help="Run id of the report whose discovery questions are being answered"),
+    from_file: Path | None = typer.Option(
+        None,
+        "--from",
+        help="YAML/JSON file: a list of {check_id, answer, question?} or a mapping with an 'answers' key",
+    ),
+    check: list[str] | None = typer.Option(None, "--check", help="Check id, e.g. NS-PER-02 (repeatable)"),
+    answer_text: list[str] | None = typer.Option(
+        None, "--answer", help="Answer for the --check given in the same position (repeatable)"
+    ),
+    out: Path | None = typer.Option(None, help="Workspace directory (default READINESS_WORKSPACE_DIR)"),
+):
+    """Store answers to a report's discovery questions as a document in the tenant workspace (AGT-03).
+
+    Re-run with `readiness assess <source> --include-answers` to score them; the answers are redacted and
+    scored like any other document and purged with `readiness tenant purge`."""
+    import yaml
+
+    from readiness.questionnaire import parse_answer_file, store_answers
+
+    entries: list[object] = []
+    if from_file:
+        loaded = yaml.safe_load(from_file.read_text())
+        entries += loaded if isinstance(loaded, list) else list((loaded or {}).get("answers", []))
+    checks, texts = check or [], answer_text or []
+    if len(checks) != len(texts):
+        raise typer.BadParameter("--check and --answer must be given the same number of times, in matching order")
+    entries += [{"check_id": c, "answer": a} for c, a in zip(checks, texts, strict=True)]
+    if not entries:
+        raise typer.BadParameter("give --from <file> and/or --check/--answer pairs")
+    settings = get_settings(**({"workspace_dir": out} if out else {}))
+    try:
+        stored = store_answers(parse_answer_file(entries, run_id), settings)
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    typer.echo(f"stored {stored.answers} answer(s) for {len(stored.checks)} check(s) -> {stored.path}")
+    typer.echo(f"document id {stored.document_id}; score them with: readiness assess <source> --include-answers")
 
 
 @app.command()
@@ -105,6 +195,20 @@ def serve(host: str = "0.0.0.0", port: int = 8080):  # noqa: S104 - container en
     import uvicorn
 
     uvicorn.run("readiness.api.app:app", host=host, port=port)
+
+
+@app.command()
+def mcp():
+    """Run the MCP server on stdio (Claude Code, Claude Desktop and other MCP clients). Needs `readiness[mcp]`."""
+    from readiness.agents.mcp_server import build_server, route_logs_to_stderr
+
+    try:
+        server = build_server()
+    except ImportError as exc:
+        typer.echo(f"error: the MCP SDK is not installed ({exc}); install it with: uv sync --extra mcp", err=True)
+        raise typer.Exit(code=1) from None
+    route_logs_to_stderr()  # stdout belongs to the protocol
+    server.run(transport="stdio")
 
 
 # --------------------------------------------------------------------------------------------------

@@ -26,6 +26,10 @@ stay byte-identical below the first heading. If you change one, change the other
 - **All cloud-specific code lives in `src/readiness/adapters/`** and implements a protocol from
   `src/readiness/ports/__init__.py`. No cloud SDK import anywhere else. New provider = new adapter + a line in
   `adapters/registry.py`.
+- **The tool never reaches client systems.** It runs outside the client's network and reads documents only:
+  push upload or read-only pull from `file`, `gs`, `s3`, `gdrive`. No scanning, remote-access or protocol-client
+  library, no `socket`/`subprocess` under `src/readiness`, no new source scheme without a superseding ADR
+  (`docs/decisions/ADR-20261103-outside-the-client-network.md`). `scripts/check_no_system_access.py` enforces it.
 - **Product behaviour is configuration.** Weights, checks, signals, thresholds, products and redaction rules
   are YAML under `config/`. Do not hard-code them in Python.
 - **The mock LLM stays the default.** `READINESS_LLM_PROVIDER=mock` and `READINESS_ALLOW_LLM_EGRESS=false`

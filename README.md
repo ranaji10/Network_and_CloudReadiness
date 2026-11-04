@@ -12,8 +12,14 @@ Storage, Amazon S3 or Google Drive), scores them against configurable control fr
 - a **Cloud Readiness** score (the five V1 pillars: compute, data, networking/identity, security/compliance, cost/licensing),
 - an **Agentic AI Readiness** score,
 - an **evidence coverage** figure per area (the V1 "confidence score": how much of the picture the documents actually cover),
-- prioritised **actions** with product options for **GCP, AWS and open source**, and
-- **discovery questions** (CSA CAIQ v4.1) for every control the documents do not cover.
+- prioritised **actions** with product options for **GCP, AWS and open source**,
+- **discovery questions** (CSA CAIQ v4.1) for every control the documents do not cover, and
+- **migration waves** (quick wins, core, legacy) derived from inventory documents, for profiles such as `gcp_migration`.
+
+**It runs outside the client's network.** Nothing is installed on client hosts, no VPN or inbound
+access is needed and the tool never scans or logs in to systems: documents are pushed to it, or pulled
+read-only from a Drive folder or storage prefix the client shares. CI fails if that ever changes
+(`scripts/check_no_system_access.py`). Client-facing summary: [docs/security/DEPLOYMENT_POSTURE.md](docs/security/DEPLOYMENT_POSTURE.md).
 
 Everything runs offline by default. A real model (Gemini or Claude) is only called when an operator
 sets `READINESS_ALLOW_LLM_EGRESS=true`, and only after redaction.
@@ -32,10 +38,27 @@ Assess your own folder:
 
 ```bash
 uv run readiness assess /path/to/client-docs --profile default --snippets
+uv run readiness assess /path/to/client-docs --profile healthcare     # or finance, public_sector
 uv run readiness assess gs://bucket/prefix --profile gcp_migration     # needs: uv sync --extra gcp
+uv run readiness assess /path/to/client-docs --pdf                      # also write report.pdf (needs: uv sync --extra pdf)
 ```
 
-Reports land in `./workspace/<tenant>/<run-id>/` (git-ignored): `report.md`, `report.json`, `audit.jsonl`.
+Profiles: `default`, `gcp_migration`, `security_only`, plus industry profiles `healthcare` (HIPAA / HITRUST
+emphasis), `finance` (PCI DSS / SOX emphasis) and `public_sector` (FedRAMP / sovereignty emphasis). See the
+table in [config/README.md](config/README.md).
+
+Supported inputs: PDF, DOCX, XLSX, Markdown, text, CSV, JSON and YAML out of the box; PPTX and legacy
+DOC/XLS need `uv sync --extra office`; scanned PDFs and images (PNG, JPEG, TIFF) need `uv sync --extra ocr`
+plus the `tesseract-ocr` binary (`apt-get install tesseract-ocr`), and are read locally, never by an OCR
+service. The container image installs both extras. Other types are skipped, never guessed.
+
+Reports land in `./workspace/<tenant>/<run-id>/` (git-ignored): `report.md`, `report.json`, `audit.jsonl`, and
+`report.pdf` with `--pdf` (or later: `uv run readiness export-pdf workspace/<tenant>/<run-id>/report.json`).
+The API serves the same PDF at `GET /assessments/{id}/report.pdf`.
+
+Close the evidence gaps the report lists under *Discovery*: `uv run readiness answer <run-id> --check NS-PER-02 --answer "..."`
+(or `--from answers.yaml`), then `uv run readiness assess /path/to/client-docs --include-answers` re-scores with the
+answers as one more document (API: `POST /assessments/{id}/answers` and `/rerun`).
 
 ## Repository map
 
@@ -83,5 +106,6 @@ The Cloud Controls Matrix (CCM) v4.1 and Consensus Assessments Initiative Questi
 | Google Cloud | Cloud Run via Cloud Build | `docs/runbooks/DEPLOY_GCP.md` (`_DEPLOY=true`) |
 | Gemini Enterprise users | ADK agent on Vertex AI Agent Engine | `docs/runbooks/DEPLOY_AGENT_ENGINE.md` (`_DEPLOY_AGENT=true`; registered once in Gemini Enterprise, updated on every main build) |
 | Python integrators | Package with bundled default config | `pip install "readiness[gcp] @ git+https://github.com/<owner>/<repo>@<tag>"` then `readiness assess <folder>` |
+| MCP clients (Claude Code, Claude Desktop, others) | MCP server on stdio (`readiness mcp`, needs the `mcp` extra) | `uv sync --extra mcp` then `claude mcp add readiness -e READINESS_WORKSPACE_DIR=$PWD/workspace -- uv run readiness mcp`. Tools: `run_readiness_assessment`, `list_profiles`, `list_checks`. `READINESS_LLM_PROVIDER` stays `mock` unless an operator opts in. See `docs/runbooks/MCP_SERVER.md` |
 
 All channels are built from the same commit and run the same engine, so scores never differ by channel.

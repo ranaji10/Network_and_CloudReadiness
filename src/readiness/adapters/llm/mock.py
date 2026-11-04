@@ -1,7 +1,10 @@
 """Offline LLM used by default, in CI, and whenever egress is disabled.
 
 It returns schema-valid, conservative answers (everything 'unknown') unless canned responses are
-registered, so the whole pipeline runs end-to-end without any network access."""
+registered, so the whole pipeline runs end-to-end without any network access. Its usage numbers are
+proportional to the prompt length (about four characters per input token, a fixed output), which is what
+lets the judge cost tests (LLM-06) measure savings offline. It has no prompt cache: `READINESS_LLM_PROMPT_CACHING`
+changes nothing here and the cache counters stay 0."""
 
 from __future__ import annotations
 

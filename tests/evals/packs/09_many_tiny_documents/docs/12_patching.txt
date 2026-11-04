@@ -1,0 +1,1 @@
+Patch management: patching cadence 30 days; vulnerability scan monthly with Qualys. Monitoring of CVE feeds.

@@ -1,6 +1,10 @@
 """Secrets are always masked. Identifiers (IPs, hostnames, emails, account ids) are masked or
 pseudonymized with a per-run, in-memory mapping. The mapping is only ever written to the local
-workspace when explicitly requested and never leaves the process otherwise."""
+workspace when explicitly requested and never leaves the process otherwise.
+
+Share-safe runs (GRD-09) additionally hide document names: `share_safe_ref` swaps a DocumentRef's name
+and uri for an opaque label derived from the document hash, so a report can leave the tenant without
+listing what the client's files are called."""
 
 from __future__ import annotations
 
@@ -11,11 +15,25 @@ from pathlib import Path
 import yaml
 
 from readiness.config import resolve_default_config_dir
+from readiness.models import DocumentRef
 
 
 def default_rules_path() -> Path:
     """config/redaction.yaml from wherever the configuration lives (checkout, staged bundle or wheel)."""
     return resolve_default_config_dir() / "redaction.yaml"
+
+
+def share_safe_label(ref: DocumentRef) -> str:
+    """Opaque, stable label for a document: `doc-<6 hex>` from its content hash (or its id when the source
+    gave no hash). Stable across runs for the same content, so two share-safe reports stay comparable."""
+    return f"doc-{(ref.sha256 or ref.id)[:6]}"
+
+
+def share_safe_ref(ref: DocumentRef) -> DocumentRef:
+    """Copy of `ref` with the name and uri replaced by the opaque label. Id, source, mime, size and hash
+    stay: they are metadata the audit log already carries."""
+    label = share_safe_label(ref)
+    return ref.model_copy(update={"name": label, "uri": f"share-safe://{label}"})
 
 
 @dataclass

@@ -1,0 +1,1 @@
+Network diagram and IP plan per clinic: CIDR 10.70.0.0/16 split per site (subnet per VLAN). Topology drawing updated yearly.
