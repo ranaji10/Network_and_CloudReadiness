@@ -19,6 +19,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from readiness.models import AssessmentReport, CheckResult, CheckStatus
+from readiness.report.markdown import COST_BAND_LEGEND
 
 if TYPE_CHECKING:
     from fpdf import FPDF
@@ -245,6 +246,7 @@ def render_pdf(report: AssessmentReport) -> bytes:
     actions = [r for r in report.recommendations if r.kind == "action"]
     disc = [r for r in report.recommendations if r.kind == "discovery"]
     doc.heading(f"4a. Actions ({len(actions)}) - prioritised", 3)
+    doc.note(COST_BAND_LEGEND)
     for i, r in enumerate(actions, 1):
         doc.para(f"{i}. {r.title}", style="B")
         doc.note(f"effort {r.effort} - impact {r.impact} - check {r.check_id}")
@@ -256,7 +258,8 @@ def render_pdf(report: AssessmentReport) -> bytes:
         for o in r.options:
             # REC-03: documentation url on the same line as the product (core fonts: plain ASCII, no link object)
             product = f"{o.product} ({o.url})" if o.url else o.product
-            doc.para(f"- {o.provider.upper()}: {product}" + (f" - {o.note}" if o.note else ""), indent=5)
+            band = f" - cost: {o.cost_band}" if o.cost_band else ""  # REC-04
+            doc.para(f"- {o.provider.upper()}: {product}{band}" + (f" - {o.note}" if o.note else ""), indent=5)
         pdf.ln(1.5)
     if not actions:
         doc.note("none")

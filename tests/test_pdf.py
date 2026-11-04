@@ -75,6 +75,15 @@ def test_pdf_prints_the_documentation_url_after_the_product(report):
     assert f"{option.product}({option.url})".replace(" ", "") in flat
 
 
+def test_pdf_prints_the_cost_band_and_legend(report):
+    """REC-04: ` - cost: <band>` follows the product on the option line; the legend sits under the actions heading."""
+    flat = _text(render_pdf(report)).replace(" ", "").replace("\n", "")
+    option = next(r for r in report.recommendations if r.kind == "action" and r.options).options[0]
+    assert option.cost_band
+    assert f"({option.url})-cost:{option.cost_band}-".replace(" ", "") in flat
+    assert "costbands:indicativemonthlyruncost" in flat and "notaquote" in flat
+
+
 def test_non_latin1_text_is_mapped_not_fatal(report):
     odd = report.model_copy(update={"warnings": ["em dash — ellipsis … “quotes” → arrow 中"]})
     text = _text(render_pdf(odd))

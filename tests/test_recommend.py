@@ -2,8 +2,20 @@
 
 from readiness.config import DEFAULT_CONFIG_DIR
 from readiness.models import CheckResult, CheckStatus, DomainScore, PillarScore, Recommendation, RecommendationOption
-from readiness.recommend.engine import family_key, load_catalog, merge_by_family, recommend
+from readiness.recommend.engine import (
+    NO_OPTION_WITHIN_CEILING,
+    family_key,
+    load_catalog,
+    merge_by_family,
+    recommend,
+    within_cost_ceiling,
+)
 from readiness.scoring.profiles import load_profile
+
+
+def _with_ceiling(profile_id: str, band: str | None):
+    profile = load_profile(DEFAULT_CONFIG_DIR, profile_id)
+    return profile.model_copy(update={"rules": profile.rules.model_copy(update={"max_cost_band": band})})
 
 
 def _check(cid: str, title: str, status: CheckStatus, points: float, max_points: float, ccm: list[str]) -> CheckResult:
@@ -120,6 +132,64 @@ def test_merge_by_family_handles_optionless_and_nested_members():
     assert m.priority == 6.0 and m.effort == "L" and m.impact == "high"
     assert m.closes_check_ids == ["X-2", "X-9", "X-1"] and m.closes_titles == ["two", "nine", "X-1"]
     assert out["A-X-3"].closes_check_ids == ["X-3"] and out["A-X-3"].family == ""
+
+
+def test_merge_keeps_the_lead_options_cost_band():
+    """REC-04: a merged action shows the lead member's options, so the band printed is the lead option's,
+    not the band of the lower-priority member it absorbed."""
+    profile = load_profile(DEFAULT_CONFIG_DIR, "default")
+    catalog = load_catalog(DEFAULT_CONFIG_DIR)
+    lead_band = catalog["NS-IAM-01"].options[0].cost_band  # gcp Cloud Identity as IdP
+    member_band = catalog["NS-IAM-02"].options[0].cost_band  # gcp 2-Step Verification on it
+    assert lead_band == "medium" and member_band == "none"  # the two really differ, so the test means something
+    merged = next(r for r in recommend([_identity_domain()], profile, DEFAULT_CONFIG_DIR) if r.id == "A-NS-IAM-01")
+    assert merged.closes_check_ids == ["NS-IAM-01", "NS-IAM-02"]
+    assert merged.options[0].cost_band == lead_band
+    assert all(o.cost_band for o in merged.options)
+
+
+def test_within_cost_ceiling_orders_bands_and_keeps_unbanded_options():
+    high = RecommendationOption(provider="gcp", product="X", cost_band="high")
+    none = RecommendationOption(provider="process", product="Y", cost_band="none")
+    unbanded = RecommendationOption(provider="oss", product="Z")
+    assert within_cost_ceiling(high, None) and within_cost_ceiling(high, "high")
+    assert not within_cost_ceiling(high, "medium") and not within_cost_ceiling(high, "none")
+    assert within_cost_ceiling(none, "none") and within_cost_ceiling(unbanded, "none")
+
+
+def test_max_cost_band_filters_options_and_keeps_the_finding():
+    """NS-IAM-01 has gcp medium, aws low, oss low; NS-IAM-04 (secrets) is low on every provider."""
+    profile = _with_ceiling("default", "low")
+    actions = {r.id: r for r in recommend([_identity_domain()], profile, DEFAULT_CONFIG_DIR) if r.kind == "action"}
+    sso = actions["A-NS-IAM-01"]
+    assert [o.provider for o in sso.options] == ["aws", "oss"]  # gcp (medium) dropped, order kept
+    assert all(o.cost_band == "low" for o in sso.options)
+    # the preferred option changed, so the family (and the merge) follows the affordable option
+    assert sso.family == "aws:iam-identity-center"
+    assert NO_OPTION_WITHIN_CEILING not in sso.rationale
+    assert len(actions["A-NS-IAM-04"].options) == 3  # nothing above low: untouched
+    # a ceiling of none leaves SSO with no product: the action stays, with the reason in its rationale
+    profile = _with_ceiling("default", "none")
+    recs = recommend([_identity_domain()], profile, DEFAULT_CONFIG_DIR)
+    sso = next(r for r in recs if r.id == "A-NS-IAM-01")
+    assert sso.options == [] and sso.family == "" and sso.closes_check_ids == ["NS-IAM-01"]
+    assert f"{NO_OPTION_WITHIN_CEILING} (profile `max_cost_band: none`)" in sso.rationale
+    mfa = next(r for r in recs if r.id == "A-NS-IAM-02")  # 2-Step Verification is `none`, so it survives alone
+    assert [o.cost_band for o in mfa.options] == ["none", "none", "none"]
+    # the rule changes which options are listed, never a score or a priority
+    unlimited = {
+        r.id: r.priority for r in recommend([_identity_domain()], _with_ceiling("default", None), DEFAULT_CONFIG_DIR)
+    }
+    assert sso.priority == 75.0 and unlimited["A-NS-IAM-01"] == 111.0  # 111 = 75 + 36 merged without a ceiling
+
+
+def test_public_sector_profile_sets_a_medium_ceiling_and_every_action_keeps_an_option():
+    profile = load_profile(DEFAULT_CONFIG_DIR, "public_sector")
+    assert profile.rules.max_cost_band == "medium"
+    catalog = load_catalog(DEFAULT_CONFIG_DIR)
+    for e in catalog.values():
+        kept = [o for o in e.options if within_cost_ceiling(o, "medium") and o.provider in profile.target_providers]
+        assert kept, f"{e.check_id}: every option is above the public_sector cost ceiling"
 
 
 def test_catalog_family_tags_are_consistent():

@@ -5,6 +5,13 @@ from __future__ import annotations
 
 from readiness.models import AssessmentReport, CheckStatus
 
+# REC-04: printed once under the actions heading, in Markdown and PDF. Bands are indicative, not a quote.
+COST_BAND_LEGEND = (
+    "cost bands: indicative monthly run cost for a mid-sized organisation (none = no recurring cost, "
+    "low < ~500 USD, medium ~500-5,000, high > ~5,000); varies by region and usage, not a quote; "
+    "see config/recommendations/catalog.yaml"
+)
+
 _ICON = {
     CheckStatus.MET: "PASS",
     CheckStatus.PARTIAL: "PARTIAL",
@@ -136,6 +143,7 @@ def render(report: AssessmentReport) -> str:
     actions = [r for r in report.recommendations if r.kind == "action"]
     disc = [r for r in report.recommendations if r.kind == "discovery"]
     lines.append(f"### 4a. Actions ({len(actions)}) — prioritised\n")
+    lines.append(f"_{COST_BAND_LEGEND}_\n")
     for i, r in enumerate(actions, 1):
         lines.append(f"**{i}. {r.title}** · effort {r.effort} · impact {r.impact} · check {r.check_id}")
         if r.rationale:
@@ -146,7 +154,9 @@ def render(report: AssessmentReport) -> str:
         for o in r.options:
             # REC-03: the product links to its official documentation when the catalog has a url
             product = f"[{o.product}]({o.url})" if o.url else o.product
-            lines.append(f"- **{o.provider.upper()}**: {product}" + (f" — {o.note}" if o.note else ""))
+            # REC-04: the indicative monthly cost band follows the product, before the note
+            band = f" · cost: {o.cost_band}" if o.cost_band else ""
+            lines.append(f"- **{o.provider.upper()}**: {product}{band}" + (f" — {o.note}" if o.note else ""))
         lines.append("")
     lines.append(f"### 4b. Discovery — evidence to collect ({len(disc)})\n")
     if disc:

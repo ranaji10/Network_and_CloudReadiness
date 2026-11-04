@@ -78,6 +78,10 @@ def test_run_readiness_assessment_offline(monkeypatch, fixtures_dir, tmp_path, c
     assert summary["report_dir"].startswith(str(tmp_path))
     assert (tmp_path / "local" / summary["run_id"] / "report.md").exists()
     assert len(summary["top_actions"]) <= 10 and len(summary["discovery"]) <= 15
+    # REC-04: every listed option carries its indicative monthly cost band (this strong synthetic policy may
+    # leave no action with options; the shape is what matters here, the catalog test covers completeness)
+    listed = [o for a in summary["top_actions"] for o in a["options"]]
+    assert all(o["cost_band"] in ("none", "low", "medium", "high") for o in listed)
 
 
 def test_list_profiles_and_checks_tools():

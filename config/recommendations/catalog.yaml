@@ -16,7 +16,29 @@
 #         SSO, MFA and cloud federation). When a profile has rules.dedupe_by_product on, actions whose
 #         preferred option shares provider + family are merged into one action listing every check it
 #         closes. Untagged options fall back to the product text, so only identical products merge.
-version: "1.1"
+#   cost_band (REC-04): required for every option, one of none | low | medium | high. The rough
+#         *incremental monthly run cost* of adopting the option for this check in a mid-sized organisation
+#         (roughly 200 to 2,000 staff), excluding implementation effort (that is `effort`):
+#           none    no recurring cost: process work, open source on existing capacity, a free tier that fits
+#           low     under roughly 500 USD per month
+#           medium  roughly 500 to 5,000 USD per month
+#           high    above roughly 5,000 USD per month
+#         Bands are indicative, vary by region and usage, and are not a quote; no exact price belongs in
+#         this file. Rule set used to fill them, so new options stay consistent:
+#           process -> none. oss -> none when it runs on existing capacity (tooling, scripts, policy as code,
+#           a library in an existing pipeline), low when it needs dedicated hosting (a VM pair, a small
+#           cluster, object storage), medium when it needs a dedicated cluster, GPUs or large storage (SIEM,
+#           lakehouse, self-hosted model serving). Managed cloud services by typical scale: free assessment
+#           and discovery tools, free-tier identity features and policy-only settings -> none; secret
+#           managers, KMS, DNS/certificates, budgets, small serverless and registries -> low; per-user
+#           identity/zero-trust products, managed Kubernetes, backup of a mid-sized estate, connectivity,
+#           CSPM/vulnerability suites, WAF/DDoS, data catalogs, RAG and guardrail services -> medium;
+#           SIEM/log analytics, data warehouses, cloud IDS, enterprise API and AI platforms, GPU serving
+#           -> high. Options sharing a family may carry different bands: each band is what *that option*
+#           adds for its check, and a merged action shows the lead option's band. A profile may set
+#           rules.max_cost_band to drop options above a band. A test fails when a band is missing or a
+#           process option is not `none`.
+version: "1.2"
 recommendations:
   # ---------------- Network security ----------------
   - check_id: NS-PER-01
@@ -29,14 +51,17 @@ recommendations:
         product: "Cloud NGFW (Enterprise) + hierarchical firewall policies"
         note: "L7 inspection and IDS integration; org-level policies scale to hundreds of projects. Wrong when the estate stays on-prem or multi-cloud and needs one vendor-neutral appliance."
         url: https://cloud.google.com/firewall/docs
+        cost_band: medium
       - provider: aws
         product: "AWS Network Firewall + Security Groups / NACLs"
         note: "Scales per VPC and availability zone; add Firewall Manager above a handful of accounts. Wrong when traffic never enters AWS or one console must cover several clouds."
         url: https://docs.aws.amazon.com/network-firewall/
+        cost_band: medium
       - provider: oss
         product: "OPNsense / pfSense with Suricata"
         note: "Fits a small or mid-size on-prem edge with a team that can run an HA pair and tune Suricata rules. Wrong when there is no network engineer on staff or the edge is already in the cloud."
         url: https://docs.opnsense.org/
+        cost_band: low
   - check_id: NS-PER-02
     title: Front public web applications with a WAF and DDoS protection
     rationale: Application-layer attacks and volumetric DDoS bypass network firewalls.
@@ -47,14 +72,17 @@ recommendations:
         product: "Cloud Armor (WAF + Adaptive Protection) on the external load balancer"
         note: "Covers every app behind a global external load balancer; preconfigured OWASP rules suit small teams. Wrong when apps are served from other clouds or on-prem without a Google front door."
         url: https://cloud.google.com/armor/docs
+        cost_band: medium
       - provider: aws
         product: "AWS WAF + AWS Shield Advanced on ALB/CloudFront"
         note: "Fits apps behind ALB, CloudFront or API Gateway; Shield Advanced is for internet-facing estates that need DDoS response. Wrong when apps are not fronted by AWS edge services."
         url: https://docs.aws.amazon.com/waf/
+        cost_band: medium
       - provider: oss
         product: "ModSecurity + OWASP Core Rule Set behind NGINX; Cloudflare free tier for DDoS"
         note: "Fits a few self-hosted sites with an engineer to tune false positives. Wrong when nobody can maintain rules or the client needs managed DDoS absorption with an SLA."
         url: https://coreruleset.org/docs/
+        cost_band: none
   - check_id: NS-PER-03
     title: Move to default-deny firewall policy with documented, reviewed rules
     rationale: Undocumented permissive rules accumulate; default-deny plus quarterly review keeps exposure known.
@@ -65,18 +93,22 @@ recommendations:
         product: "Firewall policies as code (Terraform) + Firewall Insights"
         note: "Insights flags shadowed and overly permissive rules; needs Firewall Rules Logging on. Wrong when rules are still edited by hand in the console, where a review must come before automation."
         url: https://cloud.google.com/network-intelligence-center/docs/firewall-insights
+        cost_band: low
       - provider: aws
         product: "Security Groups as code + AWS Firewall Manager + Network Access Analyzer"
         note: "Firewall Manager pays off above a few accounts in an Organization; Network Access Analyzer works per account. Wrong when one account with a few security groups can be reviewed by hand."
         url: https://docs.aws.amazon.com/firewall-manager/
+        cost_band: low
       - provider: oss
         product: "Terraform/Ansible-managed rules with periodic review in Git"
         note: "Fits any firewall with a Terraform or Ansible module and a team used to pull requests. Wrong when the firewall has no API, where a rule export plus review is the realistic step."
         url: https://developer.hashicorp.com/terraform/docs
+        cost_band: none
       - provider: process
         product: "Quarterly firewall rule review with named owner"
         note: "Fits every size; a named owner and a 90-day cadence matter more than tooling (NIST SP 800-41). Wrong when rules change daily, where review belongs in the change pipeline instead."
         url: https://csrc.nist.gov/pubs/sp/800/41/r1/final
+        cost_band: none
   - check_id: NS-PER-04
     title: Replace exposed admin ports with zero-trust or VPN access plus MFA
     rationale: Exposed RDP/SSH and legacy VPNs without MFA are the most common ransomware entry points.
@@ -88,16 +120,19 @@ recommendations:
         note: "IAP TCP forwarding covers admin SSH/RDP for any VM count; Chrome Enterprise Premium adds device posture for users. Wrong when the admin targets are outside Google Cloud."
         url: https://cloud.google.com/iap/docs
         family: identity-aware-proxy
+        cost_band: medium
       - provider: aws
         product: "AWS Verified Access or Client VPN with IAM Identity Center MFA; SSM Session Manager for admin"
         note: "Session Manager removes exposed ports on EC2 at any scale; Verified Access suits browser apps. Wrong when targets are on-prem or in another cloud with no SSM agent path."
         url: https://docs.aws.amazon.com/verified-access/
         family: ssm-session-manager
+        cost_band: medium
       - provider: oss
         product: "WireGuard / OpenVPN with MFA (Authelia/Keycloak); Teleport or Boundary for admin access"
         note: "WireGuard with an MFA identity provider fits small and mid-size teams; Teleport or Boundary add recorded admin sessions. Wrong when nobody can operate the IdP and VPN themselves."
         url: https://www.wireguard.com/
         family: teleport-boundary
+        cost_band: low
   - check_id: NS-SEG-01
     title: Segment the network into security zones with controlled east-west traffic
     rationale: Segmentation limits blast radius and is prerequisite for a clean cloud landing zone.
@@ -108,14 +143,17 @@ recommendations:
         product: "Shared VPC with per-tier subnets, firewall tags, VPC Service Controls for data perimeters"
         note: "Shared VPC scales from one host project to hundreds of service projects; VPC Service Controls add data perimeters. Wrong when most workloads stay on-prem or in another cloud."
         url: https://cloud.google.com/vpc/docs/shared-vpc
+        cost_band: low
       - provider: aws
         product: "Multi-account landing zone (Control Tower) + VPCs/subnets per tier + Transit Gateway"
         note: "Control Tower suits a new multi-account estate; Transit Gateway scales to thousands of VPC attachments. Wrong when a single-account, single-VPC estate only needs subnet tiers."
         url: https://docs.aws.amazon.com/controltower/
+        cost_band: medium
       - provider: oss
         product: "VLANs with inter-VLAN firewalling; Calico/Cilium network policies for Kubernetes"
         note: "VLAN zoning fits any site with a managed switch and firewall; Cilium or Calico cover Kubernetes east-west. Wrong when there are no Kubernetes skills, where VLANs alone are the step."
         url: https://docs.cilium.io/
+        cost_band: none
   - check_id: NS-SEG-02
     title: Produce and maintain a current network topology and IP plan
     rationale: Every migration and security review starts from an accurate map; it is also CCM I&S-08.
@@ -126,15 +164,18 @@ recommendations:
         product: "Network Topology (Network Intelligence Center) + Network Analyzer"
         note: "Automatic for every project in the organization, no agents. Wrong when the on-prem side or other clouds dominate, where it shows only the Google Cloud half of the picture."
         url: https://cloud.google.com/network-intelligence-center/docs/network-topology
+        cost_band: none
       - provider: aws
         product: "AWS Network Manager / Reachability Analyzer"
         note: "Network Manager maps Transit Gateway and Cloud WAN estates; Reachability Analyzer answers path questions per VPC. Wrong when the estate is a single VPC or mostly on-prem."
         url: https://docs.aws.amazon.com/network-manager/latest/tgwnm/what-are-global-networks.html
+        cost_band: low
       - provider: oss
         product: "NetBox as IPAM/DCIM source of truth; diagrams as code (diagrams.net in Git)"
         note: "NetBox is the source of truth from a few racks up to global estates; needs an owner to keep it current. Wrong when the team will not maintain it, where a stale CMDB is worse than none."
         url: https://netboxlabs.com/docs/netbox/
         family: netbox
+        cost_band: low
   - check_id: NS-SEG-03
     title: Isolate administrative access via bastion / management network
     rationale: Admin interfaces reachable from user networks are a lateral-movement path.
@@ -146,16 +187,19 @@ recommendations:
         note: "Fits any VM count with no bastion to patch; Privileged Access Manager adds time-bound grants. Wrong when admins must reach on-prem or non-Google hosts from the same control point."
         url: https://cloud.google.com/iap/docs/using-tcp-forwarding
         family: identity-aware-proxy
+        cost_band: none
       - provider: aws
         product: "SSM Session Manager; no public IPs on admin interfaces"
         note: "Covers every EC2 and hybrid-activated host without open ports or bastions; sessions log to CloudWatch or S3. Wrong when hosts cannot run the SSM agent or sit outside hybrid activation."
         url: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html
         family: ssm-session-manager
+        cost_band: none
       - provider: oss
         product: "Teleport / Boundary bastion with session recording; dedicated management VLAN"
         note: "Teleport or Boundary suit teams from ten admins up with session recording; a management VLAN is the minimum for any site. Wrong when nobody will run and patch the bastion itself."
         url: https://goteleport.com/docs/
         family: teleport-boundary
+        cost_band: low
   - check_id: NS-SEG-04
     title: Separate guest and corporate wireless with 802.1X
     rationale: Shared wireless lets untrusted devices reach internal systems.
@@ -166,14 +210,17 @@ recommendations:
         product: "FreeRADIUS + 802.1X (WPA2/3-Enterprise), separate guest VLAN with captive portal"
         note: "Fits any site whose access points and switches support 802.1X; one FreeRADIUS pair serves thousands of clients. Wrong when the wireless gear is consumer grade or there is no directory."
         url: https://www.freeradius.org/documentation/
+        cost_band: none
       - provider: gcp
         product: "Cloud Identity as RADIUS identity source via partner (e.g. SecureW2 / JumpCloud)"
         note: "Fits Google Workspace or Cloud Identity shops that want no on-prem directory; needs a partner RADIUS service. Wrong when the client already runs Active Directory, where NPS is simpler."
         url: https://cloud.google.com/identity/docs
+        cost_band: low
       - provider: aws
         product: "AWS Managed Microsoft AD as RADIUS backend"
         note: "Fits clients already on AWS Managed Microsoft AD with an MFA RADIUS integration; sized by directory edition. Wrong when there is no AWS footprint or no Active Directory dependency."
         url: https://docs.aws.amazon.com/directoryservice/latest/admin-guide/what_is.html
+        cost_band: low
   - check_id: NS-IAM-01
     title: Consolidate on a central identity provider with SSO
     rationale: SSO is the control point for MFA, joiner/leaver and least privilege.
@@ -185,16 +232,19 @@ recommendations:
         note: "Fits any size; Cloud Identity Free covers SSO and device basics, Workspace adds the suite. Wrong when the client is committed to Entra ID or Okta, where Cloud Identity should federate, not replace."
         url: https://cloud.google.com/identity/docs
         family: cloud-identity
+        cost_band: medium
       - provider: aws
         product: "AWS IAM Identity Center with external IdP (Entra ID / Okta)"
         note: "Fits multi-account AWS estates of any size as the AWS-side SSO; the external IdP stays the master. Wrong when the goal is a company-wide IdP for SaaS apps, which Identity Center is not."
         url: https://docs.aws.amazon.com/singlesignon/
         family: iam-identity-center
+        cost_band: low
       - provider: oss
         product: "Keycloak or Authentik as OIDC/SAML provider"
         note: "Keycloak scales from tens to hundreds of thousands of users with a team to run it; Authentik suits smaller shops. Wrong when nobody can patch and back up an identity server that must never be down."
         url: https://www.keycloak.org/documentation
         family: keycloak
+        cost_band: low
   - check_id: NS-IAM-02
     title: Enforce MFA for all users; phishing-resistant for admins
     rationale: MFA blocks the majority of credential-based attacks.
@@ -206,16 +256,19 @@ recommendations:
         note: "Fits every Cloud Identity or Workspace tenant; enforce per organizational unit and require security keys for admins. Wrong when users log in through another IdP, where MFA must be enforced there."
         url: https://support.google.com/a/answer/9176657
         family: cloud-identity
+        cost_band: none
       - provider: aws
         product: "IAM Identity Center MFA policies; FIDO2 keys for root/admin"
         note: "Covers every Identity Center user; FIDO2 keys for root and admins. Wrong when an external IdP is the source of truth, where MFA must be enforced upstream and only verified in AWS."
         url: https://docs.aws.amazon.com/singlesignon/latest/userguide/enable-mfa.html
         family: iam-identity-center
+        cost_band: none
       - provider: oss
         product: "Keycloak OTP/WebAuthn policies"
         note: "Fits any Keycloak realm; WebAuthn gives phishing-resistant admin MFA. Wrong when users authenticate against a directory or SaaS IdP that Keycloak only brokers, where MFA belongs upstream."
         url: https://www.keycloak.org/docs/latest/server_admin/
         family: keycloak
+        cost_band: none
   - check_id: NS-IAM-03
     title: Implement least privilege with periodic access reviews
     rationale: Standing privileges are the lever attackers use once inside.
@@ -226,18 +279,22 @@ recommendations:
         product: "IAM Recommender + Policy Analyzer; Privileged Access Manager for just-in-time grants"
         note: "Recommender flags unused permissions at any project count; Privileged Access Manager suits teams that grant admin rarely. Wrong when access is mainly in SaaS or on-prem systems outside Google IAM."
         url: https://cloud.google.com/policy-intelligence/docs/role-recommendations-overview
+        cost_band: none
       - provider: aws
         product: "IAM Access Analyzer + permission boundaries; Identity Center access reviews"
         note: "Access Analyzer covers every account in the Organization; permission boundaries suit delegated admin teams. Wrong when the risk is in SaaS or on-prem directories rather than AWS IAM."
         url: https://docs.aws.amazon.com/IAM/latest/UserGuide/what-is-access-analyzer.html
+        cost_band: low
       - provider: oss
         product: "Quarterly access review workflow in Git/ticketing; OpenFGA for app-level RBAC"
         note: "A ticket-driven review fits small estates; OpenFGA fits in-house apps that need relationship-based access. Wrong when there is no engineering team to integrate an authorization service."
         url: https://openfga.dev/docs
+        cost_band: none
       - provider: process
         product: "Quarterly access recertification owned by system owners"
         note: "Fits every size; scope the first round to admin and finance systems (NIST SP 800-53 AC-2). Wrong when there is no list of system owners, which must come first."
         url: https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final
+        cost_band: none
   - check_id: NS-IAM-04
     title: Move machine credentials into a secret manager with rotation
     rationale: Hard-coded or shared credentials cannot be rotated or audited.
@@ -249,16 +306,19 @@ recommendations:
         note: "Fits any workload count; Workload Identity Federation removes service-account keys for CI and on-prem. Wrong when most secrets are consumed in another cloud with no Google identity path."
         url: https://cloud.google.com/secret-manager/docs
         family: secret-manager
+        cost_band: low
       - provider: aws
         product: "AWS Secrets Manager with rotation Lambdas; IAM roles instead of keys"
         note: "Rotation Lambdas cover RDS and custom secrets at any scale; IAM roles replace access keys on EC2, ECS and Lambda. Wrong when consumers run outside AWS without IAM Roles Anywhere."
         url: https://docs.aws.amazon.com/secretsmanager/
         family: secrets-manager
+        cost_band: low
       - provider: oss
         product: "HashiCorp Vault / OpenBao with dynamic secrets"
         note: "Fits multi-cloud and on-prem estates with a platform team to run an HA cluster; dynamic secrets are the main win. Wrong when a small team only needs a few static secrets in the cloud store."
         url: https://developer.hashicorp.com/vault/docs
         family: vault
+        cost_band: low
   - check_id: NS-DET-01
     title: Centralise logs in a SIEM with a retention policy
     rationale: Without central logs there is no detection and no forensic capability.
@@ -270,15 +330,18 @@ recommendations:
         note: "Cloud Logging covers every Google Cloud project out of the box; Google SecOps is the SIEM for estates with a SOC. Wrong when most log sources are on-prem or in other clouds."
         url: https://cloud.google.com/logging/docs
         family: cloud-logging
+        cost_band: high
       - provider: aws
         product: "CloudWatch Logs + Security Lake + Amazon OpenSearch / Security Hub"
         note: "CloudWatch is the default for AWS services; Security Lake normalizes multi-account security logs into OCSF. Wrong when log sources are mostly outside AWS or a SOC already runs another SIEM."
         url: https://docs.aws.amazon.com/cloudwatch/
         family: cloudwatch
+        cost_band: high
       - provider: oss
         product: "Wazuh or Elastic Security (ELK); Graylog"
         note: "Wazuh suits small and mid-size estates needing SIEM plus endpoint agents; Elastic scales further with more operations effort. Wrong when no team owns storage, retention and detection rules."
         url: https://documentation.wazuh.com/
+        cost_band: medium
   - check_id: NS-DET-02
     title: Deploy intrusion detection and endpoint detection and response
     rationale: Network and endpoint telemetry are needed to detect compromise early.
@@ -289,14 +352,17 @@ recommendations:
         product: "Cloud IDS (Palo Alto-powered) + Security Command Center Premium"
         note: "Cloud IDS mirrors VPC traffic per zone; Security Command Center Premium adds threat detection on logs. Wrong when the traffic to inspect is on-prem or in another cloud, where Cloud IDS sees nothing."
         url: https://cloud.google.com/intrusion-detection-system/docs
+        cost_band: high
       - provider: aws
         product: "Amazon GuardDuty + Inspector; Network Firewall IPS rules"
         note: "GuardDuty is agentless and enabled per account in minutes; Inspector adds host and container findings. Wrong when the endpoints are laptops and on-prem servers, which need a separate EDR."
         url: https://docs.aws.amazon.com/guardduty/
+        cost_band: medium
       - provider: oss
         product: "Suricata / Zeek sensors; Wazuh agents for EDR-lite"
         note: "Suricata and Zeek sensors fit any site with a SPAN port or tap; Wazuh agents give basic EDR. Wrong when there is no analyst to triage alerts, where an unmanaged IDS becomes noise."
         url: https://docs.suricata.io/
+        cost_band: low
   - check_id: NS-DET-03
     title: Establish vulnerability scanning and a patching cadence
     rationale: Known-exploited vulnerabilities are patched late far more often than zero-days are used.
@@ -308,18 +374,22 @@ recommendations:
         note: "Covers VMs, GKE and container images across all projects; OS Config patch jobs scale to thousands of VMs. Wrong when the fleet is mainly on-prem, where these services do not reach."
         url: https://cloud.google.com/security-command-center/docs
         family: security-command-center
+        cost_band: medium
       - provider: aws
         product: "Amazon Inspector; SSM Patch Manager"
         note: "Inspector scans EC2, ECR and Lambda across the Organization; Patch Manager handles hybrid-activated hosts too. Wrong when hosts cannot run the SSM agent or sit in another cloud."
         url: https://docs.aws.amazon.com/inspector/
+        cost_band: medium
       - provider: oss
         product: "OpenVAS / Greenbone; Trivy for containers; unattended-upgrades / WSUS"
         note: "Greenbone suits on-prem networks of any size with an engineer to run it; Trivy covers containers in CI. Wrong when nobody owns remediation, where scan reports pile up unactioned."
         url: https://greenbone.github.io/docs/
+        cost_band: low
       - provider: process
         product: "30/60/90-day SLAs by severity, tracked monthly"
         note: "Fits every size; publish the SLA and report monthly against it (NIST SP 800-40). Wrong when there is no asset inventory, since an SLA cannot be tracked for assets that are not listed."
         url: https://csrc.nist.gov/pubs/sp/800/40/r4/final
+        cost_band: none
   - check_id: NS-DET-04
     title: Write and exercise an incident response plan
     rationale: A rehearsed plan halves time-to-contain; auditors and insurers now expect it.
@@ -330,16 +400,19 @@ recommendations:
         product: "IR plan based on NIST SP 800-61; annual tabletop; contacts for legal/PR/insurer"
         note: "Fits every size; ten pages with contacts and a yearly tabletop are enough for small clients. Wrong when the client has no central logging, where detection must be fixed before response."
         url: https://csrc.nist.gov/pubs/sp/800/61/r3/final
+        cost_band: none
       - provider: gcp
         product: "Security Command Center + SecOps SOAR playbooks"
         note: "Fits estates with a SOC that triages in Google SecOps; playbooks automate containment. Wrong when there is no SOC or incidents originate mainly outside Google Cloud."
         url: https://cloud.google.com/chronicle/docs
         family: security-command-center
+        cost_band: medium
       - provider: aws
         product: "Security Hub automated response (Security Hub ARC) + Incident Manager"
         note: "Fits multi-account AWS estates; Incident Manager adds on-call paging and runbooks. Wrong when incidents are mostly outside AWS, where the response tooling should be neutral."
         url: https://docs.aws.amazon.com/incident-manager/latest/userguide/what-is-incident-manager.html
         family: security-hub
+        cost_band: medium
   - check_id: NS-RES-01
     title: Enforce TLS 1.2+ in transit and encryption at rest everywhere
     rationale: Legacy protocols and unencrypted disks fail most compliance regimes outright.
@@ -351,15 +424,18 @@ recommendations:
         note: "Default encryption needs no work; CMEK suits regulated data; SSL policies set the TLS floor on every load balancer. Wrong when the estate is not on Google Cloud, where provider-native controls apply."
         url: https://cloud.google.com/kms/docs
         family: cloud-kms
+        cost_band: low
       - provider: aws
         product: "KMS CMKs; ALB security policies TLS 1.2+; S3 default encryption"
         note: "Covers every AWS service with KMS integration; ALB and CloudFront security policies set the TLS floor. Wrong when the estate is not on AWS, where provider-native equivalents apply."
         url: https://docs.aws.amazon.com/kms/
         family: aws-kms
+        cost_band: low
       - provider: oss
         product: "LUKS/dm-crypt; Mozilla modern TLS config; step-ca / Let's Encrypt"
         note: "Fits on-prem servers of any count; Let's Encrypt for public hosts, step-ca for internal certificates. Wrong when there is no automation, since manual certificates expire and LUKS keys get lost."
         url: https://ssl-config.mozilla.org/
+        cost_band: none
   - check_id: NS-RES-02
     title: Make backups immutable, offsite and restore-tested with defined RPO/RTO
     rationale: Ransomware targets backups first; untested restores fail when needed.
@@ -371,16 +447,19 @@ recommendations:
         note: "Backup and DR covers VMs, databases and file shares; Object Lock gives immutability. Wrong when the data to protect lives on-prem or in another cloud and must stay there."
         url: https://cloud.google.com/backup-disaster-recovery/docs
         family: backup-and-dr
+        cost_band: medium
       - provider: aws
         product: "AWS Backup with Vault Lock; S3 Object Lock"
         note: "Covers EC2, RDS, EFS and more across accounts; Vault Lock makes retention unchangeable. Wrong when the data is outside AWS, where a neutral backup product fits better."
         url: https://docs.aws.amazon.com/aws-backup/
         family: aws-backup
+        cost_band: medium
       - provider: oss
         product: "Restic / Borg / Veeam CE to immutable object storage; quarterly restore drills"
         note: "Restic or Borg fit small to mid-size estates; Veeam Community Edition covers a handful of VMs. Wrong when the client has hundreds of VMs with an RPO under an hour, where an enterprise product is needed."
         url: https://restic.readthedocs.io/
         family: restic
+        cost_band: low
   - check_id: NS-RES-03
     title: Add redundancy and failover for critical services and links
     rationale: Single points of failure turn minor incidents into outages.
@@ -391,14 +470,17 @@ recommendations:
         product: "Regional MIGs / multi-zone GKE; HA VPN; global load balancing"
         note: "Regional resources give zone redundancy at any size; HA VPN carries an availability SLA on the tunnel. Wrong when the critical services are on-prem, where the fix is dual links and a second site."
         url: https://cloud.google.com/compute/docs/instance-groups/distributing-instances-with-regional-instance-groups
+        cost_band: medium
       - provider: aws
         product: "Multi-AZ deployments; redundant VPN/Direct Connect; Route 53 health checks"
         note: "Multi-AZ is the baseline for any production workload; redundant Direct Connect for hybrid. Wrong when the single points of failure are on-prem, which AWS redundancy does not change."
         url: https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/welcome.html
+        cost_band: medium
       - provider: oss
         product: "Keepalived/VRRP; dual-ISP with BGP or SD-WAN"
         note: "Fits on-prem edges of any size; dual ISPs with BGP need your own address space, SD-WAN does not. Wrong when the team has no routing skills, where a managed SD-WAN service is safer."
         url: https://keepalived.readthedocs.io/
+        cost_band: low
   # ---------------- Cloud readiness ----------------
   - check_id: CR-CMP-01
     title: Build a complete server/VM inventory with specs and ownership
@@ -411,16 +493,19 @@ recommendations:
         note: "Agentless vCenter collection covers tens to thousands of VMs; data lands in the Google Cloud console. Wrong when inventory data may not leave the premises, where NetBox or spreadsheets stay local."
         url: https://cloud.google.com/migration-center/docs
         family: migration-center
+        cost_band: none
       - provider: aws
         product: "AWS Application Discovery Service / Migration Evaluator"
         note: "Agentless connector for VMware or agents per host; Migration Evaluator adds a business case. Wrong when the target is not AWS or data may not leave the client's premises."
         url: https://docs.aws.amazon.com/application-discovery/
         family: migration-hub
+        cost_band: none
       - provider: oss
         product: "NetBox + Ansible facts gathering; RVTools for VMware"
         note: "RVTools exports a VMware estate in minutes; NetBox and Ansible facts cover physical and Linux hosts. Wrong when no one will keep NetBox current, where a one-off export is the honest answer."
         url: https://netboxlabs.com/docs/netbox/
         family: netbox
+        cost_band: low
   - check_id: CR-CMP-02
     title: Catalogue applications with dependencies and criticality
     rationale: Migration waves must respect dependencies and business impact.
@@ -432,19 +517,23 @@ recommendations:
         note: "Fits estates assessed with the discovery client; dependency data comes from the same collection. Wrong when the inventory is not in Migration Center or the target is not Google Cloud."
         url: https://cloud.google.com/migration-center/docs
         family: migration-center
+        cost_band: none
       - provider: aws
         product: "Migration Hub + Application Discovery Service network view"
         note: "Fits estates with Application Discovery agents installed; the network view shows observed connections. Wrong when agents cannot be installed or the target is not AWS."
         url: https://docs.aws.amazon.com/migrationhub/
         family: migration-hub
+        cost_band: none
       - provider: oss
         product: "Dependency mapping via Zeek/NetFlow + spreadsheet CMDB"
         note: "Fits a few hundred servers; a month of flow data plus owner interviews is usually enough. Wrong when the estate has thousands of systems, where a discovery tool is needed."
         url: https://zeek.org/
+        cost_band: none
       - provider: process
         product: "Application owner interviews using the 6R disposition template"
         note: "Fits every size; one hour per application owner with a rehost / replatform / refactor / retire decision per app. Wrong when no owners exist, where the inventory must first assign them."
         url: https://docs.aws.amazon.com/prescriptive-guidance/latest/large-migration-guide/migration-strategies.html
+        cost_band: none
   - check_id: CR-CMP-03
     title: Pilot containerisation for a stateless workload
     rationale: Containers unlock portable, auto-scaled runtime and are the simplest path off VMs.
@@ -455,14 +544,17 @@ recommendations:
         product: "Cloud Run (serverless containers) or GKE Autopilot; Migrate to Containers for lift-and-modernise"
         note: "Cloud Run suits stateless HTTP services with no cluster to run; GKE Autopilot when Kubernetes APIs are needed. Wrong when the workload is stateful or needs licensed Windows, where VMs stay."
         url: https://cloud.google.com/run/docs
+        cost_band: medium
       - provider: aws
         product: "App Runner / ECS Fargate; EKS for Kubernetes"
         note: "App Runner and Fargate need no cluster operations; EKS when Kubernetes portability matters. Wrong when there are no container skills yet, where the pilot should follow training."
         url: https://docs.aws.amazon.com/ecs/
+        cost_band: medium
       - provider: oss
         product: "Docker + k3s / Kubernetes; Helm charts in Git"
         note: "k3s fits a lab or edge cluster on a few nodes; full Kubernetes when the team can run it. Wrong when the client has no platform team, where a managed service is the safer pilot."
         url: https://docs.k3s.io/
+        cost_band: low
   - check_id: CR-CMP-04
     title: Collect utilisation data for right-sizing before migration
     rationale: Peak-sized VMs copied to cloud waste 30-50% of spend.
@@ -474,15 +566,18 @@ recommendations:
         note: "Collect two to four weeks before sizing; Recommender right-sizes again once VMs run on Google Cloud. Wrong when the collection window cannot cover a business peak, where the sizing misleads."
         url: https://cloud.google.com/migration-center/docs
         family: migration-center
+        cost_band: none
       - provider: aws
         product: "Migration Evaluator / Compute Optimizer"
         note: "Migration Evaluator sizes from on-prem utilisation; Compute Optimizer tunes once on AWS. Wrong when the target is not AWS or utilisation data cannot leave the premises."
         url: https://docs.aws.amazon.com/compute-optimizer/
         family: migration-hub
+        cost_band: none
       - provider: oss
         product: "Prometheus node exporter + Grafana for 30 days"
         note: "Node exporter on each host covers up to a few thousand hosts with one Prometheus; thirty days capture a monthly cycle. Wrong when there is no time to run a collection window before migration."
         url: https://prometheus.io/docs/
+        cost_band: none
   - check_id: CR-DAT-01
     title: Document every database engine, version, size and growth
     rationale: Database choice (managed vs self-run) is the biggest architectural decision in a migration.
@@ -493,14 +588,17 @@ recommendations:
         product: "Database Migration Service assessment; target Cloud SQL / AlloyDB / Spanner"
         note: "Assesses and migrates MySQL, PostgreSQL, SQL Server and Oracle sources; Cloud SQL fits most, AlloyDB for heavy PostgreSQL. Wrong when the database must stay on-prem for residency or licensing."
         url: https://cloud.google.com/database-migration/docs
+        cost_band: none
       - provider: aws
         product: "DMS Schema Conversion assessment; target RDS / Aurora"
         note: "DMS covers homogeneous and heterogeneous migrations; Aurora fits MySQL and PostgreSQL at scale. Wrong when the target is not AWS or the engine is unsupported by DMS."
         url: https://docs.aws.amazon.com/dms/
+        cost_band: none
       - provider: oss
         product: "pg_stat / sys.dm_* scripts + inventory sheet"
         note: "Fits any number of instances the DBA can reach; one script per server gives size and growth. Wrong when the DBA has no access or there are hundreds of databases, where a discovery tool is faster."
         url: https://www.postgresql.org/docs/current/monitoring-stats.html
+        cost_band: none
   - check_id: CR-DAT-02
     title: Quantify storage volumes, shares and IOPS
     rationale: Storage tiers and file-share services depend on actual capacity and performance needs.
@@ -511,14 +609,17 @@ recommendations:
         product: "Cloud Storage (Standard/Nearline/Coldline/Archive) + Filestore / NetApp Volumes; Storage Transfer Service"
         note: "Cloud Storage tiers fit any volume; Filestore for NFS, NetApp Volumes for SMB and enterprise features. Wrong when the data must stay on-prem, where the step is measurement only."
         url: https://cloud.google.com/storage/docs
+        cost_band: medium
       - provider: aws
         product: "S3 tiers + EFS/FSx; DataSync"
         note: "S3 tiers fit any volume; FSx covers Windows shares and NetApp ONTAP; DataSync moves shares. Wrong when data must stay on-prem or the target is another cloud."
         url: https://docs.aws.amazon.com/s3/
+        cost_band: medium
       - provider: oss
         product: "MinIO for S3-compatible object storage; Ceph"
         note: "MinIO suits a few nodes of S3-compatible storage; Ceph scales to petabytes with a storage team. Wrong when there is no storage engineer, where managed object storage is safer."
         url: https://docs.min.io/
+        cost_band: low
   - check_id: CR-DAT-03
     title: Classify data and document residency constraints
     rationale: Residency decides regions; classification decides encryption and access controls.
@@ -529,18 +630,22 @@ recommendations:
         product: "Sensitive Data Protection (DLP) discovery; Assured Workloads / Organization Policy for data residency"
         note: "Discovery scans BigQuery and Cloud Storage across the organization; Assured Workloads and org policy pin regions. Wrong when the data lives on-prem or in another cloud, out of reach of discovery."
         url: https://cloud.google.com/sensitive-data-protection/docs
+        cost_band: medium
       - provider: aws
         product: "Amazon Macie; SCPs restricting regions"
         note: "Macie scans S3 for sensitive data; SCPs deny regions across the Organization. Wrong when the data is not in S3 or the estate is not under AWS Organizations."
         url: https://docs.aws.amazon.com/macie/
+        cost_band: medium
       - provider: oss
         product: "Classification scheme (public/internal/confidential/restricted) + OpenDLP scans"
         note: "A four-level scheme fits any size; CIS Control 3 gives the checklist, open-source scanners cover file shares. Wrong when there is no data owner to classify, since tooling cannot decide for them."
         url: https://www.cisecurity.org/controls/data-protection
+        cost_band: none
       - provider: process
         product: "Data classification policy signed off by data owners"
         note: "Fits every size; one page listing classes, examples and handling rules, signed by data owners (CCM DSP domain). Wrong when owners are not named, which must come first."
         url: https://cloudsecurityalliance.org/research/cloud-controls-matrix
+        cost_band: none
   - check_id: CR-DAT-04
     title: Document backup schedules and retention per data class
     rationale: Retention requirements drive storage cost and legal exposure.
@@ -552,16 +657,19 @@ recommendations:
         note: "Backup plans attach retention per workload; Cloud SQL point-in-time recovery covers the retention window. Wrong when the workloads are not on Google Cloud."
         url: https://cloud.google.com/backup-disaster-recovery/docs
         family: backup-and-dr
+        cost_band: medium
       - provider: aws
         product: "AWS Backup plans with lifecycle"
         note: "Plans apply lifecycle and cold storage per tag across accounts. Wrong when the data is not in AWS services that AWS Backup supports."
         url: https://docs.aws.amazon.com/aws-backup/
         family: aws-backup
+        cost_band: medium
       - provider: oss
         product: "Documented retention matrix + pgBackRest / Restic schedules"
         note: "Fits any estate; pgBackRest for PostgreSQL point-in-time recovery, Restic for files. Wrong when nobody tests restores, where a retention matrix is only paperwork."
         url: https://restic.readthedocs.io/
         family: restic
+        cost_band: low
   - check_id: CR-NET-01
     title: Design hybrid connectivity with bandwidth and latency targets
     rationale: Migration speed and hybrid operation depend on a sized, redundant link.
@@ -572,14 +680,17 @@ recommendations:
         product: "HA VPN to start; Dedicated / Partner Interconnect for >1 Gbps; Cross-Cloud Interconnect for multi-cloud"
         note: "HA VPN fits up to a few Gbps; Dedicated or Partner Interconnect above that; Cross-Cloud Interconnect for multi-cloud. Wrong when no Google Cloud workloads are planned."
         url: https://cloud.google.com/network-connectivity/docs/interconnect
+        cost_band: medium
       - provider: aws
         product: "Site-to-Site VPN; Direct Connect"
         note: "VPN fits early phases and small sites; Direct Connect for sustained bandwidth and predictable latency. Wrong when the target is not AWS."
         url: https://docs.aws.amazon.com/directconnect/
+        cost_band: medium
       - provider: oss
         product: "WireGuard/IPsec tunnels with BGP (FRRouting)"
         note: "Fits small sites or labs with a network engineer; BGP via FRRouting gives failover. Wrong when the link carries production traffic that needs a provider SLA."
         url: https://docs.frrouting.org/
+        cost_band: low
   - check_id: CR-NET-02
     title: Reserve non-overlapping IP ranges for cloud VPCs
     rationale: Overlapping ranges force NAT and block peering later.
@@ -590,15 +701,18 @@ recommendations:
         product: "Shared VPC design with reserved RFC 1918 blocks; Network Connectivity Center"
         note: "Reserve a large block per cloud region up front; Network Connectivity Center links sites and VPCs. Wrong when the client has no IPAM at all, where NetBox or a spreadsheet must come first."
         url: https://cloud.google.com/vpc/docs/vpc
+        cost_band: low
       - provider: aws
         product: "VPC IPAM to allocate and track CIDRs"
         note: "Fits multi-account estates; allocates and tracks CIDRs across Regions. Wrong when a single VPC is planned, where a documented reservation is enough."
         url: https://docs.aws.amazon.com/vpc/latest/ipam/what-it-is-ipam.html
+        cost_band: low
       - provider: oss
         product: "NetBox IPAM as source of truth"
         note: "Fits any estate; the NetBox used for inventory also holds prefixes and VLANs. Wrong when nobody maintains it, where the plan belongs in the cloud provider's IPAM instead."
         url: https://netboxlabs.com/docs/netbox/
         family: netbox
+        cost_band: low
   - check_id: CR-NET-03
     title: Federate identity to the cloud provider
     rationale: Federation avoids a second user directory and enables workload identity for services.
@@ -610,16 +724,19 @@ recommendations:
         note: "Directory sync or SAML covers users; Workload Identity Federation covers CI and on-prem workloads with no keys. Wrong when Google Cloud is not a target, where federation to the chosen cloud applies."
         url: https://cloud.google.com/iam/docs/workload-identity-federation
         family: cloud-identity
+        cost_band: low
       - provider: aws
         product: "IAM Identity Center with external IdP; IAM Roles Anywhere"
         note: "Identity Center federates users to all accounts; Roles Anywhere gives on-prem workloads temporary credentials. Wrong when the target is not AWS."
         url: https://docs.aws.amazon.com/singlesignon/
         family: iam-identity-center
+        cost_band: none
       - provider: oss
         product: "Keycloak as IdP federated to cloud via SAML/OIDC"
         note: "Fits clients already running Keycloak; SAML or OIDC federation works with any cloud. Wrong when there is no Keycloak and no team to run one, where the provider's own IdP integration is simpler."
         url: https://www.keycloak.org/documentation
         family: keycloak
+        cost_band: low
   - check_id: CR-NET-04
     title: Define DNS and certificate lifecycle for cloud
     rationale: Split-horizon DNS and automated certificates are needed from day one of hybrid.
@@ -630,14 +747,17 @@ recommendations:
         product: "Cloud DNS (private zones + forwarding) + Certificate Manager / CAS"
         note: "Private zones and forwarding cover hybrid DNS at any size; Certificate Manager automates public certs, CAS runs a private CA. Wrong when DNS authority must stay on-prem, where only forwarding applies."
         url: https://cloud.google.com/dns/docs
+        cost_band: low
       - provider: aws
         product: "Route 53 Resolver + ACM / Private CA"
         note: "Resolver endpoints cover hybrid DNS; ACM issues public certs with no operations, Private CA for internal ones. Wrong when the target is not AWS."
         url: https://docs.aws.amazon.com/route53/
+        cost_band: low
       - provider: oss
         product: "CoreDNS/BIND + cert-manager / step-ca"
         note: "Fits on-prem and Kubernetes estates with a team to run DNS; cert-manager automates certificates in clusters. Wrong when there is no Kubernetes and no DNS admin, where managed services are safer."
         url: https://cert-manager.io/docs/
+        cost_band: none
   - check_id: CR-SEC-01
     title: Map applicable compliance obligations to cloud controls
     rationale: Choosing regions, logging and encryption depends on which regimes apply.
@@ -649,19 +769,23 @@ recommendations:
         note: "Assured Workloads fits regulated clients needing residency and personnel controls; SCC dashboards map to CIS and PCI. Wrong when workloads are not on Google Cloud."
         url: https://cloud.google.com/assured-workloads/docs
         family: security-command-center
+        cost_band: medium
       - provider: aws
         product: "AWS Artifact; Audit Manager; Security Hub standards"
         note: "Artifact gives provider compliance reports; Audit Manager collects evidence per framework across accounts. Wrong when the estate is not on AWS."
         url: https://docs.aws.amazon.com/artifact/
         family: security-hub
+        cost_band: medium
       - provider: oss
         product: "CSA CCM v4.1 as the control baseline; OpenSCAP for hosts"
         note: "CCM v4.1 is a free control baseline for any size; OpenSCAP checks hosts against CIS or STIG profiles. Wrong when a specific regime (PCI, HIPAA) is mandated, where its own control set comes first."
         url: https://cloudsecurityalliance.org/research/cloud-controls-matrix
+        cost_band: none
       - provider: process
         product: "Regulatory mapping workshop with legal/compliance (CCM GRC-07)"
         note: "Fits every size; half a day with legal and compliance to list regimes and owners. Wrong when no compliance function exists, where external advice is needed first."
         url: https://cloudsecurityalliance.org/research/cloud-controls-matrix
+        cost_band: none
   - check_id: CR-SEC-02
     title: Adopt a landing zone / security baseline before the first workload
     rationale: Retrofitting org policies, logging and network design is far costlier than starting right.
@@ -672,14 +796,17 @@ recommendations:
         product: "Google Cloud Security Foundations blueprint (terraform-example-foundation) + Organization Policy"
         note: "Fits new organizations of any size; the Terraform foundation sets up folders, logging and policies. Wrong when the client already has a mature landing zone, where gaps should be closed instead."
         url: https://cloud.google.com/architecture/security-foundations
+        cost_band: low
       - provider: aws
         product: "AWS Control Tower + Landing Zone Accelerator"
         note: "Control Tower fits new multi-account estates; Landing Zone Accelerator adds regulated baselines. Wrong when the estate is one account with a handful of workloads."
         url: https://docs.aws.amazon.com/controltower/
+        cost_band: low
       - provider: oss
         product: "Terraform modules in Git with policy-as-code (OPA/Conftest, Checkov)"
         note: "Fits any cloud and multi-cloud estates with a platform team; policy-as-code gates every change. Wrong when there is no IaC skill yet, where a vendor blueprint is the faster start."
         url: https://www.openpolicyagent.org/docs/
+        cost_band: none
   - check_id: CR-SEC-03
     title: Decide the key management model (provider keys vs CMEK/BYOK/HSM)
     rationale: Regulated data often requires customer-managed keys; retrofitting re-encrypts everything.
@@ -691,15 +818,18 @@ recommendations:
         note: "CMEK fits most regulated workloads; Cloud HSM for certified hardware; External Key Manager when keys must stay outside Google. Wrong when no regime demands customer keys, where defaults suffice."
         url: https://cloud.google.com/kms/docs
         family: cloud-kms
+        cost_band: low
       - provider: aws
         product: "AWS KMS CMKs; CloudHSM; XKS for external keys"
         note: "KMS customer keys fit most workloads; CloudHSM for dedicated hardware; XKS for keys held outside AWS. Wrong when no regime demands customer keys, where defaults suffice."
         url: https://docs.aws.amazon.com/kms/
         family: aws-kms
+        cost_band: low
       - provider: oss
         product: "HashiCorp Vault Transit / OpenBao; SoftHSM for dev"
         note: "Vault Transit gives encryption as a service for in-house apps; SoftHSM is for development only. Wrong when the client needs certified hardware or has no team to run Vault."
         url: https://developer.hashicorp.com/vault/docs/secrets/transit
+        cost_band: low
   - check_id: CR-SEC-04
     title: Extend security monitoring to cloud with CSPM and audit logs
     rationale: Misconfiguration is the top cloud breach cause; posture management catches it continuously.
@@ -711,15 +841,18 @@ recommendations:
         note: "Standard tier covers every organization; Premium or Enterprise add CSPM and compliance at scale. Wrong when the estate is multi-cloud and one CSPM must cover all, where a neutral tool fits."
         url: https://cloud.google.com/security-command-center/docs
         family: security-command-center
+        cost_band: medium
       - provider: aws
         product: "Security Hub + GuardDuty + CloudTrail organisation trail"
         note: "Fits every AWS Organization; an organisation trail and delegated admin take an afternoon. Wrong when multi-cloud posture must be in one place."
         url: https://docs.aws.amazon.com/securityhub/
         family: security-hub
+        cost_band: medium
       - provider: oss
         product: "Prowler / CloudQuery / Steampipe scheduled scans; Falco for runtime"
         note: "Prowler covers AWS, Azure, GCP and Kubernetes from a scheduled job; Falco adds runtime alerts. Wrong when there is nobody to triage findings, where a managed CSPM with prioritisation is safer."
         url: https://docs.prowler.com/
+        cost_band: none
   - check_id: CR-COS-01
     title: Inventory licences and check cloud portability (BYOL / Software Assurance)
     rationale: Licence portability changes cloud TCO by 20-40% for Windows/SQL estates.
@@ -731,14 +864,17 @@ recommendations:
         note: "Fits Windows and SQL Server estates; sole-tenant nodes allow BYOL where licence terms permit. Wrong when the estate is mostly Linux and open source, where licensing is not the lever."
         url: https://cloud.google.com/compute/docs/nodes/sole-tenant-nodes
         family: migration-center
+        cost_band: none
       - provider: aws
         product: "License Manager; Dedicated Hosts for BYOL"
         note: "License Manager tracks entitlements across accounts; Dedicated Hosts for BYOL of per-socket licences. Wrong when the estate is mostly Linux and open source."
         url: https://docs.aws.amazon.com/license-manager/
+        cost_band: none
       - provider: oss
         product: "Evaluate open-source replacements (PostgreSQL for SQL Server, Linux for Windows) per workload"
         note: "Fits workloads the client owns the code for; PostgreSQL for SQL Server, Linux for Windows. Wrong when vendor applications mandate the licensed platform."
         url: https://www.postgresql.org/docs/
+        cost_band: none
   - check_id: CR-COS-02
     title: Build a current-state TCO baseline
     rationale: Without a baseline, cloud cost conversations have no anchor.
@@ -750,19 +886,23 @@ recommendations:
         note: "The TCO report needs the discovery data; the calculator fits early estimates for any size. Wrong when the target is not Google Cloud."
         url: https://cloud.google.com/products/calculator
         family: migration-center
+        cost_band: none
       - provider: aws
         product: "Migration Evaluator business case + Pricing Calculator"
         note: "Migration Evaluator builds a business case from utilisation data; the calculator fits early estimates. Wrong when the target is not AWS."
         url: https://aws.amazon.com/migration-evaluator/
         family: migration-hub
+        cost_band: none
       - provider: oss
         product: "Spreadsheet TCO model (hardware depreciation, power, licences, staff)"
         note: "Fits any size; hardware depreciation, power, licences and staff over three to five years. Wrong when finance will not validate the inputs, where the model has no authority."
         url: https://www.finops.org/framework/
+        cost_band: none
       - provider: process
         product: "Finance-validated cost baseline signed off before migration business case"
         note: "Fits every size; one signed-off number anchors the business case. Wrong when the migration is mandated regardless of cost, where effort goes into cost governance instead."
         url: https://www.finops.org/framework/
+        cost_band: none
   - check_id: CR-COS-03
     title: Establish cloud cost governance (budgets, labels, FinOps owner)
     rationale: Cost overruns are the most common reason cloud programmes stall.
@@ -773,18 +913,22 @@ recommendations:
         product: "Billing budgets and alerts; label policy; BigQuery billing export + Looker Studio dashboards; committed use discounts"
         note: "Budgets and a label policy fit every project; billing export to BigQuery is the basis for chargeback. Wrong when spend is in another cloud."
         url: https://cloud.google.com/billing/docs/how-to/budgets
+        cost_band: low
       - provider: aws
         product: "Budgets + Cost Explorer; tagging policies; Savings Plans"
         note: "Fits every account; tag policies need AWS Organizations. Wrong when spend is in another cloud."
         url: https://docs.aws.amazon.com/cost-management/latest/userguide/budgets-managing-costs.html
+        cost_band: low
       - provider: oss
         product: "OpenCost / Kubecost for Kubernetes; Infracost in CI"
         note: "OpenCost fits Kubernetes estates that need per-namespace cost; Infracost shows cost in pull requests. Wrong when there is no Kubernetes and no IaC, where the provider's own tools suffice."
         url: https://opencost.io/docs/
+        cost_band: none
       - provider: process
         product: "Named FinOps owner and monthly cost review"
         note: "Fits every size; one named owner and a monthly review beat any dashboard. Wrong when nobody has budget authority, which must be settled first."
         url: https://www.finops.org/framework/
+        cost_band: none
   - check_id: CR-COS-04
     title: "Raise operations maturity: IaC, CI/CD, monitoring, runbooks"
     rationale: Cloud at scale is only safe when changes are automated, tested and observable.
@@ -795,14 +939,17 @@ recommendations:
         product: "Terraform + Cloud Build / Cloud Deploy; Cloud Monitoring + Managed Prometheus; Cloud Operations runbooks"
         note: "Fits teams of any size on Google Cloud; Managed Prometheus avoids running a metrics stack. Wrong when the estate is multi-cloud, where neutral CI and observability tools avoid duplication."
         url: https://cloud.google.com/build/docs
+        cost_band: medium
       - provider: aws
         product: "Terraform/CDK + CodePipeline; CloudWatch + Managed Grafana"
         note: "Fits AWS-only teams; CDK suits TypeScript or Python shops, Terraform keeps the door open to other clouds. Wrong when the estate is multi-cloud."
         url: https://docs.aws.amazon.com/codepipeline/
+        cost_band: medium
       - provider: oss
         product: "Terraform / OpenTofu + GitHub Actions; Prometheus + Grafana + Loki; runbooks in Git"
         note: "Fits any cloud; the Grafana stack needs an operator but scales from one cluster to many. Wrong when the team cannot staff a platform role, where managed equivalents are safer."
         url: https://opentofu.org/docs/
+        cost_band: low
   - check_id: CR-COS-05
     title: Fund a skills and change plan (cloud centre of excellence)
     rationale: Teams without training recreate on-prem patterns in the cloud.
@@ -813,18 +960,22 @@ recommendations:
         product: "Google Cloud Skills Boost paths; Partner-led CCoE enablement"
         note: "Free and paid learning paths for any team size; partner enablement for the first landing zone. Wrong when the target is another cloud."
         url: https://www.cloudskillsboost.google/
+        cost_band: low
       - provider: aws
         product: "AWS Skill Builder; Cloud Adoption Framework (People perspective)"
         note: "Fits any team size; the People perspective of the Cloud Adoption Framework structures the change plan. Wrong when the target is another cloud."
         url: https://skillbuilder.aws/
+        cost_band: low
       - provider: oss
         product: "Internal guild + Linux Foundation / CNCF courses"
         note: "Fits engineering-led clients; vendor-neutral Kubernetes and Linux courses. Wrong when the team needs provider-specific certification for the cloud already chosen."
         url: https://www.cncf.io/training/
+        cost_band: low
       - provider: process
         product: "Named CCoE lead; 10% time for enablement for 2 quarters"
         note: "Fits clients above roughly 20 technical staff; smaller teams fold the role into a tech lead. Wrong when the migration is a one-off project, where a partner can carry the knowledge."
         url: https://cloud.google.com/adoption-framework
+        cost_band: none
   # ---------------- Agentic AI readiness ----------------
   - check_id: AI-DAT-01
     title: Stand up a data catalogue with owners and classification
@@ -837,15 +988,18 @@ recommendations:
         note: "Catalogs BigQuery, Cloud Storage and connected sources across projects; Sensitive Data Protection auto-tags sensitive columns. Wrong when the data is mostly outside Google Cloud."
         url: https://cloud.google.com/dataplex/docs
         family: dataplex
+        cost_band: medium
       - provider: aws
         product: "Glue Data Catalog + DataZone + Macie"
         note: "Glue catalogs S3 and JDBC sources; DataZone adds ownership and governance; Macie classifies S3. Wrong when the data is mostly outside AWS."
         url: https://docs.aws.amazon.com/glue/
         family: glue-datazone
+        cost_band: medium
       - provider: oss
         product: "OpenMetadata or DataHub"
         note: "Fits multi-cloud and on-prem estates with a data platform team; both connect to most warehouses. Wrong when there is no team to run and curate the catalog."
         url: https://docs.open-metadata.org/
+        cost_band: low
   - check_id: AI-DAT-02
     title: Establish a governed analytical data platform
     rationale: Agents and analytics need one governed source rather than ad-hoc extracts.
@@ -856,14 +1010,17 @@ recommendations:
         product: "BigQuery (+ BigLake for lake data), Dataflow / Datastream for ingestion"
         note: "BigQuery fits from gigabytes to petabytes with no cluster; Datastream for change data capture from databases. Wrong when residency keeps data on-prem or another warehouse is the standard."
         url: https://cloud.google.com/bigquery/docs
+        cost_band: high
       - provider: aws
         product: "Redshift / Athena on S3 lake; Glue ETL"
         note: "Athena fits ad-hoc queries over S3; Redshift for sustained BI at scale. Wrong when the data must stay on-prem or another warehouse is already in place."
         url: https://docs.aws.amazon.com/redshift/
+        cost_band: high
       - provider: oss
         product: "PostgreSQL + DuckDB / ClickHouse; Apache Iceberg lakehouse with Trino"
         note: "PostgreSQL or DuckDB fit small analytics; Iceberg plus Trino scales to a lakehouse with a platform team. Wrong when there is no data engineering team."
         url: https://iceberg.apache.org/docs/latest/
+        cost_band: medium
   - check_id: AI-DAT-03
     title: Make unstructured content retrievable (search / vector index) with access controls
     rationale: Retrieval-augmented agents need indexed documents that respect existing permissions.
@@ -874,14 +1031,17 @@ recommendations:
         product: "Vertex AI Search (managed RAG with ACL-aware connectors) or AlloyDB/pgvector + Vertex embeddings"
         note: "Vertex AI Search is managed RAG with connectors that honour source ACLs; AlloyDB plus pgvector for custom pipelines. Wrong when documents must not leave the premises."
         url: https://cloud.google.com/generative-ai-app-builder/docs
+        cost_band: medium
       - provider: aws
         product: "Amazon Kendra / Bedrock Knowledge Bases; OpenSearch vector engine"
         note: "Bedrock Knowledge Bases fit most RAG needs; Kendra for enterprise connectors with ACLs. Wrong when documents must not leave the premises."
         url: https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html
+        cost_band: medium
       - provider: oss
         product: "pgvector / Qdrant / Weaviate with document-level ACL metadata"
         note: "pgvector fits up to a few million vectors inside PostgreSQL; Qdrant or Weaviate beyond. Wrong when the team cannot build the ACL filtering, where leaking documents is the risk."
         url: https://qdrant.tech/documentation/
+        cost_band: low
   - check_id: AI-DAT-04
     title: Introduce data quality checks and lineage
     rationale: Agents amplify bad data; lineage is needed to explain and audit answers.
@@ -893,15 +1053,18 @@ recommendations:
         note: "Auto data quality and lineage cover BigQuery natively; Dataform assertions run in the pipeline. Wrong when the platform is not BigQuery."
         url: https://cloud.google.com/dataplex/docs/auto-data-quality-overview
         family: dataplex
+        cost_band: medium
       - provider: aws
         product: "Glue Data Quality; DataZone lineage"
         note: "Covers Glue and Redshift pipelines with rules evaluated per run. Wrong when the platform is not AWS."
         url: https://docs.aws.amazon.com/glue/latest/dg/glue-data-quality.html
         family: glue-datazone
+        cost_band: medium
       - provider: oss
         product: "Great Expectations / Soda; OpenLineage + Marquez"
         note: "Fits any warehouse with a data engineering team; checks run inside the pipeline. Wrong when there is no pipeline code to attach checks to."
         url: https://docs.greatexpectations.io/
+        cost_band: none
   - check_id: AI-INT-01
     title: Expose core systems through documented APIs or events
     rationale: Agents act through APIs; screen-scraping and manual steps do not scale or audit.
@@ -913,15 +1076,18 @@ recommendations:
         note: "API Gateway fits a few services; Apigee for enterprise API programmes; Pub/Sub for events at any scale. Wrong when core systems are on-prem with no API, where middleware comes first."
         url: https://cloud.google.com/apigee/docs
         family: apigee
+        cost_band: high
       - provider: aws
         product: "API Gateway; EventBridge; AppFlow"
         note: "API Gateway and EventBridge fit any size; AppFlow connects SaaS sources. Wrong when core systems are on-prem with no API, where middleware comes first."
         url: https://docs.aws.amazon.com/apigateway/
         family: api-gateway
+        cost_band: medium
       - provider: oss
         product: "OpenAPI-first services; Kafka / NATS for events; n8n for low-code glue"
         note: "NATS fits small teams; Kafka at high volume with an operations team; n8n for low-code glue. Wrong when there is no engineering team to own the services."
         url: https://kafka.apache.org/documentation/
+        cost_band: medium
   - check_id: AI-INT-02
     title: Put APIs behind a gateway with auth, quotas and logging
     rationale: Agent traffic needs rate limits and audit; a gateway is where agent identities are enforced.
@@ -933,15 +1099,18 @@ recommendations:
         note: "Cloud API Gateway suits a few internal APIs; Apigee when quotas, analytics and monetisation matter. Wrong when the APIs run in another cloud."
         url: https://cloud.google.com/apigee/docs
         family: apigee
+        cost_band: high
       - provider: aws
         product: "API Gateway usage plans + WAF"
         note: "Usage plans and API keys fit any API count; WAF for public endpoints. Wrong when the APIs run outside AWS."
         url: https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-usage-plans.html
         family: api-gateway
+        cost_band: medium
       - provider: oss
         product: "Kong / Tyk / Envoy Gateway"
         note: "Kong and Tyk fit multi-cloud estates; Envoy Gateway for Kubernetes-native teams. Wrong when there is no team to operate a gateway."
         url: https://docs.konghq.com/
+        cost_band: low
   - check_id: AI-INT-03
     title: Adopt a managed AI platform for model access and agent hosting
     rationale: Managed platforms provide enterprise data-use terms, quotas, and hosting for agents.
@@ -953,15 +1122,18 @@ recommendations:
         note: "Fits any size; Gemini Enterprise for packaged agents, Agent Engine for custom ones. Wrong when the client is standardised on another cloud or needs on-prem inference."
         url: https://cloud.google.com/vertex-ai/docs
         family: vertex-ai
+        cost_band: high
       - provider: aws
         product: "Amazon Bedrock (Claude, others) + Bedrock AgentCore"
         note: "Fits any size on AWS; AgentCore hosts custom agents. Wrong when the client is standardised on another cloud or needs on-prem inference."
         url: https://docs.aws.amazon.com/bedrock/
         family: bedrock
+        cost_band: high
       - provider: oss
         product: "Ollama / vLLM self-hosted models; LangGraph or ADK (open source) for agents"
         note: "Ollama fits laptops and pilots; vLLM serves production on GPUs. Wrong when there are no GPUs and no MLOps team, where a managed platform is the realistic choice."
         url: https://docs.vllm.ai/
+        cost_band: medium
   - check_id: AI-INT-04
     title: Standardise on agent/tool protocols (MCP, A2A, function calling)
     rationale: Open protocols keep agents portable across model providers and avoid lock-in.
@@ -973,15 +1145,18 @@ recommendations:
         note: "ADK is open source with MCP and A2A built in; Agent Engine runs it managed. Wrong when the agent runtime must be provider-neutral at the hosting layer too."
         url: https://google.github.io/adk-docs/
         family: agent-engine
+        cost_band: medium
       - provider: aws
         product: "Bedrock AgentCore Gateway (MCP) + Strands Agents"
         note: "AgentCore Gateway exposes tools over MCP; Strands is the open-source agent SDK. Wrong when hosting must stay provider-neutral."
         url: https://docs.aws.amazon.com/bedrock-agentcore/
         family: agentcore
+        cost_band: medium
       - provider: oss
         product: "MCP servers for internal systems; LangGraph / CrewAI / ADK runtime"
         note: "Fits any client with an engineering team; MCP keeps tools portable across models. Wrong when there is no engineering team to build and maintain the servers."
         url: https://modelcontextprotocol.io/
+        cost_band: low
   - check_id: AI-INT-05
     title: Provide elastic compute for inference and batch AI jobs
     rationale: AI workloads are bursty; fixed capacity is either idle or saturated.
@@ -992,14 +1167,17 @@ recommendations:
         product: "Cloud Run (GPU) / GKE Autopilot; Batch; Vertex AI endpoints with autoscaling"
         note: "Cloud Run with GPUs fits bursty inference; GKE for custom serving; Batch for jobs. Wrong when data must stay on-prem."
         url: https://cloud.google.com/run/docs/configuring/services/gpu
+        cost_band: high
       - provider: aws
         product: "ECS/EKS with Karpenter; SageMaker endpoints; AWS Batch"
         note: "SageMaker endpoints autoscale managed models; Karpenter on EKS for custom serving. Wrong when data must stay on-prem."
         url: https://docs.aws.amazon.com/sagemaker/
+        cost_band: high
       - provider: oss
         product: "Kubernetes with KEDA autoscaling; Ray for distributed jobs"
         note: "KEDA scales on queue depth; Ray for distributed jobs; both need a cluster team. Wrong when there is no Kubernetes expertise."
         url: https://keda.sh/docs/
+        cost_band: medium
   - check_id: AI-GOV-01
     title: Publish an AI acceptable-use and responsible-AI policy
     rationale: Staff are already using AI tools; policy sets what data may be shared and how outputs are checked.
@@ -1010,14 +1188,17 @@ recommendations:
         product: "Policy covering approved tools, data classes allowed, human review, disclosure; aligned to NIST AI RMF / ISO 42001"
         note: "Fits every size; two pages listing approved tools, allowed data classes and review rules. Wrong when leadership has not agreed who owns AI risk, which must come first."
         url: https://www.nist.gov/itl/ai-risk-management-framework
+        cost_band: none
       - provider: gcp
         product: "Enforce via Workspace / Gemini Enterprise admin controls and DLP"
         note: "Fits Workspace tenants; admin controls and DLP enforce the policy for Gemini. Wrong when staff use tools outside Workspace, where the policy needs other enforcement."
         url: https://cloud.google.com/gemini-enterprise/docs
+        cost_band: medium
       - provider: aws
         product: "Enforce via Bedrock Guardrails and IAM"
         note: "Fits Bedrock users; Guardrails filter content and PII, IAM limits who may call which model. Wrong when staff use SaaS AI tools outside AWS."
         url: https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html
+        cost_band: low
   - check_id: AI-GOV-02
     title: Risk-assess AI use cases before deployment
     rationale: Agents that act on systems need the same change and risk control as any production change.
@@ -1028,10 +1209,12 @@ recommendations:
         product: "Lightweight AI risk assessment template (use case, data, autonomy level, failure modes); DPIA when personal data"
         note: "Fits every size; one page per use case following the NIST AI RMF playbook. Wrong when no inventory of use cases exists, where discovery comes first."
         url: https://airc.nist.gov/airmf-resources/playbook/
+        cost_band: none
       - provider: oss
         product: "NIST AI RMF playbook; OWASP Top 10 for LLM Applications checklist"
         note: "Free checklists for any size. Wrong when a regime (EU AI Act, sector rules) mandates a specific assessment format."
         url: https://genai.owasp.org/llm-top-10/
+        cost_band: none
   - check_id: AI-GOV-03
     title: Gate consequential agent actions behind human approval
     rationale: Autonomy should be earned per action class; approvals and kill switches limit damage.
@@ -1043,15 +1226,18 @@ recommendations:
         note: "Fits agents built with ADK; long-running tools pause for approval. Wrong when agents run on another framework or cloud."
         url: https://cloud.google.com/vertex-ai/generative-ai/docs/agent-engine/overview
         family: agent-engine
+        cost_band: low
       - provider: aws
         product: "Bedrock Agents return-of-control / AgentCore policies; Step Functions human approval"
         note: "Fits Bedrock agents; Step Functions adds a durable approval step. Wrong when agents run elsewhere."
         url: https://docs.aws.amazon.com/bedrock/latest/userguide/agents-returncontrol.html
         family: agentcore
+        cost_band: low
       - provider: oss
         product: "Approval step in LangGraph (interrupt) or n8n; feature flags as kill switch"
         note: "Fits in-house agents; interrupts pause the graph until a human resumes it. Wrong when there is no engineering team to build the approval UI."
         url: https://langchain-ai.github.io/langgraph/concepts/human_in_the_loop/
+        cost_band: none
   - check_id: AI-GOV-04
     title: Keep an inventory of models and agents with owners
     rationale: Unowned agents cannot be patched, audited or retired.
@@ -1063,14 +1249,17 @@ recommendations:
         note: "Fits models and agents on Vertex AI. Wrong when models are consumed only as SaaS APIs, where a simple register suffices."
         url: https://cloud.google.com/vertex-ai/docs/model-registry/introduction
         family: vertex-ai
+        cost_band: low
       - provider: aws
         product: "SageMaker Model Registry; AgentCore registry"
         note: "Fits models and agents on AWS. Wrong when models are consumed only as SaaS APIs, where a simple register suffices."
         url: https://docs.aws.amazon.com/sagemaker/latest/dg/model-registry.html
+        cost_band: low
       - provider: oss
         product: "Model cards in Git; MLflow registry"
         note: "MLflow fits teams that train their own models; model cards in Git fit everyone. Wrong when there are no in-house models, where a spreadsheet register is enough."
         url: https://mlflow.org/docs/latest/
+        cost_band: none
   - check_id: AI-GOV-05
     title: Complete model-provider due diligence and data-use terms
     rationale: Confirm no training on your data, retention windows and regional processing before sending client data.
@@ -1081,16 +1270,19 @@ recommendations:
         product: "Vendor assessment (CAIQ-lite) + DPA; confirm zero-retention / no-training terms"
         note: "Fits every size; the CSA STAR registry holds many providers' CAIQ answers. Wrong when the provider is a hyperscaler whose terms are published, where a review replaces a questionnaire."
         url: https://cloudsecurityalliance.org/star
+        cost_band: none
       - provider: gcp
         product: "Vertex AI enterprise data-use terms; data residency via regional endpoints"
         note: "Published terms cover most clients; regional endpoints pin processing. Wrong when the client needs guarantees beyond the published terms, where a contract addendum is needed."
         url: https://cloud.google.com/vertex-ai/generative-ai/docs/data-governance
         family: vertex-ai
+        cost_band: none
       - provider: aws
         product: "Bedrock data-use terms; regional endpoints"
         note: "Published terms cover most clients; regional endpoints pin processing. Wrong when the client needs guarantees beyond the published terms, where a contract addendum is needed."
         url: https://docs.aws.amazon.com/bedrock/latest/userguide/data-protection.html
         family: bedrock
+        cost_band: none
   - check_id: AI-SEC-01
     title: Run agents under least-privilege, auditable identities
     rationale: An agent with admin rights is an unattended admin.
@@ -1101,14 +1293,17 @@ recommendations:
         product: "Dedicated service accounts per agent; Workload Identity; IAM Conditions; Privileged Access Manager"
         note: "Fits any agent count; IAM Conditions limit time and resource scope. Wrong when agents act on systems outside Google Cloud IAM."
         url: https://cloud.google.com/iam/docs/service-account-overview
+        cost_band: none
       - provider: aws
         product: "IAM roles per agent with session tags; permission boundaries"
         note: "Fits any agent count; session tags carry the caller into CloudTrail. Wrong when agents act on systems outside AWS IAM."
         url: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html
+        cost_band: none
       - provider: oss
         product: "SPIFFE/SPIRE identities; OpenFGA for fine-grained authorisation"
         note: "Fits multi-cloud and on-prem estates with a platform team. Wrong when there is no platform team to run SPIRE, where cloud-native identities are enough."
         url: https://spiffe.io/docs/latest/
+        cost_band: low
   - check_id: AI-SEC-02
     title: Keep secrets in a manager and out of prompts and code
     rationale: Prompts and traces are logged; a secret in a prompt is a secret in the logs.
@@ -1120,16 +1315,19 @@ recommendations:
         note: "Fits any size; Sensitive Data Protection inspects prompts for secrets and PII. Wrong when workloads run outside Google Cloud."
         url: https://cloud.google.com/secret-manager/docs
         family: secret-manager
+        cost_band: low
       - provider: aws
         product: "Secrets Manager; CodeGuru / git-secrets"
         note: "Fits any size; CodeGuru and git-secrets catch secrets in code. Wrong when workloads run outside AWS."
         url: https://docs.aws.amazon.com/secretsmanager/
         family: secrets-manager
+        cost_band: low
       - provider: oss
         product: "gitleaks pre-commit + CI; Vault/OpenBao"
         note: "gitleaks fits every repository from day one; Vault when secrets span clouds. Wrong when a small team only needs the cloud secret store."
         url: https://gitleaks.io/
         family: vault
+        cost_band: low
   - check_id: AI-SEC-03
     title: Add prompt-injection and data-leakage controls around agents
     rationale: Documents and web content are untrusted input; outputs must be filtered for sensitive data.
@@ -1140,14 +1338,17 @@ recommendations:
         product: "Model Armor (prompt/response screening) + Sensitive Data Protection; VPC Service Controls"
         note: "Model Armor screens prompts and responses for any model behind Vertex AI; VPC Service Controls limit exfiltration. Wrong when models run outside Google Cloud."
         url: https://cloud.google.com/security-command-center/docs/model-armor-overview
+        cost_band: medium
       - provider: aws
         product: "Bedrock Guardrails (content, PII, grounding)"
         note: "Fits Bedrock models; filters content, PII and grounding. Wrong when models run outside Bedrock."
         url: https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html
+        cost_band: medium
       - provider: oss
         product: "Presidio for PII; LLM Guard / NeMo Guardrails; allow-listed tools only"
         note: "Fits self-hosted stacks with an engineering team; Presidio detects PII, LLM Guard screens prompts. Wrong when there is no team to tune the detectors."
         url: https://microsoft.github.io/presidio/
+        cost_band: none
   - check_id: AI-SEC-04
     title: Trace and audit every agent action and model call
     rationale: Traceability is required to debug, prove compliance and investigate incidents.
@@ -1159,15 +1360,18 @@ recommendations:
         note: "Fits any size; OpenTelemetry keeps instrumentation portable. Wrong when agents run outside Google Cloud, where a neutral backend fits better."
         url: https://cloud.google.com/trace/docs
         family: cloud-logging
+        cost_band: low
       - provider: aws
         product: "CloudWatch + X-Ray; AgentCore Observability"
         note: "Fits any size on AWS; AgentCore Observability traces hosted agents. Wrong when agents run elsewhere."
         url: https://docs.aws.amazon.com/xray/
         family: cloudwatch
+        cost_band: low
       - provider: oss
         product: "OpenTelemetry + Langfuse / Phoenix"
         note: "Fits any size; self-hosted Langfuse needs a database. Wrong when nobody will run the backend, where the cloud provider's tracing suffices."
         url: https://opentelemetry.io/docs/
+        cost_band: low
   - check_id: AI-SEC-05
     title: Evaluate and red-team agents before and after release
     rationale: Agent behaviour drifts with model and prompt changes; evals catch regressions.
@@ -1179,12 +1383,15 @@ recommendations:
         note: "Fits any size; eval sets in CI catch regressions on every prompt change. Wrong when models are hosted elsewhere."
         url: https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-overview
         family: vertex-ai
+        cost_band: low
       - provider: aws
         product: "Bedrock model evaluation; AgentCore evaluations"
         note: "Fits any size on Bedrock. Wrong when models are hosted elsewhere."
         url: https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation.html
         family: bedrock
+        cost_band: low
       - provider: oss
         product: "promptfoo / DeepEval in CI; garak / PyRIT for red-teaming"
         note: "promptfoo runs in CI against any provider; garak and PyRIT cover red-teaming. Wrong when there is no CI pipeline to run them in."
         url: https://www.promptfoo.dev/docs/intro/
+        cost_band: none

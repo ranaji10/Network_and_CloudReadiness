@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from pydantic import ValidationError
 
@@ -6,6 +8,7 @@ from readiness.recommend.engine import load_catalog
 from readiness.scoring.catalog import control
 from readiness.scoring.profiles import (
     Profile,
+    ProfileRules,
     apply_pillar_weight_overrides,
     list_profiles,
     load_domain,
@@ -108,9 +111,13 @@ def test_every_catalog_option_has_docs_link_and_limitation_note():
     """REC-03 catalog contract (see the header comment of config/recommendations/catalog.yaml):
     product options (gcp / aws / oss) link to official documentation over https; every option has a note
     of at most 220 characters with a sizing hint and a sentence starting "Wrong when"; a process option
-    may have url null only when its note says "no authoritative reference"."""
+    may have url null only when its note says "no authoritative reference". REC-04 adds `cost_band`: every
+    option has one of none / low / medium / high, every process option is `none`, and no note or product
+    quotes a price (bands are indicative, never a quote)."""
     catalog = load_catalog(DEFAULT_CONFIG_DIR)
     seen = 0
+    bands: set[str] = set()
+    price = re.compile(r"(\$\s?\d|\d\s?(usd|eur|gbp)\b|\d\s?(/|per)\s?(month|user|seat))", re.I)
     for e in catalog.values():
         for o in e.options:
             seen += 1
@@ -123,7 +130,26 @@ def test_every_catalog_option_has_docs_link_and_limitation_note():
                 assert "no authoritative reference" in o.note.lower(), f"{where}: null url not explained"
             else:
                 assert o.url and o.url.startswith("https://"), f"{where}: missing https documentation url"
+            assert o.cost_band in ("none", "low", "medium", "high"), f"{where}: missing or unknown cost_band"
+            bands.add(o.cost_band)
+            if o.provider == "process":
+                assert o.cost_band == "none", f"{where}: process options have no recurring cost"
+            assert not price.search(o.note) and not price.search(o.product), f"{where}: no prices in the catalog"
     assert seen >= 150, "catalog unexpectedly small"
+    assert bands == {"none", "low", "medium", "high"}, f"expected every band to be used, got {sorted(bands)}"
+
+
+def test_cost_band_is_validated_and_optional():
+    from readiness.models import RecommendationOption
+
+    assert RecommendationOption(provider="gcp", product="X").cost_band is None  # older catalogs still load
+    assert RecommendationOption(provider="gcp", product="X", cost_band="high").cost_band == "high"
+    with pytest.raises(ValidationError):
+        RecommendationOption(provider="gcp", product="X", cost_band="cheap")
+    assert ProfileRules().max_cost_band is None
+    assert ProfileRules(max_cost_band="low").max_cost_band == "low"
+    with pytest.raises(ValidationError):
+        ProfileRules(max_cost_band="free")
 
 
 def test_unknown_profile_field_is_rejected():

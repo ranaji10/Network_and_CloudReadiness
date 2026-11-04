@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -116,12 +116,21 @@ class DomainScore(BaseModel):
     thresholds: dict[str, float] = {}
 
 
+CostBand = Literal["none", "low", "medium", "high"]
+COST_BAND_RANK: dict[str, int] = {"none": 0, "low": 1, "medium": 2, "high": 3}
+
+
 class RecommendationOption(BaseModel):
     provider: str  # gcp | aws | oss | process
     product: str
     note: str = ""
     url: str | None = None
     family: str = ""  # product family tag; options sharing provider+family close several checks with one rollout
+    # REC-04: indicative incremental monthly run cost for a mid-sized organisation (roughly 200 to 2,000 staff),
+    # excluding implementation effort. none = no recurring cost, low < ~500 USD/month, medium ~500-5,000,
+    # high > ~5,000. Indicative only; varies by region and usage; never a quote. Semantics and the rule set
+    # live in the header of config/recommendations/catalog.yaml.
+    cost_band: CostBand | None = None
 
 
 class Recommendation(BaseModel):

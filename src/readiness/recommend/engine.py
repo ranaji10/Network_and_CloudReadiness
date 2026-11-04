@@ -10,7 +10,13 @@ provider closes SSO, MFA and cloud federation). When the profile rule `dedupe_by
 whose *preferred* option (the first one after provider-preference ordering) belongs to the same product
 family are merged into one action that lists every check it closes (`closes_check_ids`). The family key
 is `<provider>:<family>` where `family` is the option's explicit `family` tag in the catalog, falling back
-to the product name lower-cased and trimmed. Discovery items are never merged."""
+to the product name lower-cased and trimmed. Discovery items are never merged.
+
+Cost ceiling (REC-04): every catalog option carries an indicative monthly `cost_band`. When the profile rule
+`max_cost_band` is set, options above that band are dropped before the preferred option (and so the family)
+is chosen. An action that loses every option is kept, with no options and a sentence appended to its
+rationale, so the finding is not silently lost. A merged action shows the lead member's options, and with
+them the lead option's band."""
 
 from __future__ import annotations
 
@@ -19,7 +25,7 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel
 
-from readiness.models import CheckStatus, DomainScore, Recommendation, RecommendationOption
+from readiness.models import COST_BAND_RANK, CheckStatus, DomainScore, Recommendation, RecommendationOption
 from readiness.scoring.catalog import caiq_questions
 from readiness.scoring.profiles import Profile
 
@@ -55,6 +61,17 @@ def family_key(option: RecommendationOption) -> str:
 
 def _max_by(values: list[str], rank: dict[str, int]) -> str:
     return max(values, key=lambda v: rank.get(v, -1))
+
+
+NO_OPTION_WITHIN_CEILING = "No option within the cost ceiling"
+
+
+def within_cost_ceiling(option: RecommendationOption, max_band: str | None) -> bool:
+    """True when the option's band is at or below `max_band`. No ceiling, or an option without a band
+    (a catalog that predates REC-04), keeps the option: the filter never hides what it cannot judge."""
+    if max_band is None or option.cost_band is None:
+        return True
+    return COST_BAND_RANK[option.cost_band] <= COST_BAND_RANK[max_band]
 
 
 def merge_by_family(actions: list[Recommendation]) -> list[Recommendation]:
@@ -140,6 +157,15 @@ def recommend(domains: list[DomainScore], profile: Profile, config_dir: Path) ->
                         entry.effort,
                         entry.impact,
                     )
+                    ceiling = profile.rules.max_cost_band
+                    affordable = [o for o in options if within_cost_ceiling(o, ceiling)]
+                    if options and not affordable:
+                        # keep the finding, say why no product is listed (the band legend explains the scale)
+                        rationale = (
+                            f"{rationale or r.rationale} {NO_OPTION_WITHIN_CEILING} "
+                            f"(profile `max_cost_band: {ceiling}`); every catalog option for this check is above it."
+                        ).strip()
+                    options = affordable
                 else:
                     options, title, rationale, effort, impact = (
                         [],

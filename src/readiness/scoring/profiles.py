@@ -4,6 +4,7 @@ typo in configuration fails fast with a readable message rather than silently sk
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -66,6 +67,9 @@ class ProfileRules(BaseModel):
     negative_overrides: bool = True
     llm_override_min_confidence: float = 0.6
     dedupe_by_product: bool = True  # merge actions whose preferred option shares a product family (REC-06)
+    # REC-04: drop catalog options whose indicative monthly cost band is above this one (none < low < medium
+    # < high). Unset (the default) keeps every option. An action that loses all its options is kept and says so.
+    max_cost_band: Literal["none", "low", "medium", "high"] | None = None
 
 
 class Profile(BaseModel):

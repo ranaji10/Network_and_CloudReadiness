@@ -55,6 +55,7 @@ Grades use `>=`: A at or above `grade_a`, B at or above `grade_b`, C at or above
 | `negative_overrides` | boolean | `true` | A negative signal match forces NOT_MET |
 | `llm_override_min_confidence` | number | `0.6` | Minimum confidence for an LLM verdict to replace the rule verdict |
 | `dedupe_by_product` | boolean | `true` | Merge actions whose preferred option shares a product family into one action listing every check it closes (see *Product-family merge*) |
+| `max_cost_band` | `none`, `low`, `medium`, `high` or unset | unset | Drop catalog options whose `cost_band` is above this one; unset keeps every option (see *Cost bands*). `public_sector` sets `medium` |
 
 ## Domain (`config/scoring/<id>.yaml`)
 
@@ -196,10 +197,38 @@ Option fields:
 | `url` | string or null | `null` | Official documentation landing page; **required (`https://`) for `gcp`, `aws` and `oss`**. For `process` the most relevant public reference (CSA CCM / STAR, NIST SP 800-xx, NIST AI RMF, CIS Controls, FinOps Framework); `null` only when nothing authoritative fits, and the note must then say "no authoritative reference" |
 | `note` | string | required by test | At most 220 characters, neutral, no prices: a sizing hint ("fits up to ...", "needs a team that ...") followed by a sentence starting with `Wrong when` that names the situation in which the option is the wrong choice |
 | `family` | string | `""` | Short tag such as `cloud-identity` shared by options that are the same product rollout; see *Product-family merge* |
+| `cost_band` | `none`, `low`, `medium` or `high` | required by test | Indicative incremental monthly run cost of the option for a mid-sized organisation; see *Cost bands* |
 
-`test_every_catalog_option_has_docs_link_and_limitation_note` enforces the `url` and `note` rules. The Markdown
-report renders the product as `[product](url)` followed by the note; the PDF prints the url in parentheses after
-the product on the same line.
+`test_every_catalog_option_has_docs_link_and_limitation_note` enforces the `url`, `note` and `cost_band` rules.
+The Markdown report renders the product as `[product](url)`, then `· cost: <band>`, then the note; the PDF prints
+the url in parentheses after the product and ` - cost: <band>` on the same line.
+
+### Cost bands
+
+`cost_band` is the rough **incremental monthly run cost** of adopting the option for that check in a
+mid-sized organisation (roughly 200 to 2,000 staff). It excludes implementation effort, which is the
+entry's `effort`. The bands:
+
+| Band | Meaning |
+|---|---|
+| `none` | No recurring cost: process work, open source on existing capacity, a free tier that fits |
+| `low` | Under roughly 500 USD per month |
+| `medium` | Roughly 500 to 5,000 USD per month |
+| `high` | Above roughly 5,000 USD per month |
+
+Bands are indicative, vary by region and usage, and are not a quote; the catalog never carries an exact
+price. The rule set used to assign them (process is always `none`; open source is `none` on existing
+capacity, `low` with dedicated hosting, `medium` with a dedicated cluster or GPUs; managed services by
+their typical scale) is written once in the catalog's header comment, not per option. Options that share
+a `family` may carry different bands because each band is what that option adds for its check; a merged
+action shows the lead option's band. Every report prints a one-line legend under the actions heading.
+
+With `rules.max_cost_band` set, `recommend()` drops options above the ceiling *before* the preferred
+option and the family key are chosen, so the merge follows the affordable option. An action whose options
+are all above the ceiling is kept, with no options and the sentence "No option within the cost ceiling
+(profile `max_cost_band: <band>`)" appended to its rationale; it is then never merged. Options without a
+band (a catalog predating REC-04) are never dropped. The ADK/MCP `top_actions` summary lists each option
+with its `cost_band`, as `RecommendationOption.model_dump()` does.
 
 ### What the engine produces
 
