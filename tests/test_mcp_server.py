@@ -17,18 +17,18 @@ TOOLS = {"run_readiness_assessment", "submit_questionnaire_answers", "list_profi
 
 def _payload(result) -> object:
     """The tool's return value: the SDK's structured content (lists are wrapped under `result`), else the text."""
-    assert not result.isError, result.content
-    structured = result.structuredContent
+    assert not result.is_error, result.content
+    structured = result.structured_content
     if structured is not None:
         return structured["result"] if set(structured) == {"result"} else structured
     return json.loads(result.content[0].text)
 
 
 def _with_client(fn):
-    from mcp.shared.memory import create_connected_server_and_client_session
+    from mcp import Client
 
     async def go():
-        async with create_connected_server_and_client_session(mcp_server.build_server(), raise_exceptions=True) as c:
+        async with Client(mcp_server.build_server(), raise_exceptions=True) as c:
             return await fn(c)
 
     return asyncio.run(go())
@@ -41,8 +41,8 @@ def test_server_lists_the_three_tools():
     listed = _with_client(go)
     assert {t.name for t in listed.tools} == TOOLS
     run_tool = next(t for t in listed.tools if t.name == "run_readiness_assessment")
-    assert set(run_tool.inputSchema["properties"]) == {"source_uri", "profile", "include_answers"}
-    assert run_tool.inputSchema["required"] == ["source_uri"]
+    assert set(run_tool.input_schema["properties"]) == {"source_uri", "profile", "include_answers"}
+    assert run_tool.input_schema["required"] == ["source_uri"]
 
 
 @pytest.fixture
@@ -70,7 +70,7 @@ def test_run_readiness_assessment_offline(monkeypatch, fixtures_dir, tmp_path, c
     assert captured.out == "", "stdout is the stdio protocol channel; pipeline logs must go to stderr"
     assert "run.end" in captured.err or "score=" in captured.err
     summary = _payload(result)
-    assert result.structuredContent is not None  # clients get a typed object, not only text
+    assert result.structured_content is not None  # clients get a typed object, not only text
     assert summary["run_id"] and 0 <= summary["overall_score"] <= 100
     assert [d["id"] for d in summary["domains"]] == ["network_security"]
     # Compact: summaries only, but the client is told where the full report lives.

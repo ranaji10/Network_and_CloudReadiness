@@ -115,10 +115,11 @@ def route_logs_to_stderr() -> None:
 
 
 def build_server():
-    """Build the FastMCP server. Raises ImportError when the `mcp` extra is not installed."""
-    from mcp.server.fastmcp import FastMCP
+    """Build the MCPServer (mcp SDK 2.x; the class was called FastMCP in 1.x). Raises ImportError when the
+    `mcp` extra is not installed."""
+    from mcp.server.mcpserver import MCPServer
 
-    server = FastMCP(SERVER_NAME, instructions=INSTRUCTIONS)
+    server = MCPServer(SERVER_NAME, instructions=INSTRUCTIONS)
     server.tool()(run_readiness_assessment)
     server.tool()(submit_questionnaire_answers)
     server.tool()(list_profiles)
