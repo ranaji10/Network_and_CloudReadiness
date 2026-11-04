@@ -15,11 +15,11 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 | GRD | Guardrails | 4 | 0 | 0 | 5 | 9 |
 | INF | Infrastructure | 3 | 0 | 0 | 7 | 10 |
 | ING | Ingestion | 2 | 0 | 0 | 7 | 9 |
-| LLM | Model providers | 2 | 1 | 0 | 3 | 6 |
+| LLM | Model providers | 2 | 0 | 0 | 4 | 6 |
 | MIG | Portability and migration | 3 | 0 | 0 | 2 | 5 |
 | REC | Recommendations | 1 | 1 | 0 | 4 | 6 |
 | SCR | Scoring | 2 | 0 | 0 | 7 | 9 |
-| **All** | | 19 | 2 | 0 | 60 | 81 |
+| **All** | | 19 | 1 | 0 | 61 | 81 |
 
 ## By phase
 
@@ -89,14 +89,14 @@ Source of truth: `docs/planning/tracker/<EPIC>.yaml`. Phases are described in `d
 - `todo` **MIG-01** Migrate the GCP project from the personal account to an organisation
 - `done` **MIG-05** Data export and deletion procedure per tenant (claude-code)
 
-### Phase 3: Recommendations depth and AWS (4/12 done)
+### Phase 3: Recommendations depth and AWS (5/12 done)
 
 - `done` **AGT-04** Expose the assessment as an MCP server (claude-code)
 - `todo` **INF-06** Validate AWS skeleton and add App Runner service
 - `todo` **ING-06** S3 source verified against a live bucket
 - `done` **ING-09** PPTX and legacy DOC/XLS extraction (claude-code)
 - `todo` **LLM-03** Amazon Bedrock adapter
-- `in_progress` **LLM-06** Prompt caching and batching for large document sets (claude-code)
+- `done` **LLM-06** Prompt caching and batching for large document sets (claude-code)
 - `todo` **MIG-02** Terraform state move drill
 - `todo` **MIG-04** Provider switch drill (local to gcp to aws) with the same report output
 - `in_progress` **REC-03** Catalog expansion with sizing hints and documentation links (claude-code)
@@ -239,7 +239,7 @@ Owner hint: src/readiness/adapters/llm and guardrails/policy.py
 | LLM-03 | Amazon Bedrock adapter | todo | 3 |  |  | LLM-02 | READINESS_LLM_PROVIDER=bedrock works from an AWS runtime role |
 | LLM-04 | Mock provider with canned responses for tests | done | 0 |  |  |  | MockLLM returns conservative defaults or canned schema instances |
 | LLM-05 | Token and cost accounting per run in the audit log | done | 2 | claude-code | claude/trusting-keller-qe5w65 | LLM-01 | llm.ok events carry input/output token counts; report shows model cost |
-| LLM-06 | Prompt caching and batching for large document sets | in_progress | 3 | claude-code | claude/nifty-mendel-lcqzeb | LLM-01 | judge cost per run halves on a 100-document pack |
+| LLM-06 | Prompt caching and batching for large document sets | done | 3 | claude-code | claude/nifty-mendel-lcqzeb | LLM-01 | judge cost per run halves on a 100-document pack |
 
 ### MIG: Portability and migration
 
