@@ -31,13 +31,13 @@ stories:
     notes: "every option has an https docs url (160/163 unique urls verified 200; vllm, owasp genai, zeek block bots) and a note with a sizing hint and a Wrong-when sentence; links rendered in Markdown and PDF; contract enforced by test"
   - id: REC-04
     title: Rough cost bands per option
-    status: in_progress
+    status: done
     phase: 3
     owner: claude-code
     branch: claude/nifty-mendel-lcqzeb
     depends_on: [REC-03]
     acceptance: "low/medium/high monthly cost band shown in the report"
-    notes: ""
+    notes: "cost_band (none/low/medium/high) on all 185 options (60/63/51/11), legend in Markdown and PDF, rules.max_cost_band ceiling (public_sector: medium)"
   - id: REC-05
     title: Migration wave planning (quick wins, core, legacy) from inventory documents
     status: done
