@@ -6,15 +6,6 @@ reach support, how fast we respond and how incidents are handled is on this page
 `SECURITY.md`, `docs/runbooks/INCIDENT_DATA_LEAK.md`, `docs/runbooks/TENANT_OFFBOARDING.md`,
 `docs/security/DATA_HANDLING_POLICY.md`, `docs/security/DEPLOYMENT_POSTURE.md`.
 
-> **Status of the numbers.** Every value tagged `[proposed]` (response and mitigation targets, support hours,
-> the post-incident report deadline, the deprecation notice) is a proposal pending sign-off by the product
-> owner. Treat them as sensible defaults for a small operator, not as commitments, until the tag is removed.
-
-<!-- DECISION: the product owner has not yet set the SLA numbers, the support hours, the out-of-hours rule,
-     the contact alias, the post-incident report deadline or the deprecation notice period. Everything tagged
-     [proposed] below is a placeholder. When they are decided: replace the values, remove the [proposed] tags,
-     delete this comment and the status note above, and bump the "Last reviewed" line at the bottom. -->
-
 ## 1. Scope
 
 ### What is supported
@@ -57,14 +48,14 @@ Rules:
 
 ## 3. Service levels
 
-| Severity | First response `[proposed]` | Mitigation or resolution target `[proposed]` | Status updates (section 6) |
+| Severity | First response | Mitigation or resolution target | Status updates (section 6) |
 |---|---|---|---|
 | Sev-1 | 1 hour, any time | Mitigation within 4 hours; resolution and post-incident report follow | Every 2 hours until mitigated |
 | Sev-2 | 4 support hours | Mitigation within 2 business days; fix in the next patch release | Daily |
 | Sev-3 | 1 business day | Workaround confirmed in the first response; fix in the next scheduled release | On change of state |
 | Sev-4 | 2 business days | Answered, or placed on the roadmap (`docs/product/ROADMAP.md`) with the tracker story id | None after the answer |
 
-| Term | Meaning `[proposed]` |
+| Term | Meaning |
 |---|---|
 | Support hours | Business days, 09:00 to 18:00 in the operator's time zone named in the client agreement; public holidays of that location excluded |
 | Business day | A day inside support hours; a target of "1 business day" received at 17:00 on a Friday is due 17:00 the next business day |
@@ -137,8 +128,8 @@ the first-response target for the ticket's severity.
 
 | Severity | Cadence | Content of each update |
 |---|---|---|
-| Sev-1 | Every 2 hours until mitigated, then daily until resolved `[proposed]` | What is known, what has been done, what is next, next update time |
-| Sev-2 | Daily `[proposed]` | Same |
+| Sev-1 | Every 2 hours until mitigated, then daily until resolved | What is known, what has been done, what is next, next update time |
+| Sev-2 | Daily | Same |
 | Sev-3 | On change of state (workaround confirmed, fix scheduled, fix released) | What changed |
 | Sev-4 | None after the answer | n/a |
 
@@ -147,7 +138,7 @@ deployment) is sent only for a Sev-1 affecting all tenants, by the service owner
 
 ### Post-incident report
 
-Delivered to each affected client within 5 business days of resolution for Sev-1 and Sev-2 `[proposed]`,
+Delivered to each affected client within 5 business days of resolution for Sev-1 and Sev-2,
 reviewed by the service owner, and by the security owner when client data was involved.
 
 | Section | Content |
@@ -175,11 +166,11 @@ per `docs/runbooks/INCIDENT_DATA_LEAK.md` section 4.
 
 | Topic | Rule |
 |---|---|
-| Planned maintenance | Notice to all client contacts at least 2 business days ahead `[proposed]`, with the window in UTC and the expected effect (read-only, unavailable, none). Maintenance that may interrupt a running job is scheduled outside support hours where possible. Jobs are re-run free of charge if interrupted |
+| Planned maintenance | Notice to all client contacts at least 2 business days ahead, with the window in UTC and the expected effect (read-only, unavailable, none). Maintenance that may interrupt a running job is scheduled outside support hours where possible. Jobs are re-run free of charge if interrupted |
 | Release announcements | Every tagged release (`vX.Y.Z`) gets release notes with the deployed image digest and the revision name (`docs/planning/RELEASE_PLAN.md`); scoring changes name the domain or profile version that moved and why, so a client can tell a score change caused by a release from one caused by their documents |
 | Supported versions | Only the `main` branch and the latest tagged release receive fixes (`SECURITY.md`). A hosted deployment always runs the latest tagged release or a hotfix of it |
 | Rollback | Cloud Run traffic split to the previous revision; a rolled-back release never changes an already produced report, which is re-run if a client needs a corrected one |
-| Deprecation | A route, CLI command, MCP tool, profile or check is marked deprecated in the release notes at least one minor release and at least 30 days `[proposed]` before removal; the replacement is named in the same note |
+| Deprecation | A route, CLI command, MCP tool, profile or check is marked deprecated in the release notes at least one minor release and at least 30 days before removal; the replacement is named in the same note |
 | Scoring changes | A change to weights, points or thresholds bumps the domain or profile version; a client comparing quarter-on-quarter runs is told which version each run used (`tool_version` and profile `version` in the report) |
 
 ## 8. Data requests
@@ -187,7 +178,7 @@ per `docs/runbooks/INCIDENT_DATA_LEAK.md` section 4.
 Policy: `docs/security/DATA_HANDLING_POLICY.md`. Procedure: `docs/runbooks/TENANT_OFFBOARDING.md`. Both are
 tenant-scoped: everything stored for a client sits under its `<tenant_id>/` prefix, so one command covers it.
 
-| Request | How it is handled | Target `[proposed]` |
+| Request | How it is handled | Target |
 |---|---|---|
 | Export ("give us everything you hold") | `readiness tenant export <tenant_id>` for the workspace and reports store, and again with `--store uploads`; the manifest (keys, sizes, sha256) is verified and kept as the record; the zips are delivered over the channel in the client agreement, never attached to a ticket or e-mail | Delivered within 5 business days |
 | Deletion ("delete everything") | Export first unless the client declines in writing; dry-run purge; purge with `--yes` for both stores; hard delete of all object versions; confirmation that the dry run reports 0 objects; dates recorded in the engagement log | Confirmed within 5 business days of the export being accepted (or of the written decline) |
@@ -211,4 +202,4 @@ providers are governed by the terms recorded in `docs/security/LLM_PROVIDER_CHEC
 | Which profiles and checks apply? | `GET /profiles`, `readiness profiles`, `readiness checks <domain>`, or the MCP `list_profiles` and `list_checks` tools | The scoring frame used, so a question about a score can name the check id |
 | Is my token scoped to my tenant? | Request a report id that is not yours: the API returns 404 | Tenancy isolation in action; a 200 for another tenant's id is Sev-1 |
 
-Last reviewed: 2026-11-03. Owner role: service owner, with the security owner for sections 2, 5, 6 and 8.
+Last reviewed: 2026-11-04 (SLA targets, support hours and notice periods signed off by the product owner). Owner role: service owner, with the security owner for sections 2, 5, 6 and 8.

@@ -46,7 +46,7 @@ stories:
     branch: claude/nifty-mendel-lcqzeb
     depends_on: []
     acceptance: "docs/runbooks/SUPPORT.md with SLAs and escalation"
-    notes: "docs/runbooks/SUPPORT.md; SLA numbers, support hours and contact alias are [proposed] pending product-owner sign-off"
+    notes: "docs/runbooks/SUPPORT.md; SLA targets, support hours and notice periods signed off by the product owner on 2026-11-04"
   - id: DOC-06
     title: Tracker sync to GitHub Issues (optional script)
     status: done
